@@ -140,6 +140,8 @@ if ($page['type'] == PAGE_TYPE_HTML) {
 
 	$page_header->addCssFile('assets/styles/'.$page_header->getTheme().'.css');
 
+	// [DM 해설] 모듈 manifest.json 의 "assets"."css" 파일을 <모듈>/assets/css/ 에서 찾아 모든 화면에 넣는다.
+	// [DM 해설] 5버전처럼 blue-theme.css 를 덮어쓰지 않고, 커스텀 스타일은 모듈의 assets/css/dmove.css 에 둔다.
 	foreach (APP::ModuleManager()->getAssets() as $module_id => $assets) {
 		$module = APP::ModuleManager()->getModule($module_id);
 		$relative_path = $module->getRelativePath().'/assets/css';

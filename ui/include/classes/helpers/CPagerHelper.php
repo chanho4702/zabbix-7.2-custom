@@ -34,6 +34,8 @@ class CPagerHelper {
 	 *
 	 * @return CTag  paging line
 	 */
+	// [DM 해설] 배열 $rows 를 현재 페이지 분량으로 잘라 주고(&$rows 라 원본이 바뀐다), 페이지 이동 HTML 을 돌려준다.
+	// [DM 해설] 한 페이지 행 수는 사용자 설정(rows_per_page)을 따른다.
 	public static function paginate($page, &$rows, $sort_order, CUrl $url) {
 		$data = self::prepareData($page, count($rows));
 
@@ -100,6 +102,8 @@ class CPagerHelper {
 		$rows_per_page = CWebUser::$data['rows_per_page'];
 
 		$offset_down = 0;
+		// [DM 해설] 전체 행 수가 "검색/필터 결과 제한"(관리 > 일반 > GUI, 기본 1000)을 넘으면 그 수까지만 화면에 표시한다.
+		// [DM 해설] 목록이 1000건을 넘는 화면은 이 제한에 걸린다는 점을 사용자에게 안내하거나 CSV 로 전체를 받게 한다.
 		$limit_exceeded = ($num_rows > CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT));
 
 		if ($limit_exceeded) {

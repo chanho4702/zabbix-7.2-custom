@@ -22,6 +22,7 @@ use API,
 /**
  * Base class for user modules. If Module.php is not provided by user module, this class will be instantiated instead.
  */
+// [DM 해설] 모든 모듈 Module.php 의 부모 클래스. 모듈에서는 class Module extends CModule 로 상속하고 필요한 메소드만 재정의한다.
 class CModule {
 
 	public const TYPE_MODULE = 'module';
@@ -37,6 +38,7 @@ class CModule {
 		$this->relative_path = $relative_path;
 	}
 
+	// [DM 해설] 모듈이 로드될 때 1회 호출된다. 사이드바 메뉴 추가는 여기를 재정의해서 한다. (modules/dmove/Module.php)
 	public function init(): void {
 	}
 
@@ -107,6 +109,7 @@ class CModule {
 	 *
 	 * @return mixed  Configuration option (if exists) or the $default value.
 	 */
+	// [DM 해설] manifest.json 의 "config" 에 적은 값을 읽는다. 모듈 설정값(임계치 등)을 코드에 박지 않고 두는 용도.
 	public function getOption(?string $name = null, $default = null) {
 		return array_key_exists($name, $this->manifest['config']) ? $this->manifest['config'][$name] : $default;
 	}
@@ -128,6 +131,8 @@ class CModule {
 	 *
 	 * @param CAction $action  Action instance responsible for current request.
 	 */
+	// [DM 해설] 어떤 화면이든 컨트롤러 실행 직전에 호출된다. $action->getAction() 으로 현재 액션명을 알 수 있다.
+	// [DM 해설] 코어 화면의 동작을 가로채야 할 때(코어 파일을 고치지 않고) 쓰는 자리다.
 	public function onBeforeAction(CAction $action): void {
 	}
 
@@ -136,6 +141,7 @@ class CModule {
 	 *
 	 * @param CAction $action  Action instance responsible for current request.
 	 */
+	// [DM 해설] 요청 처리가 끝날 때 호출된다.
 	public function onTerminate(CAction $action): void {
 	}
 }

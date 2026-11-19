@@ -86,4 +86,5 @@ foreach ($data['alerts'] as $alert) {
 	$csv[] = $row;
 }
 
+// [DM 해설] CSV 뷰의 출력. 첫 행이 헤더, 나머지가 데이터인 2차원 배열을 문자열로 바꿔 echo 한다.
 echo zbx_toCSV($csv);

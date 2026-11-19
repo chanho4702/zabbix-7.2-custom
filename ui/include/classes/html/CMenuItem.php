@@ -88,6 +88,7 @@ class CMenuItem extends CTag {
 	 *
 	 * @return CMenuItem
 	 */
+	// [DM 해설] 클릭하면 zabbix.php?action=<액션명> 으로 이동하게 한다. 액션명은 라우팅 표나 모듈 manifest.json 에 있어야 한다.
 	public function setAction(string $action_name): self {
 		return $this->setUrl((new CUrl('zabbix.php'))->setArgument('action', $action_name), $action_name);
 	}
@@ -118,6 +119,7 @@ class CMenuItem extends CTag {
 	 *
 	 * @return CMenuItem
 	 */
+	// [DM 해설] 이 메뉴가 "선택됨" 으로 표시될 다른 액션들. 예) 목록 메뉴에 편집/CSV 액션을 넣어 둔다.
 	public function setAliases(array $aliases): self {
 		foreach ($aliases as $alias) {
 			['path' => $action_name, 'query' => $query_string] = parse_url($alias) + ['query' => ''];
@@ -135,6 +137,7 @@ class CMenuItem extends CTag {
 	 *
 	 * @return CMenuItem
 	 */
+	// [DM 해설] 1단계 메뉴의 아이콘. ZBX_ICON_* 상수(include/defines.inc.php)를 쓴다. 2단계 메뉴에는 필요 없다.
 	public function setIcon(string $icon_class): self {
 		$this->icon_class = $icon_class;
 
@@ -215,6 +218,7 @@ class CMenuItem extends CTag {
 	 *
 	 * @return CMenu
 	 */
+	// [DM 해설] 하위(2단계) 메뉴 목록. 없으면 빈 목록을 만들어 돌려주므로 바로 ->add() 할 수 있다.
 	public function getSubMenu(): CMenu {
 		if ($this->sub_menu === null) {
 			$this->setSubMenu(new CMenu());
@@ -289,6 +293,7 @@ class CMenuItem extends CTag {
 	 *
 	 * @return CMenuItem
 	 */
+	// [DM 해설] 옛 방식 페이지(hostinventories.php 등)로 가는 메뉴에 쓴다. 새 화면은 setAction() 을 쓴다.
 	public function setUrl(CUrl $url, ?string $action_name = null): self {
 		$action = null;
 

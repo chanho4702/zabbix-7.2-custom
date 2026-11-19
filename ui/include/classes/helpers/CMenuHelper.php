@@ -22,6 +22,9 @@ class CMenuHelper {
 	 * @throws Exception
 	 * @return CMenu
 	 */
+	// [DM 해설] 왼쪽 사이드바 메뉴 전체를 만드는 곳. 5버전의 include/menu.inc.php 에 해당한다.
+	// [DM 해설] 이 파일은 고치지 않는다. 메뉴 추가/삭제는 모듈의 Module::init() 에서 한다.
+	// [DM 해설] 1단계 메뉴 라벨: Dashboards, Monitoring, Services, Inventory, Reports, Data collection, Alerts, Users, Administration
 	public static function getMainMenu(): CMenu {
 		$menu = new CMenu();
 
@@ -102,6 +105,8 @@ class CMenuHelper {
 		}
 
 		$submenu_inventory = [
+			// [DM 해설] 인벤토리 하위 메뉴. 사용자 역할에 권한이 있는 항목만 넣는다(없으면 null -> 아래 array_filter 로 제거).
+			// [DM 해설] setUrl() 은 옛 방식 페이지(xxx.php)용, 새 MVC 화면은 setAction('액션명') 을 쓴다.
 			CWebUser::checkAccess(CRoleHelper::UI_INVENTORY_OVERVIEW)
 				? (new CMenuItem(_('Overview')))
 					->setUrl(new CUrl('hostinventoriesoverview.php'), 'hostinventoriesoverview.php')
@@ -110,10 +115,13 @@ class CMenuHelper {
 				? (new CMenuItem(_('Hosts')))->setUrl(new CUrl('hostinventories.php'), 'hostinventories.php')
 				: null
 		];
+		// [DM 해설] 권한이 없어 null 이 된 항목을 지운다. 하위 항목이 하나도 없으면 Inventory 메뉴 자체가 만들어지지 않는다.
+		// [DM 해설] 그래서 모듈에서는 find(_('Inventory')) 가 아니라 findOrAdd(_('Inventory')) 를 쓴다.
 		$submenu_inventory = array_filter($submenu_inventory);
 
 		if ($submenu_inventory) {
 			$menu->add(
+				// [DM 해설] 1단계 메뉴 "Inventory". 모듈은 이 라벨(_('Inventory'))로 찾아서 그 하위에 "SW 인벤토리" 를 추가한다.
 				(new CMenuItem(_('Inventory')))
 					->setId('cm')
 					->setIcon(ZBX_ICON_INVENTORY)

@@ -14,6 +14,8 @@
 **/
 
 
+// [DM 해설] 모든 MVC 컨트롤러의 부모 클래스. 모듈의 actions/*.php 도 이 클래스를 상속한다.
+// [DM 해설] 자식 클래스가 만들어야 하는 것: checkInput(), checkPermissions(), doAction(). 필요하면 init().
 abstract class CController {
 
 	protected const POST_CONTENT_TYPE_FORM = 0;
@@ -80,6 +82,7 @@ abstract class CController {
 	/**
 	 * Initialization function that can be overridden later.
 	 */
+	// [DM 해설] 컨트롤러가 만들어질 때 호출된다. 조회 전용 화면이면 여기서 $this->disableCsrfValidation() 을 부른다.
 	protected function init() {
 	}
 
@@ -162,6 +165,7 @@ abstract class CController {
 	 *
 	 * @return bool  Returns true if user has access to rule, false - otherwise.
 	 */
+	// [DM 해설] 사용자 역할에 해당 권한이 있는지 확인한다. 규칙 이름은 CRoleHelper 의 상수(UI_INVENTORY_HOSTS 등)를 쓴다.
 	protected function checkAccess(string $rule_name): bool {
 		return CWebUser::checkAccess($rule_name);
 	}
@@ -169,6 +173,8 @@ abstract class CController {
 	/**
 	 * Disables CSRF token validation.
 	 */
+	// [DM 해설] CSRF 토큰 검사를 끈다. 5버전의 disableSIDValidation() 이 이 이름으로 바뀌었다.
+	// [DM 해설] 목록 조회처럼 데이터를 바꾸지 않는 액션에서만 끈다. 저장/삭제 액션에서 끄면 보안 문제가 된다.
 	protected function disableCsrfValidation(): void {
 		$this->validate_csrf_token = false;
 	}
@@ -244,6 +250,9 @@ abstract class CController {
 	 *
 	 * @return bool
 	 */
+	// [DM 해설] 요청 값을 규칙에 따라 검사한다. 5버전의 check_fields() 대체.
+	// [DM 해설] 여기서 통과한 값만 getInput() 으로 읽을 수 있다. 규칙에 없는 파라미터는 버려진다.
+	// [DM 해설] 규칙 종류는 include/classes/validators/CNewValidator.php 참고 (string, in, ge, id, array_db ...).
 	protected function validateInput(array $validation_rules): bool {
 		if ($this->raw_input === null) {
 			$this->validation_result = self::VALIDATION_FATAL_ERROR;
@@ -336,6 +345,7 @@ abstract class CController {
 	 *
 	 * @return bool
 	 */
+	// [DM 해설] 요청에 해당 값이 있는지. 5버전 hasRequest() 대체.
 	protected function hasInput($var) {
 		return array_key_exists($var, $this->input);
 	}
@@ -348,6 +358,7 @@ abstract class CController {
 	 *
 	 * @return mixed
 	 */
+	// [DM 해설] 검증을 통과한 요청 값을 읽는다. 없으면 $default. 5버전 getRequest() 대체.
 	protected function getInput($var, $default = null) {
 		if ($default === null) {
 			return $this->input[$var];
@@ -387,6 +398,7 @@ abstract class CController {
 	 *
 	 * @return bool
 	 */
+	// [DM 해설] true 를 돌려줘야 doAction() 이 실행된다. 아니면 접근 거부 화면이 나온다.
 	abstract protected function checkPermissions();
 
 	/**
@@ -396,6 +408,7 @@ abstract class CController {
 	 *
 	 * @return bool
 	 */
+	// [DM 해설] 입력 검증. false 를 돌려주면 doAction() 은 실행되지 않으므로, 그 전에 setResponse() 로 오류 응답을 지정해 둔다.
 	abstract protected function checkInput();
 
 	/**
@@ -434,6 +447,7 @@ abstract class CController {
 	 *
 	 * @abstract
 	 */
+	// [DM 해설] 실제 처리. 데이터를 만들어 $this->setResponse(new CControllerResponseData($data)) 로 넘기면 뷰가 실행된다.
 	abstract protected function doAction();
 
 	private function populateRawInput(): void {
@@ -458,6 +472,8 @@ abstract class CController {
 	 *
 	 * @return CControllerResponse|null
 	 */
+	// [DM 해설] 컨트롤러 실행 순서가 정해지는 곳. final 이라 자식 클래스에서 바꿀 수 없다.
+	// [DM 해설] 순서: (CSRF 검사) -> checkInput() -> checkPermissions() -> doAction()
 	final public function run(): ?CControllerResponse {
 		if ($this->validate_csrf_token && (!CWebUser::isLoggedIn() || !$this->checkCsrfToken())) {
 			throw new CAccessDeniedException();

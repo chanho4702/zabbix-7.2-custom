@@ -79,6 +79,7 @@ $search = (new CForm('get', 'zabbix.php'))
 	->addItem([$header, $server_name, $search])
 	->addItem(
 		(new CDiv([
+			// [DM 해설] 사이드바 메뉴 출력. 모듈이 Module::init() 에서 추가한 메뉴도 menu.main 에 들어 있어 여기서 함께 그려진다.
 			(new CTag('nav', true, APP::Component()->get('menu.main')->addClass('menu-main')))
 				->addClass('nav-main')
 				->setAttribute('role', 'navigation')
