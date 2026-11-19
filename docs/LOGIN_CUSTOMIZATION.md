@@ -1,0 +1,321 @@
+# 로그인 화면 수정과 추가 인증(OTP 등) 이관 안내
+
+5버전 로그인 화면에 들어가 있던 추가 인증(OTP, mypass)을 7.2 로 옮길 때 **어디를 봐야 하고 어떻게 넣을지**를 정리했다.
+
+먼저 밝혀 둘 점: 5버전 로그인 커스텀 소스는 보지 못했다. 그래서 OTP 와 mypass 가 실제로 무엇을 하는지
+(어느 서버에, 언제, 무엇을 보내는지)는 모른다. 1장의 방법으로 고객환경에서 먼저 확인해야 구현 방식을 정할 수 있다.
+7.2 쪽 내용은 소스를 읽고 Zabbix 7.2.15 + PHP 8.4 에서 직접 돌려 확인한 것이다.
+
+| 알고 싶은 것 | 볼 곳 |
+|---|---|
+| 5버전에서 로그인 커스텀이 어디에 들어 있는지 찾기 | 1장 |
+| 7.2 로그인이 동작하는 순서와 파일 | 2장 |
+| 5버전 로그인 코드가 7.2 에서 안 맞는 부분 | 3장 |
+| 7.2 에 넣는 방법 4가지와 고르는 기준 | 4장 |
+| 코어 패치로 OTP 를 넣는 뼈대 코드 | 5장 |
+| 보안상 지킬 것 | 6장 |
+
+---
+
+## 1. 5버전: 어디를 봐야 하나
+
+### 1.1 가장 빠른 방법: 덮어쓴 파일을 원본과 비교
+
+5버전은 `patch.sh` 가 `autoever/src/` 의 파일을 코어 위치에 복사하고, 원래 파일은 `파일명.날짜` 로 남겨 두는 방식이었다.
+즉 **`autoever/src/` 에 있는 파일이 곧 수정된 코어 파일이고, 가장 오래된 백업이 원본**이다. 둘을 비교하면 커스텀 내용이 정확히 나온다.
+
+```bash
+cd /usr/share/zabbix
+
+# 1) patch.sh 가 로그인 관련 파일을 덮어쓰는지 확인
+grep -nE 'index|login|CWebUser|CUser|ZBase' autoever/patch.sh
+
+# 2) 덮어쓸 파일 목록
+ls -la autoever/src/
+
+# 3) 원본 백업 찾기 (patch.sh 가 "mv 원본 원본.$d" 로 남긴 것. 날짜가 가장 이른 것이 원본)
+ls -la index.php* include/views/general.login.php* include/classes/user/CWebUser.php* \
+       include/classes/api/services/CUser.php* include/classes/core/ZBase.php* 2>/dev/null
+
+# 4) 비교 (백업 파일명은 3번 결과에 맞춘다)
+diff -u index.php.<가장이른날짜> index.php
+diff -u include/views/general.login.php.<가장이른날짜> include/views/general.login.php
+```
+
+백업이 없으면 같은 5.0.x 버전의 공식 소스를 받아 그 파일과 비교한다.
+
+### 1.2 키워드로 찾기
+
+```bash
+cd /usr/share/zabbix
+
+# OTP / mypass 가 언급된 모든 파일
+grep -rnilE 'otp|mypass|my_pass' --include='*.php' --include='*.js' --include='*.sh' --include='*.sql' .
+
+# 외부 서버로 요청을 보내는 코드 (로그인 관련 파일 위주로 본다)
+grep -rnE 'curl_(init|setopt|exec)|file_get_contents\s*\(\s*["'"'"']?https?|fsockopen|SoapClient|stream_context_create' \
+    --include='*.php' index.php include/views/general.login.php include/classes/user include/classes/api/services/CUser.php dmove
+
+# 로그인 화면에서 브라우저가 직접 요청을 보내는 코드 (JS)
+grep -rnE 'ajax|fetch\(|XMLHttpRequest|\.submit\(|window\.open|location\.href' include/views/general.login.php js/ autoever/js 2>/dev/null | grep -iE 'otp|mypass|login'
+```
+
+### 1.3 5버전 로그인 관련 파일 (5.0 기준)
+
+| 파일 | 역할 | 커스텀이 들어갔을 가능성 |
+|---|---|---|
+| `index.php` | 로그인 폼 표시와 로그인 처리 | 높음. 추가 입력값 받기, 검증 호출 |
+| `include/views/general.login.php` | 로그인 화면 모양 | 높음. OTP 입력창, 버튼, 안내 문구 |
+| `include/classes/user/CWebUser.php` | `login()`. 화면 로그인의 실제 처리 | 중간 |
+| `include/classes/api/services/CUser.php` | `login()`. 아이디/비밀번호 검증 본체 | 중간. 여기를 고쳤다면 API 로그인에도 적용돼 있다 |
+| `include/classes/core/ZBase.php` | `authenticateUser()`. 매 요청의 세션 확인 | 낮음 |
+| `index_http.php`, `index_sso.php` | HTTP 인증, SAML 로그인 | SSO 방식이면 여기 |
+| `js/`, `jsLoader.php` | 화면 스크립트 | `patch.sh` 가 `jsLoader.php` 를 덮어썼으므로 확인 필요 |
+| `autoever/function.php`, `autoever/src/` | 커스텀 공통 함수 | 검증 함수가 여기 있을 수 있다 |
+
+### 1.4 찾은 뒤 정리할 것
+
+구현 방식이 아래 답에 따라 달라진다. 5장의 뼈대를 채우려면 이 정보가 필요하다.
+
+1. **언제** 검증하나: 비밀번호와 같은 화면에서 한 번에 / 비밀번호 통과 후 다음 화면에서 / 비밀번호 없이 외부 인증만
+2. **누가** 외부 서버로 요청하나: 웹서버(PHP)가 / 사용자 브라우저(JS 또는 화면 이동)가
+3. **무엇을** 보내고 받나: URL, 방식(GET/POST), 보내는 값(아이디, OTP 번호, 시스템 코드 등), 성공/실패 응답 형식
+4. **누구에게** 적용하나: 전체 사용자 / 특정 그룹 / 예외 계정(연동용 계정 등)
+5. API 로그인(`api_jsonrpc.php`)에도 적용돼 있나
+6. 외부 서버가 응답하지 않을 때 로그인 허용인가 차단인가
+7. mypass 는 OTP 와 같은 단계인가 별개 기능(비밀번호 변경, 통합 로그인 등)인가
+
+---
+
+## 2. 7.2: 어디를 봐야 하나
+
+아래 파일들에는 `// [DM 해설]` 주석을 달아 두었다. 표의 순서대로 읽으면 된다.
+
+### 2.1 로그인 한 번의 흐름
+
+```
+브라우저 → index.php (로그인 화면)
+             │  [Sign in] 클릭 = 같은 index.php 로 POST (name, password, enter)
+             ▼
+          CWebUser::login()  ──→  API user.login = CUser::login()
+             │                        사용자 조회 → 차단 여부 → LDAP/비밀번호 검증 → 세션 생성
+             ▼
+          성공
+             ├─ MFA 대상 아님 → 원래 가려던 주소 또는 첫 메뉴로 이동        (로그인 완료)
+             └─ MFA 대상      → index_mfa.php (세션은 "확인 필요" 상태)
+                                   └ 코드 검증 CUser::confirm() 성공 → 세션 "활성" → 이동
+```
+
+| 순서 | 파일 | 볼 곳 | 내용 |
+|---|---|---|---|
+| 1 | `ui/index.php` | `$fields` | 로그인 폼에서 받을 수 있는 값 목록. 입력창을 추가하면 여기에도 추가해야 읽힌다 |
+| 2 | `ui/index.php` | `if (hasRequest('enter') && CWebUser::login(...))` | 로그인 처리의 핵심 줄 |
+| 3 | `ui/include/classes/user/CWebUser.php` | `login()` | API `user.login` 을 부르고 `CWebUser::$data` 에 사용자 정보를 채운다 |
+| 4 | `ui/include/classes/api/services/CUser.php` | `login()` | 아이디/비밀번호 검증 본체. 화면과 API 가 모두 거친다 |
+| 5 | `ui/index.php` | `if (CWebUser::$data['mfaid'])` | 내장 2단계 인증 대상이면 `index_mfa.php` 로 보낸다 |
+| 6 | `ui/index_mfa.php` | `CUser::getConfirmData()`, `CUser::confirm()` | 2단계 화면 표시와 코드 검증 |
+| 7 | `ui/index.php` | `$redirect = array_filter([...])` | 로그인 후 이동할 주소 |
+| 8 | `ui/include/views/general.login.php` | `(new CForm())` 이하 | 로그인 화면 모양. 입력창, 버튼, 로고 |
+| 9 | `ui/app/views/mfa.login.php` | 전체 | 2단계 코드 입력 화면 모양 |
+| 10 | `ui/include/classes/core/ZBase.php` | `authenticateUser()` | 매 요청마다 쿠키의 세션을 확인하는 곳 |
+
+그 밖의 로그인 경로:
+
+| 파일 | 용도 |
+|---|---|
+| `ui/index_http.php` | 웹서버가 인증한 사용자(HTTP 인증)를 비밀번호 없이 로그인시킨다. `CUser::loginByUsername()` 사용 |
+| `ui/index_sso.php` | SAML 통합 로그인 |
+| `ui/local/conf/brand.conf.php` | 로그인 화면 로고와 도움말 주소를 코어 수정 없이 바꾸는 설정 파일 (없으면 만들어서 쓴다) |
+
+### 2.2 모듈로 되는 것과 안 되는 것 (직접 확인한 결과)
+
+모듈의 `onBeforeAction()` 에 표시를 넣어 언제 실행되는지 확인했다.
+
+| 요청 | 모듈이 실행되나 |
+|---|---|
+| 로그인 전 `index.php` (로그인 화면) | **안 됨** |
+| 로그인 POST (아이디/비밀번호 전송) | **안 됨** |
+| 로그인 후 `zabbix.php?action=...` | 됨 |
+| 로그인 후 옛 방식 페이지 (`hostinventories.php` 등), `jsrpc.php` | 됨 |
+| `api_jsonrpc.php` (API) | **안 됨** |
+
+이유: 로그인 전 사용자는 역할이 없어서(roleid 0) 모듈 접근 검사를 통과하지 못하고, 모듈이 하나도 로드되지 않는다
+(`ZBase.php` 의 `authenticateUser()`, `initModuleManager()`).
+
+따라서:
+
+- **로그인 화면의 모양을 바꾸거나 입력창을 추가하는 일은 모듈로 할 수 없다.** 코어 파일 수정이 필요하다.
+- 로그인 **이후** 요청을 가로채 다른 화면으로 보내는 것은 모듈로 된다(`onBeforeAction()` 에서 `redirect()` 동작 확인).
+- 사용자 역할에서 이 모듈 접근이 꺼진 사용자에게는 모듈이 로드되지 않으므로, 모듈 방식의 가로채기는 그 사용자에게 적용되지 않는다.
+
+---
+
+## 3. 5버전 로그인 코드가 7.2 에서 안 맞는 부분
+
+5버전 로그인 커스텀을 그대로 붙이면 걸리는 곳이다. 5버전 쪽 설명은 5.0 표준 소스 기준이므로 고객 서버의 실제 코드와 대조한다.
+
+| 항목 | 5버전 | 7.2 | 영향 |
+|---|---|---|---|
+| 사용자 아이디 필드 | `alias` (`CWebUser::$data['alias']`, DB `users.alias`) | `username` | `alias` 를 읽는 코드는 `Undefined array key` 경고가 나고 값이 비어 외부 서버에 빈 아이디가 전달된다. SQL 에 `alias` 를 썼다면 오류 |
+| API 로그인 인자 | `user.login` 에 `user` | `username` | 연동 스크립트 수정 필요 |
+| 세션 저장 방식 | 쿠키 `zbx_sessionid` 에 세션 ID 를 직접 저장 | 서명된 쿠키 `zbx_session` 하나에 세션 데이터를 담는다 (`CEncryptedCookieSession`) | `$_COOKIE['zbx_sessionid']` 나 `setcookie` 로 세션을 다루던 코드는 동작하지 않는다 |
+| 세션에 값 저장 | `$_SESSION[...]` 직접 사용 가능 | `CSessionHelper::set() / get() / has() / unset()` 을 쓴다 | OTP 통과 여부를 `$_SESSION` 에 넣던 코드는 바꿔야 한다 |
+| 2단계 인증 | 없음 (직접 구현) | 내장 MFA (TOTP, Duo). 세션에 "확인 필요" 상태가 있다 | 표준 TOTP 면 직접 구현이 필요 없다 |
+| 로그인 후 이동 | `$request` 또는 사용자 URL | 같은 구조. `CMenuHelper::getFirstUrl()` 추가 | 영향 적음 |
+| 로그인 화면 클래스 | `CForm`, `CTextBox`, `CPassBox`, `CSubmit` | 같은 클래스 유지 | 입력창 추가 코드는 거의 그대로 쓸 수 있다 |
+| 사용자 권한 | 사용자 유형 3단계 | 사용자 역할 (`roleid`) | 유형으로 예외 계정을 가리던 코드는 확인 필요 |
+| 인증 설정 읽기 | `$config['authentication_type']` 등 전역 설정 배열 | `CAuthenticationHelper::get(...)` | 전역 `$config` 를 읽던 코드는 고쳐야 한다 |
+| 외부 요청 코드 | `curl_*`, `file_get_contents` | 그대로 사용 가능 | PHP 8 규칙만 지킨다 (`null` 전달, 없는 배열 키. `HANDBOOK.md` 3.2) |
+
+---
+
+## 4. 7.2 에 넣는 방법 4가지
+
+| | 방법 | 코어 수정 | 맞는 경우 | 한계 |
+|---|---|---|---|---|
+| A | 내장 MFA (TOTP / Duo) | 없음 | OTP 가 표준 TOTP(휴대폰 OTP 앱의 6자리 코드)인 경우 | 사내 OTP 서버에 번호를 물어보는 방식은 지원하지 않는다. 사용자가 OTP 를 다시 등록해야 한다 |
+| B | 내장 SAML / HTTP 인증 | 없음 | mypass 가 통합 로그인(SSO)이고 SAML 을 지원하거나, 웹서버 앞단에서 인증해 주는 경우 | 인증 시스템이 표준 방식을 지원해야 한다 |
+| C | 로그인 코어 파일 최소 패치 | 있음 (2개 파일, 표시된 블록만) | 비밀번호와 같은 화면에서 OTP 번호를 받아 사내 서버로 검증하는, 5버전과 같은 방식 | Zabbix 업그레이드 때마다 패치를 다시 적용해야 한다 |
+| D | 모듈로 로그인 후 2단계 화면 | 없음 | 비밀번호 통과 후 별도 화면에서 추가 인증을 받아도 되는 경우 | API 요청과 모듈 접근이 꺼진 역할에는 적용되지 않는다(2.2). 보안 통제 수단으로는 C 보다 약하다 |
+
+고르는 순서:
+
+1. 1장에서 확인한 방식이 표준 TOTP 나 SAML 이면 **A 또는 B**. 코드가 필요 없다.
+   설정 위치는 **사용자 > 인증** (Users > Authentication) 의 MFA / SAML / HTTP 탭이고, MFA 는 사용자 그룹별로 켠다.
+2. 사내 서버에 OTP 번호를 보내 검증받는 방식이면 **C**. 5버전과 동작이 같고, 통제가 확실하다.
+3. 코어 수정이 절대 불가하다는 조건이면 **D**. 단 한계를 고객과 합의한다.
+
+A, B 로 가능한지는 1.4 의 답(특히 2, 3번)이 있어야 판단할 수 있다.
+
+---
+
+## 5. 방법 C: 코어 패치로 OTP 를 넣는 뼈대
+
+비밀번호 검증이 성공한 **뒤에** OTP 를 검증하고, 실패하면 방금 만든 세션을 끊는 구조다.
+아래 코드는 검증 함수를 "123456 이면 통과"로 두고 7.2.15 에서 다음을 확인했다.
+
+- 비밀번호 맞음 + OTP 틀림 → 로그인 화면에 "OTP 인증에 실패했습니다." 표시, 세션 종료, 이후 화면 접근 불가
+- 비밀번호 틀림 → 기존 오류 문구 그대로 (OTP 검증은 호출되지 않음)
+- 비밀번호 맞음 + OTP 맞음 → 로그인 완료
+
+실제 OTP 서버 호출 부분(`verify()`)은 1.4 의 정보가 있어야 채울 수 있어서 비워 두었다. 그래서 이 패치는 저장소에 반영하지 않았다.
+
+### 5.1 `ui/index.php` (2곳)
+
+```php
+	'form' =>		[T_ZBX_STR, O_OPT, null,	null,	null],
+	// DMOVE-PATCH BEGIN: 로그인 폼의 OTP 입력값
+	'otp' =>		[T_ZBX_STR, O_OPT, null,	null,	null]
+	// DMOVE-PATCH END
+];
+```
+
+```php
+// DMOVE-PATCH BEGIN: 비밀번호 검증 뒤에 OTP 검증을 추가
+require_once __DIR__.'/modules/dmove/includes/LoginOtp.php';
+
+if (hasRequest('enter') && CWebUser::login(getRequest('name', ZBX_GUEST_USER), getRequest('password', ''))
+		&& \Modules\DMove\Includes\LoginOtp::verifyOrLogout(getRequest('otp', ''))) {
+// DMOVE-PATCH END
+```
+
+원래의 `if (hasRequest('enter') && CWebUser::login(...)) {` 한 줄을 위 블록으로 바꾼다.
+`&&` 는 앞 조건이 참일 때만 뒤를 실행하므로 OTP 검증은 비밀번호가 맞았을 때만 호출된다.
+로그인 전에는 모듈 오토로더가 없어서 `require_once` 로 파일을 직접 읽는다.
+
+### 5.2 `ui/include/views/general.login.php` (1곳)
+
+비밀번호 입력 묶음과 "Remember me" 체크박스 사이에 넣는다.
+
+```php
+						// DMOVE-PATCH BEGIN: OTP 입력창
+						->addItem([
+							new CLabel('OTP', 'otp'),
+							(new CTextBox('otp'))->setAttribute('autocomplete', 'off')
+						])
+						// DMOVE-PATCH END
+```
+
+### 5.3 `ui/modules/dmove/includes/LoginOtp.php` (새 파일)
+
+검증 로직은 코어 파일이 아니라 모듈 폴더에 둔다. 코어에는 호출 한 줄만 남는다.
+
+```php
+<?php declare(strict_types = 0);
+
+namespace Modules\DMove\Includes;
+
+use CWebUser;
+
+class LoginOtp {
+
+	/**
+	 * OTP 가 맞으면 true. 틀리면 방금 만들어진 로그인 세션을 끊고 false.
+	 */
+	public static function verifyOrLogout(string $otp): bool {
+		if (self::verify(CWebUser::$data['username'], $otp)) {
+			return true;
+		}
+
+		CWebUser::logout();          // DB 의 세션을 종료한다
+		CWebUser::setDefault();      // 로그인 전 상태로 되돌린다 (빼면 뒤 코드에서 경고가 난다)
+		error('OTP 인증에 실패했습니다.');   // 로그인 화면의 빨간 글씨로 표시된다
+
+		return false;
+	}
+
+	/**
+	 * TODO(고객환경): 5버전의 OTP 서버 호출 로직을 여기에 옮긴다.
+	 *
+	 * 반드시 지킬 것
+	 *   - 서버가 응답하지 않거나 응답을 해석하지 못하면 false (실패 시 차단)
+	 *   - 연결/응답 제한 시간을 둔다. 없으면 OTP 서버 장애 때 로그인 화면이 멈춘다
+	 *   - 5버전의 $data['alias'] 는 7.2 에서 $username 이다
+	 *   - OTP 번호와 서버 응답 전문을 로그에 남기지 않는다
+	 */
+	private static function verify(string $username, string $otp): bool {
+		if ($otp === '') {
+			return false;
+		}
+
+		return false;
+	}
+}
+```
+
+### 5.4 이 구조에서 정해야 할 것
+
+- **예외 계정**: 연동용 계정처럼 OTP 를 면제할 사용자가 있으면 `verifyOrLogout()` 앞부분에서 걸러 `true` 를 돌려준다.
+  기준(사용자 그룹, 역할)은 고객과 정한다.
+- **게스트 로그인**: 게스트 접근을 쓰는 환경이면 `ZBX_GUEST_USER` 는 OTP 대상에서 빼야 한다.
+- **API 로그인**: 이 패치는 화면 로그인에만 적용된다. 5버전에서 API 에도 적용했다면 별도로 논의한다.
+- **감사 로그**: 비밀번호가 맞은 시점에 "로그인 성공"이 먼저 기록되고, OTP 실패 시 "로그아웃"이 이어서 기록된다.
+  OTP 실패를 따로 남겨야 하면 `verifyOrLogout()` 에 기록 코드를 추가한다.
+- **내장 MFA 와 병행 금지**: 같은 사용자에게 내장 MFA 까지 켜면 세션이 "확인 필요" 상태라 `logout()` 동작이 달라진다. 둘 중 하나만 쓴다.
+- **문서화**: 코어를 고쳤으므로 `docs/CORE_PATCHES.md` 를 만들어 두 파일과 이유를 적는다. 업그레이드 때 이 목록을 보고 다시 적용한다.
+
+### 5.5 방법 D 를 택할 때의 구조 (참고)
+
+만들어 보지는 않았고, 2.2 에서 확인한 동작에 근거한 설계다.
+
+1. `Module.php` 의 `onBeforeAction()` 에서 `CSessionHelper::get('dmove_otp_ok')` 가 없으면
+   `redirect('zabbix.php?action=dmove.otp.view')` 로 보낸다. OTP 화면 자신의 액션과 `index.php` 는 제외한다(무한 이동 방지).
+2. `dmove.otp.view` 액션이 OTP 입력 화면을 보여 주고, 검증에 성공하면 `CSessionHelper::set('dmove_otp_ok', 1)` 을 한다.
+3. 로그아웃하면 세션 데이터가 사라져 다음 로그인 때 다시 요구된다.
+
+2.2 의 한계(API, 모듈 접근이 꺼진 역할) 때문에 "반드시 막아야 하는 통제"에는 맞지 않는다.
+
+---
+
+## 6. 보안상 지킬 것
+
+로그인은 전체 시스템의 입구라서 다른 화면보다 기준이 높다.
+
+- OTP 서버 주소, 연동 키, 계정을 소스나 깃에 넣지 않는다. 이 저장소는 공개 저장소다.
+  서버의 설정 파일(웹에서 접근할 수 없는 위치, 깃 제외)에서 읽는다.
+- 외부 서버 호출은 HTTPS 로 하고 인증서 검증을 끄지 않는다(`CURLOPT_SSL_VERIFYPEER` 를 `false` 로 두지 않는다).
+- 실패 문구로 "아이디는 맞는데 OTP 가 틀림"을 알려 주게 되므로, 반복 시도 제한이 OTP 서버 쪽에 있는지 확인한다.
+- 검증 실패나 장애 시 기본 동작은 차단이다. 장애 시 허용이 필요하면 고객의 명시적 결정으로 남긴다.
+- 테스트용 통과 코드(예: 고정 번호)를 운영 코드에 남기지 않는다.
+- 패치 후 반드시 확인: 올바른 로그인, 틀린 비밀번호, 틀린 OTP, 빈 OTP, OTP 서버 중단 상태, 로그아웃 후 재로그인,
+  실패 직후 주소를 직접 입력했을 때 접근 차단 여부.
