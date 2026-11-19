@@ -1,0 +1,68 @@
+{
+	"manifest_version": 2.0,
+	"id": "dmove",
+	"name": "DMove Custom",
+	"namespace": "DMove",
+	"version": "1.2.0",
+	"author": "DMove",
+	"description": "Zabbix 5 커스텀 화면의 7.2 이관 모듈. 설명서: docs/DEVELOPMENT_GUIDE.md, 페이지 추가: ui/modules/dmove/template/README.md",
+	"actions": {
+		"swinventory.list": {
+			"class": "Inventory/SwInventory/SwInventoryList",
+			"view": "inventory/swinventory.list",
+			"layout": "layout.htmlpage"
+		},
+		"swinventory.export": {
+			"class": "Inventory/SwInventory/SwInventoryList",
+			"layout": "export/layout.file"
+		},
+		"uptime.list": {
+			"class": "Reports/Uptime/UptimeList",
+			"view": "reports/uptime.list",
+			"layout": "layout.htmlpage"
+		},
+		"lowserver.list": {
+			"class": "Reports/LowServer/LowServerList",
+			"view": "reports/lowserver.list",
+			"layout": "layout.htmlpage"
+		},
+		"highserver.list": {
+			"class": "Reports/HighServer/HighServerList",
+			"view": "reports/highserver.list",
+			"layout": "layout.htmlpage"
+		},
+		"perftrend.list": {
+			"class": "Reports/PerfTrend/PerfTrendList",
+			"view": "reports/perftrend.list",
+			"layout": "layout.htmlpage"
+		},
+		"dailycheck.list": {
+			"class": "Reports/DailyCheck/DailyCheckList",
+			"view": "reports/dailycheck.list",
+			"layout": "layout.htmlpage"
+		},
+		"peakevent.list": {
+			"class": "Reports/PeakEvent/PeakEventList",
+			"view": "reports/peakevent.list",
+			"layout": "layout.htmlpage"
+		},
+		"winpatch.list": {
+			"class": "Reports/WinPatch/WinPatchList",
+			"view": "reports/winpatch.list",
+			"layout": "layout.htmlpage"
+		},
+		"usageexport.list": {
+			"class": "Reports/UsageExport/UsageExportList",
+			"view": "reports/usageexport.list",
+			"layout": "layout.htmlpage"
+		},
+		"userunconnect.list": {
+			"class": "Users/UserUnconnect/UserUnconnectList",
+			"view": "users/userunconnect.list",
+			"layout": "layout.htmlpage"
+		}
+	},
+	"assets": {
+		"css": ["dmove.css"]
+	}
+}
