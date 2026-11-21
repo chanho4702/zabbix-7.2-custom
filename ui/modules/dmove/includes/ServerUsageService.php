@@ -12,14 +12,16 @@
  *     2) 아이템별, 날짜별로  하루 평균 = 그날 시간별 평균의 평균,  하루 최대 = 그날 시간별 최대의 최대
  *     3) 아이템별로          기간 평균 = 하루 평균들의 평균,       Peak = 하루 최대들의 최대
  *
- *   "업무시간" 을 고르면 2) 에서 업무시간대의 시간별 값만 쓰고, "업무외시간" 이면 그 나머지만 쓴다.
+ *   "업무시간" 을 고르면 2) 에서 업무일(기본: 월~금)의 업무시간대 시간별 값만 쓴다. (5버전과 같다)
+ *   "업무외시간" 이면 모든 요일의 나머지 시간대만 쓴다. (5버전과 같다)
  *
  * 5버전과 달라진 점
  *   - 5버전은 하루치 요약을 따로 만든 테이블(extends_trends_day)에 쌓아 두고 읽었다.
  *     여기서는 추가 테이블 없이 trends 를 직접 집계한다. 결과는 같다.
  *     (Zabbix DB 에 테이블을 추가하면 업그레이드와 백업/복구 때 따로 챙겨야 해서 만들지 않았다)
- *   - 5버전의 메모리용 집계 코드에는 업무시간 Peak 에 "하루 전체의 최대"를 쓰는 부분이 있었다.
- *     여기서는 업무시간을 고르면 Peak 도 업무시간 안의 최대다. 5버전과 Peak 숫자가 다르면 이 차이일 수 있다.
+ *   - 5버전은 "업무시간" 의 Peak 에 업무시간이 아닌 "그날 전체의 최대"를 썼다. (CPU, 메모리 집계 모두)
+ *     5버전 화면과 숫자를 맞추려면 conf/serverusage.conf.php 의 business_peak_whole_day 를 true 로 둔다.
+ *     기본값은 5버전과 같게 true 다. false 로 바꾸면 업무시간 안의 최대가 된다.
  *
  * 주의
  *   - 기간이 길고 호스트가 많으면 읽는 양이 많다. (1시간 1줄 x 아이템 수 x 날짜 수)
@@ -119,32 +121,63 @@ class ServerUsageService {
 		$second_till = (int) $business_till * self::HOUR;
 		$second_of_day = 'MOD('.$local.','.self::DAY.')';
 
-		$hours_condition = '';
+		/*
+		 * 요일. 1970-01-01 이 목요일이라서, 시각에 3일(259200초)을 더해 1주(604800초)로 나눈 나머지를
+		 * 하루(86400초)로 나누면 월요일 0 ~ 일요일 6 이 된다.
+		 * (MOD 에는 정수만 넣어야 PostgreSQL 에서 동작한다. 그래서 날짜 번호가 아니라 초 단위로 계산한다)
+		 * 설정의 업무일은 ISO 요일(월 1 ~ 일 7)이라 1 을 빼서 맞춘다.
+		 */
+		$weekday = 'FLOOR(MOD('.$local.'+'.(3 * self::DAY).','.(7 * self::DAY).')/'.self::DAY.')';
+		$business_days = array_map(static fn($day): int => (int) $day - 1, $this->config['business_days']);
+
+		/*
+		 * $in_hours : 이 시간별 값이 고른 시간대에 속하는가 (SQL 조건식)
+		 * $day_condition : 이 날짜를 집계에 넣는가 (SQL 조건식. 업무시간일 때만 요일을 거른다)
+		 */
+		$in_hours = '1=1';
+		$day_condition = '';
 
 		if ($hours === self::HOURS_BUSINESS) {
-			$hours_condition = ' AND '.$second_of_day.'>='.$second_from.' AND '.$second_of_day.'<'.$second_till;
+			$in_hours = $second_of_day.'>='.$second_from.' AND '.$second_of_day.'<'.$second_till;
+			$day_condition = $business_days ? ' AND '.dbConditionInt($weekday, $business_days) : '';
 		}
 		elseif ($hours === self::HOURS_OFF) {
-			$hours_condition = ' AND ('.$second_of_day.'<'.$second_from.' OR '.$second_of_day.'>='.$second_till.')';
+			$in_hours = '('.$second_of_day.'<'.$second_from.' OR '.$second_of_day.'>='.$second_till.')';
 		}
+
+		/*
+		 * Peak 를 무엇의 최대로 할지.
+		 *   업무시간 + business_peak_whole_day = true : 그날 전체 시간의 최대 (5버전과 같다)
+		 *   그 밖                                    : 고른 시간대 안의 최대
+		 */
+		$peak_whole_day = $hours === self::HOURS_BUSINESS && !empty($this->config['business_peak_whole_day']);
 
 		/*
 		 * 3) 집계. 안쪽 SELECT 가 아이템별 + 날짜별 하루 평균/최대를, 바깥 SELECT 가 그것의 기간 평균/최대를 구한다.
 		 *
-		 *    dbConditionId(컬럼, ID배열) : "itemid IN (1,2,3)" 조건을 안전하게 만들어 주는 코어 함수.
+		 *    CASE WHEN 조건 THEN 값 END : 조건에 맞을 때만 값, 아니면 NULL. AVG/MAX 는 NULL 을 빼고 계산한다.
+		 *    그래서 시간대 밖의 값은 평균에 들어가지 않고, Peak 만 필요하면 전체 시간의 최대를 같이 구할 수 있다.
+		 *    고른 시간대의 값이 하나도 없는 날은 하루 평균이 NULL 이 되어 기간 평균에서 빠진다.
+		 *
+		 *    dbConditionId / dbConditionInt : "컬럼 IN (1,2,3)" 조건을 안전하게 만들어 주는 코어 함수.
 		 *    쿼리에 들어가는 나머지 값은 모두 이 메소드 안에서 만든 정수라서 따옴표 처리가 필요 없다.
 		 */
+		$day_peak = $peak_whole_day ? 'MAX(value_max)' : 'MAX(CASE WHEN '.$in_hours.' THEN value_max END)';
+
 		$result = DBselect(
 			'SELECT d.itemid,AVG(d.day_avg) AS usage_avg,MAX(d.day_max) AS usage_peak'.
 			' FROM ('.
-				'SELECT itemid,'.$day_number.' AS day_number,AVG(value_avg) AS day_avg,MAX(value_max) AS day_max'.
+				'SELECT itemid,'.$day_number.' AS day_number,'.
+					'AVG(CASE WHEN '.$in_hours.' THEN value_avg END) AS day_avg,'.
+					$day_peak.' AS day_max'.
 				' FROM trends'.
 				' WHERE '.dbConditionId('itemid', array_keys($hostid_by_itemid)).
 					' AND clock>='.$time_from.
 					' AND clock<='.$time_till.
-					$hours_condition.
+					$day_condition.
 				' GROUP BY itemid,'.$day_number.
 			') d'.
+			' WHERE d.day_avg IS NOT NULL'.
 			' GROUP BY d.itemid'
 		);
 

@@ -177,11 +177,12 @@ find /usr/share/zabbix/modules/dmove -name '*.php' -exec php -l {} \;
 | 메뉴 | 액션 | 상태 |
 |---|---|---|
 | 인벤토리 > SW 인벤토리 | `swinventory.list`, `.export` | 구현. ITSM 테이블 이름 설정과 Agent "예외" 기준만 남음 |
-| 보고서 > 저사용 서버 사용현황 | `lowserver.list`, `.export` | 구현 (5버전 소스 기준) |
+| 보고서 > 저사용 서버 사용현황 | `lowserver.list`, `.export` | 구현 (5버전 소스 기준. 업무시간 = 월~금 09~18시, Peak 는 5버전과 같은 방식) |
 | 보고서 > 고사용 서버 사용현황 | `highserver.list`, `.export` | 구현. 판정 조건은 가정 (확인 필요) |
 | 보고서 > 일일점검 | `dailycheck.list` | 구현 (5버전 소스 기준). 태그 설정(`conf/dailycheck.conf.php`)을 채워야 한다 |
 | 보고서 > Peak 이벤트 분석 | `peakevent.list`, `.export` | 구현. 집계 기준은 가정 (확인 필요) |
 | 보고서 > 윈도우즈 패치 현황 | `winpatch.list`, `.export`, `.detail` | 구현 (5버전 소스 기준). 필터의 세부 동작은 가정 |
+| 보고서 > Box 사용현황 | `hostbox.list`, `.export` | 구현 (5버전 트레잇 기준). 메뉴 위치는 확인 필요 |
 | 보고서 > 서버 시간 확인 | `uptime.list` | 필터/표 구성 완료, 데이터 조회 TODO |
 | 유저 > 장기 미접속 계정 현황 | `userunconnect.list` | 필터/표 구성 완료, 데이터 조회 TODO |
 | 보고서 > CPU/Memory 전체 사용률 추출 | `usageexport.list` | 필터 구성 완료, 추출 기능 TODO |

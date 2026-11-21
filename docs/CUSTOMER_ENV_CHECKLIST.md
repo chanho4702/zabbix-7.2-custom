@@ -12,7 +12,7 @@
 ## 1. 설정 채우기 (코드는 되어 있고, 값을 넣어야 동작하는 것)
 
 이 저장소는 공개 저장소라서 고객 환경의 값(테이블 이름, 아이템 키, 태그)은 설정 파일에 비워 두었다.
-모듈을 고객 서버에 올린 뒤 `conf/` 의 파일 네 개를 먼저 채운다.
+모듈을 고객 서버에 올린 뒤 `conf/` 의 파일 다섯 개를 먼저 채운다.
 
 | # | 확인할 것 | 방법 | 맞지 않으면 | 고칠 곳 |
 |---|---|---|---|---|
@@ -20,6 +20,7 @@
 | 1-2 | 일일점검용 트리거 태그의 이름과 항목별 값 7개. 그리고 7버전 서버의 트리거에 그 태그가 달려 있는가 | 5버전 일일점검 트레잇(`...Daily.php`)의 `$tag_*` 값. 서버에서는 데이터 수집 > 호스트(또는 템플릿) > 트리거의 태그 | 설정이 비어 있으면 일일점검에 '-' 와 설정 안내가 나온다. 태그가 달린 트리거가 없으면 점검대상 0 으로 나온다 | `conf/dailycheck.conf.php`, 서버의 트리거/템플릿 |
 | 1-3 | CPU 사용률 아이템 키 3종 (리눅스, 유닉스, 윈도우) | 5버전 키 클래스(`...Key.php`)의 `serverCpuUsage()`. 서버에서는 종류별 호스트 하나씩 아이템 목록의 키 | 설정이 비어 있으면 저사용/고사용 서버 화면에 설정 안내가 나온다. 키가 다르면 호스트가 안 나온다 | `conf/serverusage.conf.php` |
 | 1-4 | 윈도우 패치 목록 파일 아이템 키 | 5버전 키 클래스의 `patchFile()`. 서버에서는 윈도우 호스트의 아이템 목록의 키 | 설정이 비어 있으면 윈도우즈 패치 현황에 설정 안내가 나온다. 키가 다르면 호스트가 안 나온다 | `conf/winpatch.conf.php` |
+| 1-4b | Box 사용현황 아이템 키 6개 (ESXi 코어/메모리/디스크 전체·할당) | 5버전 키 클래스의 `cpuCoreTotal()` ~ `diskUsage()`. **5버전 소스의 문자열은 셸 기호 자리가 밑줄(`_`)로 되어 있으므로 그대로 쓰지 말고** 서버의 실제 아이템 키를 확인한다 | 설정이 비어 있으면 Box 사용현황에 설정 안내가 나온다 | `conf/hostbox.conf.php` |
 | 1-5 | 패치 목록 파일의 형식 (첫 줄이 `Caption CSName Description ...` 인 칸 맞춤 표인가) | 최신 데이터 화면에서 그 아이템의 값을 열어 본다 | 상세보기 표의 열이 어긋난다 | `includes/WinPatchService.php` 의 `parse()` |
 | 1-6 | 인벤토리 필드 `os`, `software_app_a~d` 에 값이 들어 있는가 | 호스트의 인벤토리 탭 | SW 인벤토리의 OS/WEB/WAS/DB/이중화가 빈칸으로 나온다 | 서버의 인벤토리 수집 설정, 또는 `includes/SoftwareResolver.php` |
 
@@ -30,11 +31,11 @@
 | # | 화면 | 가정한 내용 | 5버전에서 볼 것 | 고칠 곳 |
 |---|---|---|---|---|
 | 2-1 | 고사용 서버 사용현황 | 평균 50% 이상 **그리고** Peak 70% 이상인 서버 | 고사용 컨트롤러(`CControllerHighserver.php`)의 판정 조건(그리고/또는, Peak 방향과 값) | `actions/reports/highserver/HighServerList.php` 의 `matches()`, `conf/serverusage.conf.php` |
-| 2-2 | 저사용/고사용 서버 | 업무시간을 고르면 Peak 도 업무시간 안의 최대 | 서버 CPU 집계 클래스(`...CPU.php`)의 업무시간 Peak 계산. 숫자가 다르면 이 부분이다 | `includes/ServerUsageService.php` |
 | 2-3 | 저사용 서버 | 저사용 평균 기준 30% | 저사용 컨트롤러의 기본값(30 또는 20) | `conf/serverusage.conf.php` |
 | 2-4 | Peak 이벤트 분석 | 기간 안의 장애 이벤트 수를 트리거별로 센 상위 100개 | `peak_event.php` 의 집계 쿼리(대상 트리거, 세는 기준, 건수 제한) | `actions/reports/peakevent/PeakEventList.php` 의 `getRows()` |
 | 2-5 | 윈도우즈 패치 현황 | HotFix ID = 그 달의 패치 목록에 입력한 글자가 들어 있는 호스트. 수집월 기본값 = 지난달 1일 | 윈도우 패치 컨트롤러의 필터 처리와 기본값 | `includes/WinPatchService.php`, `actions/reports/winpatch/WinPatchList.php` |
 | 2-6 | SW 인벤토리 | Agent "예외" 판정은 비워 두었다 (설치/미설치만 구분) | Agent 판정 클래스(`...HostAgent`)의 `_hostAgent_checkAll()`, `get()` | `includes/SwInventoryService.php` 의 `resolveAgentStatus()` |
+| 2-7 | Box 사용현황 | 메뉴 위치는 보고서 맨 끝, 필터는 호스트 그룹/호스트 | 5버전 화면이 있던 메뉴와 필터 구성 (화면과 컨트롤러는 확인하지 못했다) | `Module.php`, `actions/reports/hostbox/HostBoxList.php` |
 
 ## 3. 아직 만들지 못한 것 (5버전 소스를 봐야 하는 것)
 
@@ -46,7 +47,6 @@
 | 3-4 | 성능 데이터 추세 분석 | 빈 페이지 | 먼저 방향을 정한다: 대시보드 "그래프" 위젯으로 대체할지, 독립 화면으로 만들지. 독립 화면이면 `data.analysis` 컨트롤러와 CSV 구성 |
 | 3-5 | 저사용/고사용 서버의 [기준설정] 버튼 | 없음 (설정 파일로 대체) | 버튼이 여는 화면과 저장 방식. 사용자별 저장인지 전체 공통인지 |
 | 3-6 | 일일점검의 [CPU 사용률 Top 10] [Memory 사용률 Top 10] 버튼 | 없음 | 버튼이 여는 화면과 집계 방식 |
-| 3-7 | Box 사용현황 (`hostbox`) | 없음 | 메뉴 위치, 화면 구성, 컨트롤러. 규칙 파일의 열은 호스트 / CPU 전체 Core / CPU 할당 Core / 전체 메모리 / 할당 메모리 / 할당 Disk / 최근 데이터 |
 | 3-8 | 그 밖의 액션 (`routing.php` 전체) | 없음 | 지금까지 확인한 것 외에 남은 화면/팝업 액션이 있는지 (`hostesxi`, `popup.*` 등) |
 
 ## 4. 메뉴, 화면 꾸밈

@@ -58,6 +58,16 @@ return [
 	'* High usage criteria: average usage %1$s%% or more / Peak %2$s%% or more' =>
 		'※고사용 기준: 평균사용률 %1$s%% 이상 / Peak %2$s%% 이상',
 
+	// ── Box 사용현황 ──
+	'Box usage' => 'Box 사용현황',
+	'CPU total cores' => 'CPU 전체 Core',
+	'CPU allocated cores' => 'CPU 할당 Core',
+	'Total memory' => '전체 메모리',
+	'Allocated memory' => '할당 메모리',
+	'Total disk' => '전체 Disk',
+	'Allocated disk' => '할당 Disk',
+	'Latest data' => '최근 데이터',
+
 	// ── 일일점검 ──
 	'Check item' => '점검항목',
 	'Normal hosts' => '정상호스트',

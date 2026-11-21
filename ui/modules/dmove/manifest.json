@@ -72,6 +72,15 @@
 			"view": "reports/winpatch.detail",
 			"layout": "layout.json"
 		},
+		"hostbox.list": {
+			"class": "Reports/HostBox/HostBoxList",
+			"view": "reports/hostbox.list",
+			"layout": "layout.htmlpage"
+		},
+		"hostbox.export": {
+			"class": "Reports/HostBox/HostBoxList",
+			"layout": "export/layout.file"
+		},
 		"usageexport.list": {
 			"class": "Reports/UsageExport/UsageExportList",
 			"view": "reports/usageexport.list",

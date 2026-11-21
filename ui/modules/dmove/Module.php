@@ -69,7 +69,9 @@ class Module extends CModule {
 		'Daily check' =>					['dailycheck.list', []],
 		'Peak event analysis' =>			['peakevent.list', ['peakevent.export']],
 		'Windows patch status' =>			['winpatch.list', ['winpatch.export']],
-		'CPU/Memory usage export' =>		['usageexport.list', []]
+		'CPU/Memory usage export' =>		['usageexport.list', []],
+		// TODO(고객환경): 5버전에서 이 화면이 있던 메뉴 위치를 확인한다. (확인 전이라 보고서 맨 끝에 두었다)
+		'Box usage' =>						['hostbox.list', ['hostbox.export']]
 	];
 
 	/**

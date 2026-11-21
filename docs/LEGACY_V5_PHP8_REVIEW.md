@@ -164,3 +164,30 @@ PHP 8 에서 오류나 결과 변화가 나므로 눈으로 함께 확인한다.
 | 중간 | `$response->setTitle(_('Hosts'))` (일일점검) | 브라우저 제목이 "호스트"로 나온다 | 화면 제목으로 지정 |
 | 낮음 | 한글이 든 문자열에 `strlen()`, `substr()` | 글자가 깨진다 | `mb_*` 함수 |
 
+## 추가 검토: 서버 CPU 집계, Box 사용현황, 일별 집계 SQL (4차 검토)
+
+확인한 파일: 서버 CPU 집계 클래스(`...CPU.php`), Box 사용현황 트레잇(`...HostBox.php`), 키 클래스(재확인), 일별 집계 DB 함수(`batch.sql`).
+
+### 7버전 구현에 반영한 사실
+
+| 사실 | 5버전 근거 | 7버전 반영 위치 |
+|---|---|---|
+| "업무시간" 은 월~금의 09:00~18:00 만 집계한다 | CPU 집계 클래스 `query_Work()` 의 `weekend in (1,2,3,4,5)` | `conf/serverusage.conf.php` 의 `business_days` |
+| "업무시간" 의 Peak 는 그날 전체의 최대다 (`max(value_max) as work_max`) | CPU, 메모리 집계 클래스 모두 같다 | `business_peak_whole_day` (기본 true = 5버전과 같게) |
+| "업무외시간" 은 요일을 가리지 않는다 | `process()` 가 업무시간이 아니면 `query_all()` 을 쓴다 | `ServerUsageService` |
+| Box 사용현황의 값은 아이템의 마지막 값, 메모리/디스크는 바이트 단위 표시, "최근 데이터" 는 최신 데이터 화면 링크 | Box 사용현황 트레잇 | `actions/reports/hostbox/HostBoxList.php` |
+
+### 동작이 의도와 달라 보이는 곳
+
+| 위치 | 내용 |
+|---|---|
+| `batch.sql` 업무외시간 UPDATE | 서브쿼리 이름이 `work` 이고 `night_* = work.*` 로 넣는다. 이름만 다를 뿐 값은 업무외시간 집계라 결과는 맞다 |
+| `batch.sql` 시간 구간 | 하루 시작을 자정이 아니라 `trends` 의 첫 시각에 맞춰 9시간/18시간을 더한다. 첫 시각이 자정이 아니면 업무시간 구간이 밀린다. PHP 쪽 집계는 자정 기준이라 둘의 결과가 다를 수 있다 |
+| `batch.sql` 시작 | 먼저 `truncate` 로 표를 비우므로 실행할 때마다 전체 기간을 처음부터 다시 계산한다 |
+| CPU 집계 클래스 `query_all()`, `query_Work()`, `trendHour()` | 시작 시각이 숫자(1606957999 등)로 박힌 SQL 문자열이 들어 있다. 디버그용으로 보인다 |
+| CPU 집계 클래스 월 집계 표 | `extends_trends__month`(밑줄 2개)와 `extend_trends_month` 두 이름이 섞여 있다 |
+| Box 사용현황 트레잇 | 값이 없을 때 칸마다 "item없음", "no-value", "0.0Tb", "-" 로 다르게 표시한다. `total_disk` 함수는 규칙 파일에 없어서 화면에 나오지 않았다 |
+| 키 클래스 ESXi 키 6개 | 셸 기호(`|`, `"`, `$`, `'`) 자리가 모두 밑줄(`_`)로 되어 있다. 이 문자열 그대로는 셸 명령이 되지 않으므로 서버의 실제 키와 대조가 필요하다 |
+| 키 클래스 `inventoryWas()` | `inventoryWeb()` 과 글자까지 같다. 윈도우 WEB 파일명이 `WEBBTOB`(B 두 개)로 되어 있다 |
+| 키 클래스 윈도우 OS 버전 키 | `systems.run[ver]` (s 가 붙음). Zabbix 에 없는 키라 수집되지 않았을 것으로 보인다 |
+
