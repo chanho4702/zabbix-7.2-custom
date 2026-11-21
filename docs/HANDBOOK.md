@@ -6,7 +6,7 @@
 | 알고 싶은 것 | 볼 곳 |
 |---|---|
 | 5버전과 뭐가 달라졌나 | 1장 |
-| 페이지를 새로 추가하는 방법 | 2장 |
+| 페이지를 새로 추가하는 방법 | 2장 (원리), 2.1 (본보기 화면), 2.2~2.3 (공통 작업, 기능별 방법) |
 | 5버전 소스 중 그대로 쓰면 안 되는 코드 | 3장 |
 | 5버전 코드를 한 줄씩 바꾸는 규칙 | 4장 |
 | 남은 화면 목록과 진행 순서 | 5장 |
@@ -53,7 +53,8 @@
 ## 2. 따라 하기: 새 페이지 추가
 
 > 실제로 페이지를 추가할 때는 **`ui/modules/dmove/template/README.md` 의 템플릿 복사 절차**를 쓴다. (파일 3개 복사 + 이름 바꾸기)
-> 저사용 서버 화면은 이미 껍데기(`actions/reports/lowserver/`, `views/reports/lowserver.list.php`)가 만들어져 있다.
+> 비슷한 화면이 이미 있으면 그 화면을 복사하는 것이 더 빠르다. (2.1)
+> 저사용 서버 화면은 실제로는 완성되어 있고 구조도 아래 예제와 다르다(공통 컨트롤러 사용). 아래는 원리를 보이기 위한 단순한 형태다.
 > 이 장은 각 파일이 무슨 일을 하는지 처음부터 손으로 만들어 보며 이해하기 위한 설명이다.
 
 5버전의 "저사양 서버" 화면을 예로, **필터 1개 + 목록 테이블**이 있는 페이지를 보고서(Reports) 메뉴 아래에 추가한다.
@@ -269,8 +270,216 @@ APP::Component()->get('menu.main')
 
 Excel 파일은 제목 줄 서식/고정/필터, 테두리, 열 너비 맞춤이 적용되어 나온다. 자세한 내용은 `ui/modules/dmove/template/README.md` 의 "내보내기" 절에 있다.
 
-5버전의 팝업 액션(`popup.lowserver` 등, `layout.json`)은 아직 7.2 에서 만들어 보지 않았다.
-옮길 때는 코어의 팝업 컨트롤러(`ui/app/controllers/CControllerPopup*.php`)를 본보기로 삼아야 한다.
+5버전의 팝업 액션(`popup.windows` 등)은 아래 2.3 의 "상세 팝업" 방식으로 옮긴다.
+
+> 위 ②③④ 의 예제는 원리를 보이려고 한국어를 코드에 바로 적었다. 실제 코드는 화면 글자를 영어로 적고 `Lang::t('...')` 로 감싼 뒤 `lang/ko.php` 에 번역을 넣는다. (2.2 ①)
+
+---
+
+## 2.1 지금 있는 화면과 본보기
+
+새 화면은 아래 중 **가장 비슷한 화면을 하나 골라 복사해서 고치는 것**이 제일 빠르다. 처음부터 만들 때만 템플릿(`template/README.md`)을 쓴다.
+
+| 화면 | 컨트롤러 / 뷰 | 이 화면에서 배울 것 |
+|---|---|---|
+| SW 인벤토리 | `actions/inventory/swinventory/`, `views/inventory/swinventory.list.php` | 체크박스 필터, 로직을 `includes/` 로 분리, 외부 DB(ITSM) 합치기 |
+| 저사용 / 고사용 서버 | `actions/reports/serverusage/ServerUsageController.php` + `lowserver/`, `highserver/` | 비슷한 화면 두 개를 공통 컨트롤러로 묶기, 날짜 기간 필터, trends 집계 |
+| 일일점검 | `actions/reports/dailycheck/`, `views/reports/dailycheck.list.php` | 버튼으로 기간 바꾸기(D-1, D-2), 숫자에 말풍선 목록, 코어 화면으로 가는 링크 |
+| Peak 이벤트 분석 | `actions/reports/peakevent/`, `views/reports/peakevent.list.php` | 코어의 시간 선택기(최근 1시간, 어제 ...) |
+| 윈도우즈 패치 현황 | `actions/reports/winpatch/`, `views/reports/winpatch.*.php`, `views/js/reports/winpatch.list.js.php` | 상세 팝업, 화면 전용 스크립트, 이력(history) 값 읽기 |
+| Box 사용현황 | `actions/reports/hostbox/`, `views/reports/hostbox.list.php` | 아이템 마지막 값으로 표 만들기, 설정 파일에서 아이템 키 읽기, 단위 변환 |
+| 서버 시간 확인, 장기 미접속 계정, CPU/Memory 추출 | `uptime/`, `users/userunconnect/`, `usageexport/` | 데이터 없이 필터와 표만 있는 껍데기. 드롭다운/라디오 필터 |
+
+---
+
+## 2.2 어떤 화면이든 공통으로 하는 것
+
+템플릿을 복사했든 기존 화면을 복사했든 아래 6곳은 항상 손댄다.
+
+| # | 파일 | 할 일 |
+|---|---|---|
+| ① | `manifest.json` | 액션 등록. 화면 `<이름>.list`, 내보내기 `<이름>.export`, 팝업 `<이름>.detail` |
+| ② | `actions/<카테고리>/<이름>/` | 컨트롤러. `namespace Modules\DMove\Actions\<카테고리>\<이름>;` (폴더는 소문자, 네임스페이스는 대문자 시작) |
+| ③ | `views/<카테고리>/<이름>.list.php` | 뷰 |
+| ④ | `Module.php` | `REPORT_MENUS` 같은 표에 `'영어 라벨' => ['<이름>.list', ['<이름>.export']]` 한 줄 |
+| ⑤ | `lang/ko.php` | 메뉴 라벨, 제목, 열 이름, 안내 문구의 한국어 |
+| ⑥ | `docs/DEVELOPMENT_GUIDE.md` 5.1 | 화면 상태 표에 한 줄 |
+
+코드에 적는 규칙:
+
+- **화면 글자**: 영어로 적고 `Lang::t('Box usage')`. 코어에 이미 있는 말(`Host`, `Filter`, `Close`)은 `_('Host')` 를 쓰면 번역이 따로 필요 없다.
+- **프로파일 키**: `web.dmove.<이름>.` 로 시작. (필터 저장값이 다른 화면과 섞이지 않게)
+- **액션 이름**: `dmove` 를 넣지 않는다. 주소에 보인다. 코어 액션과 겹치는지 `template/README.md` 의 "액션 이름 정하기" 로 확인.
+- **고객 값**(아이템 키, 태그, 테이블 이름): 코드에 적지 않고 `conf/` 파일로 뺀다. (2.3 의 "설정 파일")
+- **권한**: 조회 화면은 `$this->getUserType() >= USER_TYPE_ZABBIX_USER`, 관리 화면은 `$this->checkAccess(CRoleHelper::UI_ADMINISTRATION_USERS)` 처럼.
+
+---
+
+## 2.3 기능별로 붙이는 법
+
+필요한 기능의 절만 골라 읽는다. 코드 조각은 실제 파일에서 가져왔다. 더 자세한 설명은 그 파일의 주석에 있다.
+
+### 설정 파일 (고객 값을 코드 밖으로)
+
+고객 서버마다 다른 값(아이템 키 등)은 `conf/<이름>.conf.php` 에 두고, 비어 있으면 화면에 안내를 띄운다.
+본보기: `conf/hostbox.conf.php`, `actions/reports/hostbox/HostBoxList.php`
+
+```php
+// conf/diskusage.conf.php : 배열을 return 하는 PHP 파일. 공개 저장소에는 값을 비워서 올린다.
+return [
+	'item_key' => ''      // TODO(고객환경) 실제 아이템 키
+];
+```
+
+```php
+// 컨트롤러 doAction(). dirname(__DIR__, 3) = actions/<카테고리>/<이름>/ 에서 세 단계 위 = 모듈 폴더
+$config = require dirname(__DIR__, 3).'/conf/diskusage.conf.php';
+$item_key = trim($config['item_key']);
+
+$rows = $item_key !== '' ? $this->getRows($item_key) : [];
+$data['config_missing'] = $item_key === '';
+```
+
+```php
+// 뷰. 비어 있으면 노란 안내 상자
+if ($data['config_missing']) {
+	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_WARNING, [],
+		Lang::t('Settings are required: %1$s', 'conf/diskusage.conf.php'), false
+	));
+}
+```
+
+`includes/` 의 서비스 클래스에서 읽을 때는 `dirname(__DIR__).'/conf/...'` 다. (`includes/WinPatchService.php` 생성자)
+새 설정 파일을 만들면 `docs/CUSTOMER_ENV_CHECKLIST.md` 1장에 "무엇을 어디서 확인해 채우는지" 한 줄을 추가한다.
+
+### 호스트 그룹 / 호스트 필터
+
+공용 부품 `includes/filter/HostFilter.php` 를 쓴다. 본보기: `HostBoxList.php`, `views/reports/hostbox.list.php`
+
+```php
+// 컨트롤러 checkInput()
+$fields = [ ... ] + HostFilter::INPUT_FIELDS + self::exportInputFields();
+
+// 컨트롤러 doAction()
+if ($this->hasInput('filter_set')) {
+	HostFilter::save(self::PROFILE_PREFIX, $this->getInput('filter_groupids', []), $this->getInput('filter_hostids', []));
+}
+elseif ($this->hasInput('filter_rst')) {
+	HostFilter::reset(self::PROFILE_PREFIX);
+}
+$host_filter = HostFilter::load(self::PROFILE_PREFIX);
+
+// API 조회에 조건 붙이기
+$items = API::Item()->get(HostFilter::toApiOptions($host_filter) + ['output' => [...], ...]);
+
+// 뷰로 넘기기
+$data['host_filter'] = HostFilter::toViewData($host_filter);
+```
+
+```php
+// 뷰
+->addFilterTab(_('Filter'), [HostFilter::addRows(new CFormList(), $data['host_filter'])]);
+```
+
+### 날짜 기간 필터 (시작일 ~ 종료일)
+
+본보기: `ServerUsageController.php` 의 `filter_from` / `filter_to`, `views/reports/serverusage.list.php` 의 `CDateSelector`.
+시작 ≤ 종료, 최대 기간(366일) 검사가 컨트롤러에 있다. 기간 단위 집계(일, 월)를 하는 화면에 맞다.
+
+### 코어 시간 선택기 (최근 1시간, 어제, 지난주 ...)
+
+코어 보고서 화면 위쪽의 그 시간 선택기다. 본보기: `PeakEventList.php`, `views/reports/peakevent.list.php`
+
+```php
+// 컨트롤러 checkInput()
+$fields = ['from' => 'range_time', 'to' => 'range_time', ...];
+$ret = $this->validateInput($fields) && $this->validateTimeSelectorPeriod();
+
+// 컨트롤러 doAction()
+$options = ['profileIdx' => 'web.dmove.diskusage.filter', 'profileIdx2' => 0, 'from' => null, 'to' => null];
+$this->getInputs($options, ['from', 'to']);
+updateTimeSelectorPeriod($options);
+$timeline = getTimeSelectorPeriod($options);   // $timeline['from_ts'], ['to_ts'] = 유닉스 초
+```
+
+뷰에는 두 가지가 필요하다. 하나라도 빠지면 기간을 눌러도 화면이 안 바뀐다.
+
+1. `$filter->addTimeSelector($data['timeline']['from'], $data['timeline']['to'], true, $data['timeline_profile']);`
+2. 뷰 맨 아래 `timeControl.addObject("diskusage", ...)` 스크립트. `peakevent.list.php` 맨 아래를 복사하고 `"peakevent"` 를 화면 이름으로 바꾼다.
+
+### 상세 팝업 (목록에서 [상세보기] 를 누르면 뜨는 창)
+
+5버전의 `popup.*` 액션이 여기에 해당한다. 본보기: 윈도우즈 패치 현황. 파일 4개가 엮인다.
+
+```
+목록 뷰 (winpatch.list.php)
+  ├─ 링크에 표시를 단다:  ->addClass('js-winpatch-detail')->setAttribute('data-hostid', $row['hostid'])
+  ├─ 스크립트를 부른다:  $this->includeJsFile('reports/winpatch.list.js.php')
+  └─ 시작시킨다:         dmoveWinPatchList.init({detail_action: 'winpatch.detail', month: ...})
+        │
+        ▼ 링크를 누르면
+스크립트 (views/js/reports/winpatch.list.js.php)
+  └─ PopUp('winpatch.detail', {hostid, month}, {dialogue_class: 'modal-popup-generic', trigger_element: link})
+        │
+        ▼ 코어가 액션을 호출
+팝업 컨트롤러 (WinPatchDetail.php)  manifest 의 layout 은 "layout.json"
+  └─ 입력 검증 'hostid' => 'required|db hosts.hostid'
+        │
+        ▼
+팝업 뷰 (winpatch.detail.php)
+  └─ echo json_encode(['header' => 제목, 'body' => $table->toString(), 'buttons' => [...]])
+```
+
+주의할 것:
+
+- 스크립트 파일 위치는 `views/js/<카테고리>/<뷰 이름>.js.php` 이고, `includeJsFile()` 에는 `views/js/` **뒤의 경로**만 적는다. (`'reports/winpatch.list.js.php'`) 뷰 파일과 같은 폴더에 두면 못 찾는다.
+- 스크립트 안의 객체 이름은 `dmove` 로 시작한다. (다른 화면 스크립트와 겹치지 않게)
+- 팝업 뷰는 `->show()` 를 하지 않고 JSON 만 출력한다. 값은 `CTableInfo`, `CCol` 로 조립해야 HTML 이스케이프가 된다.
+- 팝업 컨트롤러에서도 호스트는 API 로 다시 조회한다. 주소의 hostid 를 바꿔 넣어도 권한 밖 호스트는 API 가 돌려주지 않는다.
+
+### 데이터 가져오기: 무엇을 쓸까
+
+| 필요한 값 | 방법 | 본보기 |
+|---|---|---|
+| 아이템의 지금 값 | `API::Item()->get(['output' => ['lastvalue', 'lastclock'], 'filter' => ['key_' => ...]])`. `lastclock` 이 0 이면 아직 수집 안 됨 | `HostBoxList::getRows()` |
+| 기간 안의 원래 값(글자, 숫자) | `API::History()->get(['history' => 아이템의 value_type, ...])` | `WinPatchService::getLatestValue()` |
+| 기간의 시간별 평균/최대 (며칠~몇 달) | `trends` 표 집계 SQL. PostgreSQL 과 MySQL 양쪽에서 돌게 쓴다 | `ServerUsageService::getUsage()` |
+| 트리거 / 장애 건수 | `API::Trigger()->get(['tags' => ...])`, `API::Event()->get(['countOutput' => true, 'groupBy' => ['objectid']])` | `DailyCheckList::getCheckResult()`, `PeakEventList::getRows()` |
+| Zabbix 밖의 표(ITSM 등) | `DBselect()` + `zbx_dbstr()`. 표 이름은 설정에서 읽고 검증한다 | `includes/ItsmRepository.php` |
+
+API 로 되는 것은 API 를 쓴다. 사용자 권한이 자동으로 적용된다. 직접 SQL 은 집계처럼 API 로 안 되는 경우만 쓴다.
+
+표시 가공:
+
+- 바이트 → `convertUnits(['value' => $v, 'units' => 'B'])` (1.5 TB)
+- 심각도 → `CSeverityHelper::getName($severity)`, 색은 `CSeverityHelper::getStyle($severity)`
+- 값이 없을 때는 `'-'` 로 통일한다. (내보내기 파일에서도 그대로 `-` 로 나온다)
+
+### 비슷한 화면 두 개를 한 컨트롤러로
+
+저사용 / 고사용처럼 필터와 표가 같고 판정 조건만 다르면, 공통 부분을 `abstract` 클래스에 두고 화면별로 다른 부분만 채운다.
+본보기: `ServerUsageController.php` (공통) + `LowServerList.php` (저사용, 40줄 남짓)
+
+```php
+class LowServerList extends ServerUsageController {
+	protected function getPageKey(): string { return 'lowserver'; }          // 액션/프로파일/파일명에 쓰는 이름
+	protected function getPageTitle(): string { return Lang::t('Low usage servers'); }
+	protected function getCriteriaText(array $t): string { ... }            // 화면에 보일 판정 기준 문장
+	protected function matches(float $avg, float $peak, array $t): bool {    // 목록에 넣을지
+		return $avg <= $t['low_avg'] && $peak <= $t['low_peak'];
+	}
+}
+```
+
+두 화면이 같은 뷰를 쓰므로 manifest 의 `view` 는 둘 다 `reports/serverusage.list` 다.
+
+### 다 만든 뒤 확인
+
+1. `php -l` 로 문법 검사 (테스트 환경: `docker compose -f dev/compose.yaml exec web php -l /usr/share/zabbix/modules/dmove/...`)
+2. 메뉴 → 화면 → 필터 적용/초기화 → 정렬 → 다음 페이지 → CSV / Excel 내보내기 순서로 눌러 본다.
+3. 설정 파일을 비운 상태에서도 열어 본다. 안내 상자만 나오고 오류가 없어야 한다.
+4. 화면 언어를 English / 한국어로 바꿔 둘 다 본다.
+5. 일반 사용자(Zabbix User) 계정으로도 열어 본다.
 
 ---
 
@@ -499,25 +708,32 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 
 | 5버전 액션 | 화면 | 7.2 상태 |
 |---|---|---|
-| `swinventories`, `swinventories.view.csv` | SW 인벤토리 | 틀 완성. ITSM 연동 등 `TODO(고객환경)` 남음 |
-| `lowserver`, `lowserver.view.csv`, `popup.lowserver` | 저사양 서버 | 미착수 |
-| `highserver`, `highserver.view.csv`, `popup.agent` | 고사용 서버 | 미착수 |
-| `windows`, `windows.view.csv`, `popup.windows`, `popup.windows.all` | 윈도우 패치 | 미착수 |
-| `windowsall`, `windowsall.view.csv` | 윈도우 전체 (임시 라우터) | 미착수. 필요 여부 확인 |
-| `hostbox`, `hostesxi` | 호스트 박스, ESXi | 미착수 |
-| `daily`, `popup.topcpu`, `popup.topmemory` | 일일 보고 | 미착수 |
-| `popup.batch` | 배치 팝업 | 미착수 |
+| `swinventories`, `swinventories.view.csv` | SW 인벤토리 | 완성. Agent "예외" 판정만 비어 있음 |
+| `lowserver`, `lowserver.view.csv` | 저사용 서버 | 완성. [기준설정] 버튼은 설정 파일로 대체 |
+| `highserver`, `highserver.view.csv`, `popup.agent` | 고사용 서버 | 완성. 판정 조건은 가정 |
+| `windows`, `windows.view.csv`, `popup.windows` | 윈도우즈 패치 현황 | 완성 (상세 팝업 포함) |
+| `popup.windows.all`, `windowsall`, `windowsall.view.csv` | 윈도우 전체 | 미착수. 필요 여부 확인 |
+| `hostbox` | Box 사용현황 | 완성. 메뉴 위치는 가정 |
+| `hostesxi` | ESXi | 미착수. 소스 없음 |
+| `daily` | 일일점검 | 완성 |
+| `popup.topcpu`, `popup.topmemory` | 일일점검의 Top 10 버튼 | 미착수. 소스 없음 |
+| `popup.batch` | 배치 팝업 | 미착수. 7버전에서는 일별 집계표(`extends_trends_day`) 없이 `trends` 를 바로 집계하므로 필요 없을 가능성이 크다 |
+| `uptime.view` | 서버 시간 확인 | 껍데기 (필터와 표만) |
+| `user.unconnect` | 장기 미접속 계정 | 껍데기 |
+| `perf.analysis.view` | CPU/Memory 사용률 추출 | 껍데기 |
+| `data.analysis` | 성능 데이터 추세 분석 | 빈 페이지. 대시보드 위젯으로 대체할지 결정 필요 |
+| (peak_event.php) | Peak 이벤트 분석 | 완성. 집계 기준은 가정 |
+
+화면별 최신 상태는 `DEVELOPMENT_GUIDE.md` 5.1, 고객환경에서 확인할 것은 `CUSTOMER_ENV_CHECKLIST.md` 에 있다.
 
 고객환경 첫날 순서:
 
 1. 모듈 폴더를 서버에 올리고 활성화한다 (`DEVELOPMENT_GUIDE.md` 3장).
 2. `find /usr/share/zabbix/modules/dmove -name '*.php' -exec php -l {} \;` 로 문법을 확인한다.
-3. SW 인벤토리 화면이 뜨는지 본다. 이 시점에는 "ITSM 연동이 구현되지 않아..." 경고가 보이는 것이 정상이다.
-4. 5버전 소스에서 3.4 의 점검 명령을 돌려 문제 목록을 만든다.
-5. `includes/ItsmRepository.php` 의 `fetch()` 에 5버전 `itsm_hostList()` 로직을 옮긴다.
-6. `SoftwareResolver` 의 `INVENTORY_FIELDS` 를 5버전 규칙에 맞춘다.
-7. 5버전 화면과 7버전 화면의 CSV 를 같은 조건으로 뽑아 행 수와 값을 비교한다.
-8. 다음 화면은 2장의 순서로 추가한다.
+3. 메뉴의 화면을 하나씩 연다. 이 시점에는 "설정이 필요합니다: conf/..." 안내가 보이는 것이 정상이다.
+4. `CUSTOMER_ENV_CHECKLIST.md` 1장을 따라 `conf/` 의 설정 파일을 채운다.
+5. 5버전 화면과 7버전 화면을 같은 조건으로 열어(또는 CSV 를 뽑아) 행 수와 값을 비교한다. (체크리스트 2장)
+6. 껍데기 화면은 5버전 소스를 보고 2.3 의 방법으로 채운다.
 
 ---
 
@@ -540,7 +756,7 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 | `Wrong Module.php class name for module located at ...` | `Module.php` 의 네임스페이스나 클래스명이 틀림 | `namespace Modules\DMove;` 와 `class Module extends CModule` 확인 |
 | `Module.php class must extend ...` | 부모 클래스가 틀림 | `use Zabbix\Core\CModule;` 확인 |
 | `... - thrown by module located at ...` | `init()` 안에서 예외 발생 | 메시지 앞부분이 실제 오류다. 보통 `use` 선언 누락 |
-| `Identical actions are used by modules located at ...` | 다른 모듈과 액션명이 겹침 | 액션명을 `dmove.` 로 시작하게 |
+| `Identical actions are used by modules located at ...` | 다른 모듈과 액션명이 겹침 | 겹치지 않는 이름으로 바꾼다. 주소에 보이므로 `dmove` 는 넣지 않는다 |
 | `Page not found` | 등록되지 않은 액션 | 주소의 `action` 값과 `manifest.json` 의 키가 같은지 확인 |
 | `Class ... not found for action ...` | 컨트롤러 파일을 못 찾음 | 파일이 `actions/<카테고리>/<화면>/` 에 있는지, manifest 의 `class` 가 `카테고리/화면/클래스` 형식인지, 파일명과 클래스명과 manifest 의 `class` 가 대소문자까지 같은지, `namespace Modules\DMove\Actions;` 인지 확인 |
 | `Action class ... must extend CController class.` | 컨트롤러가 `CController` 를 상속하지 않음 | `use CController;` 와 `extends CController` 확인 |
