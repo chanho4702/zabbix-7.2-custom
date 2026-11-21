@@ -182,7 +182,15 @@ Excel 파일은 이렇게 나온다.
 
 | 필요한 것 | 볼 파일 |
 |---|---|
-| 호스트 그룹/호스트 선택창 필터 | `actions/reports/uptime/UptimeList.php`, `views/reports/uptime.list.php` |
+| 호스트 그룹/호스트 선택창 필터 (공용 부품) | `includes/filter/HostFilter.php` 머리말. 사용 예 `actions/reports/uptime/` |
+| 날짜 입력, 세로 라디오 버튼, 좌우 2단 필터 | `views/reports/serverusage.list.php` |
+| 시간 선택기(최신 1시간, 어제 ...) | `actions/reports/peakevent/PeakEventList.php`, `views/reports/peakevent.list.php` |
+| 팝업 창, 화면 전용 스크립트 | `actions/reports/winpatch/WinPatchDetail.php`, `views/reports/winpatch.detail.php`, `views/js/reports/winpatch.list.js.php` |
+| 숫자를 누르면 목록이 뜨는 말풍선, 코어 화면으로 가는 링크 | `views/reports/dailycheck.list.php` |
+| 비슷한 화면 두 개를 공통 컨트롤러로 묶기 | `actions/reports/serverusage/ServerUsageController.php` |
+| 트리거 태그로 호스트 세기, 이벤트 개수 세기 | `actions/reports/dailycheck/DailyCheckList.php` |
+| trends(시간별 요약) 집계 | `includes/ServerUsageService.php` |
+| 이력(history) 값 읽기 | `includes/WinPatchService.php` |
 | 라디오 버튼, 드롭다운 필터 | `views/users/userunconnect.list.php` |
 | 체크박스 필터, 데이터 로직을 `includes/` 로 분리 | `actions/inventory/swinventory/`, `includes/SwInventoryService.php` |
 | DB 직접 조회(안전한 방법) | `includes/ItsmRepository.php` |

@@ -3,7 +3,7 @@
 	"id": "dmove",
 	"name": "DMove Custom",
 	"namespace": "DMove",
-	"version": "1.2.0",
+	"version": "1.3.0",
 	"author": "DMove",
 	"description": "Zabbix 5 커스텀 화면의 7.2 이관 모듈. 설명서: docs/DEVELOPMENT_GUIDE.md, 페이지 추가: ui/modules/dmove/template/README.md",
 	"actions": {
@@ -23,13 +23,21 @@
 		},
 		"lowserver.list": {
 			"class": "Reports/LowServer/LowServerList",
-			"view": "reports/lowserver.list",
+			"view": "reports/serverusage.list",
 			"layout": "layout.htmlpage"
+		},
+		"lowserver.export": {
+			"class": "Reports/LowServer/LowServerList",
+			"layout": "export/layout.file"
 		},
 		"highserver.list": {
 			"class": "Reports/HighServer/HighServerList",
-			"view": "reports/highserver.list",
+			"view": "reports/serverusage.list",
 			"layout": "layout.htmlpage"
+		},
+		"highserver.export": {
+			"class": "Reports/HighServer/HighServerList",
+			"layout": "export/layout.file"
 		},
 		"perftrend.list": {
 			"class": "Reports/PerfTrend/PerfTrendList",
@@ -46,10 +54,23 @@
 			"view": "reports/peakevent.list",
 			"layout": "layout.htmlpage"
 		},
+		"peakevent.export": {
+			"class": "Reports/PeakEvent/PeakEventList",
+			"layout": "export/layout.file"
+		},
 		"winpatch.list": {
 			"class": "Reports/WinPatch/WinPatchList",
 			"view": "reports/winpatch.list",
 			"layout": "layout.htmlpage"
+		},
+		"winpatch.export": {
+			"class": "Reports/WinPatch/WinPatchList",
+			"layout": "export/layout.file"
+		},
+		"winpatch.detail": {
+			"class": "Reports/WinPatch/WinPatchDetail",
+			"view": "reports/winpatch.detail",
+			"layout": "layout.json"
 		},
 		"usageexport.list": {
 			"class": "Reports/UsageExport/UsageExportList",

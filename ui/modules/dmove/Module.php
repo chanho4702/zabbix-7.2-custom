@@ -63,12 +63,12 @@ class Module extends CModule {
 	 */
 	private const REPORT_MENUS = [
 		'Server time check' =>				['uptime.list', []],
-		'Low usage servers' =>				['lowserver.list', []],
-		'High usage servers' =>				['highserver.list', []],
+		'Low usage servers' =>				['lowserver.list', ['lowserver.export']],
+		'High usage servers' =>				['highserver.list', ['highserver.export']],
 		'Performance trend analysis' =>		['perftrend.list', []],
 		'Daily check' =>					['dailycheck.list', []],
-		'Peak event analysis' =>			['peakevent.list', []],
-		'Windows patch status' =>			['winpatch.list', []],
+		'Peak event analysis' =>			['peakevent.list', ['peakevent.export']],
+		'Windows patch status' =>			['winpatch.list', ['winpatch.export']],
 		'CPU/Memory usage export' =>		['usageexport.list', []]
 	];
 

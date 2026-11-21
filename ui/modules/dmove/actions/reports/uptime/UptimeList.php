@@ -24,25 +24,18 @@
  * 이 화면에 속한 파일
  *   actions/reports/uptime/UptimeList.php   컨트롤러 (이 파일)
  *   views/reports/uptime.list.php     화면 뷰
+ *   includes/filter/HostFilter.php    호스트 그룹/호스트 선택 필터 (여러 화면 공용)
  */
 
 namespace Modules\DMove\Actions\Reports\Uptime;
 
-/*
- *   API           Zabbix API 를 PHP 안에서 직접 호출.            ui/include/classes/api/API.php
- *   CArrayHelper  배열 도우미.                                   ui/include/classes/helpers/CArrayHelper.php
- *   CPagerHelper  페이징.                                        ui/include/classes/helpers/CPagerHelper.php
- *   CProfile      사용자별 설정(필터 값) 저장.                   ui/include/classes/user/CProfile.php
- *   CUrl          주소 조립.                                     ui/include/classes/routing/CUrl.php
- */
-use API;
-use CArrayHelper;
 use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
 use CPagerHelper;
 use CProfile;
 use CUrl;
+use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\Lang;
 
 class UptimeList extends CController {
@@ -60,13 +53,11 @@ class UptimeList extends CController {
 			'page' =>				'ge 1',
 			'filter_set' =>			'in 1',
 			'filter_rst' =>			'in 1',
-			// 선택창(멀티셀렉트)은 ID 배열로 넘어온다. 'array_id' = 숫자 ID 의 배열.
-			'filter_groupids' =>	'array_id',
-			'filter_hostids' =>		'array_id',
 			'filter_os' =>			'string',
 			// 숫자 입력이지만 빈 칸으로도 넘어오므로 문자열로 받고 아래에서 숫자만 골라 쓴다.
 			'filter_uptime_days' =>	'string'
-		];
+		// 호스트 그룹/호스트 선택 필터의 규칙(filter_groupids, filter_hostids)을 더한다. (includes/filter/HostFilter.php)
+		] + HostFilter::INPUT_FIELDS;
 
 		$ret = $this->validateInput($fields);
 
@@ -90,12 +81,8 @@ class UptimeList extends CController {
 	protected function doAction(): void {
 		// ── 1) 필터 저장/초기화 ([적용] -> filter_set=1, [리셋] -> filter_rst=1) ──
 		if ($this->hasInput('filter_set')) {
-			// 배열 값은 updateArray, 값 하나는 update 로 저장한다.
-			CProfile::updateArray(self::PROFILE_PREFIX.'filter.groupids', $this->getInput('filter_groupids', []),
-				PROFILE_TYPE_ID
-			);
-			CProfile::updateArray(self::PROFILE_PREFIX.'filter.hostids', $this->getInput('filter_hostids', []),
-				PROFILE_TYPE_ID
+			HostFilter::save(self::PROFILE_PREFIX, $this->getInput('filter_groupids', []),
+				$this->getInput('filter_hostids', [])
 			);
 			CProfile::update(self::PROFILE_PREFIX.'filter.os', trim($this->getInput('filter_os', '')),
 				PROFILE_TYPE_STR
@@ -105,34 +92,31 @@ class UptimeList extends CController {
 			);
 		}
 		elseif ($this->hasInput('filter_rst')) {
-			foreach (['groupids', 'hostids', 'os', 'uptime_days'] as $key) {
+			HostFilter::reset(self::PROFILE_PREFIX);
+
+			foreach (['os', 'uptime_days'] as $key) {
 				CProfile::deleteIdx(self::PROFILE_PREFIX.'filter.'.$key);
 			}
 		}
 
 		// ── 2) 저장된 필터 읽기 ──
+		$host_filter = HostFilter::load(self::PROFILE_PREFIX);	// ['groupids' => [...], 'hostids' => [...]]
 		$filter = [
-			'groupids' => CProfile::getArray(self::PROFILE_PREFIX.'filter.groupids', []),
-			'hostids' => CProfile::getArray(self::PROFILE_PREFIX.'filter.hostids', []),
 			'os' => CProfile::get(self::PROFILE_PREFIX.'filter.os', ''),
 			'uptime_days' => CProfile::get(self::PROFILE_PREFIX.'filter.uptime_days', '')
 		];
 
 		// ── 3) 데이터 조회 ──
-		$rows = $this->getRows($filter);
+		$rows = $this->getRows($host_filter, $filter);
 
 		// ── 4) 뷰로 넘길 데이터 ──
 		$data = [
 			'action' => $this->getAction(),
 			'title' => Lang::t('Server time check'),
 			'active_tab' => CProfile::get(self::PROFILE_PREFIX.'filter.active', 1),
-			'filter' => [
-				// 선택창은 ID 만으로는 이름을 표시할 수 없어서 [['id' => .., 'name' => ..], ...] 형태로 바꿔 넘긴다.
-				'groups' => $this->getGroupsForMultiselect($filter['groupids']),
-				'hosts' => $this->getHostsForMultiselect($filter['hostids']),
-				'os' => $filter['os'],
-				'uptime_days' => $filter['uptime_days']
-			],
+			// 선택창에 표시할 값(ID + 이름)으로 바꿔 넘긴다.
+			'host_filter' => HostFilter::toViewData($host_filter),
+			'filter' => $filter,
 			'data_ready' => false	// TODO(고객환경): getRows() 를 구현하면 true 로 바꾼다. (뷰의 안내 상자가 사라진다)
 		];
 
@@ -165,11 +149,10 @@ class UptimeList extends CController {
 	 *
 	 * 구현 순서 예시 (아이템 키는 5버전 소스에서 확인한 값으로 바꾼다)
 	 *
-	 *   // 1) 필터에 맞는 호스트. groupids/hostids 가 비어 있으면 null 을 줘서 조건을 빼야 한다.
-	 *   $hosts = API::Host()->get([
+	 *   // 1) 필터에 맞는 호스트. HostFilter::toApiOptions() 가 groupids / hostids 조건을 만들어 준다.
+	 *   //    (맨 위에 use API; 를 추가해야 한다)
+	 *   $hosts = API::Host()->get(HostFilter::toApiOptions($host_filter) + [
 	 *       'output' => ['hostid', 'host', 'description'],
-	 *       'groupids' => $filter['groupids'] ? getSubGroups($filter['groupids']) : null,
-	 *       'hostids' => $filter['hostids'] ?: null,
 	 *       'selectInterfaces' => ['ip', 'main', 'type'],
 	 *       'selectInventory' => ['os'],
 	 *       'preservekeys' => true
@@ -189,7 +172,7 @@ class UptimeList extends CController {
 	 * 5버전은 DBselect 로 zabbix.items / history 테이블을 직접 읽었다. 그러면 사용자 권한이 무시되고
 	 * 스키마 이름(zabbix.)이 다르면 깨지므로 위처럼 API 를 쓴다.
 	 */
-	private function getRows(array $filter): array {
+	private function getRows(array $host_filter, array $filter): array {
 		return [];
 	}
 
@@ -199,32 +182,5 @@ class UptimeList extends CController {
 
 		// ctype_digit: 문자열이 0~9 로만 이루어졌는지 검사한다.
 		return ctype_digit($value) ? $value : '';
-	}
-
-	/**
-	 * 호스트 그룹 선택창에 넣을 [['id' => groupid, 'name' => 이름], ...] 을 만든다.
-	 * 사용자가 볼 수 없는 그룹은 API 가 돌려주지 않으므로 자동으로 빠진다.
-	 */
-	private function getGroupsForMultiselect(array $groupids): array {
-		if (!$groupids) {
-			return [];
-		}
-
-		// renameObjectsKeys: 각 행의 키 이름을 바꾼다. groupid -> id (선택창이 요구하는 이름)
-		return CArrayHelper::renameObjectsKeys(API::HostGroup()->get([
-			'output' => ['groupid', 'name'],
-			'groupids' => $groupids
-		]), ['groupid' => 'id']);
-	}
-
-	private function getHostsForMultiselect(array $hostids): array {
-		if (!$hostids) {
-			return [];
-		}
-
-		return CArrayHelper::renameObjectsKeys(API::Host()->get([
-			'output' => ['hostid', 'name'],
-			'hostids' => $hostids
-		]), ['hostid' => 'id']);
 	}
 }

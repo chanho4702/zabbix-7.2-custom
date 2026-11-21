@@ -132,3 +132,35 @@ PHP 8 에서 오류나 결과 변화가 나므로 눈으로 함께 확인한다.
 | OS/WEB/WAS/DB/이중화 = 인벤토리 `os`, `software_app_a`, `_b`, `_c`, `_d` | `C*Inventoris::middle_inventory()` | `includes/SoftwareResolver.php` 의 `INVENTORY_FIELDS` |
 | Agent 설치 = ITSM 과 Zabbix 호스트가 매칭됨(1), 미설치 = 매칭 안 됨(2), 예외 = 4 | `C*Itms::itsm_description()` 의 주석 | `includes/SwInventoryService.php` (예외 판정은 미확인) |
 | 20자 넘는 값은 줄이고 전체 값은 말풍선으로 표시 | 공통 `outputValues()` | 미반영. 필요하면 뷰에서 `(new CSpan(mb_strimwidth($v, 0, 20, '...')))->setHint($v)` |
+
+## 추가 검토: 보고서 화면 소스 (3차 검토)
+
+3차로 확인한 파일은 일일점검 컨트롤러와 트레잇, 저사용 서버 컨트롤러와 트레잇, 키 클래스, 일별 집계 클래스, 윈도우 패치 트레잇, 미들웨어 클래스, 규칙 파일(`swinventory`, `highserver`, `hostbox`)이다.
+이 파일들도 그대로 가져오지 않고 다시 작성했다. 아래는 원본을 참고할 때 알아 둘 점이다.
+
+### 동작이 의도와 달라 보이는 곳 (PHP 버전과 무관)
+
+| 위치 | 내용 | 7버전에서 |
+|---|---|---|
+| 일일점검 트레잇 `middle_Disk30_key()`, `middle_CPU_key()` | 전일 대비 30% / 20% 를 trends 로 직접 계산하는 함수인데 호출되지 않는다. 안에서도 전일 조건을 당일 쿼리 변수에 붙이고, 별칭 없는 `avg(value_avg)` 를 `$row['avg']` 로 읽는다 | 옮기지 않았다. 판정은 일일점검용 태그가 달린 트리거가 한다 |
+| 일일점검 트레잇 `du_problems()` | 이중화 항목의 링크에 Paging 항목의 태그를 쓴다 | 항목마다 자기 태그로 링크한다 |
+| 일별 집계 클래스 `process()` | 업무시간 최대에 하루 전체 최대(`max(value_max) as work_max`)를 쓴다 | 업무시간을 고르면 업무시간 안의 최대를 쓴다 |
+| 일별 집계 클래스 `check()` | INSERT 와 UPDATE 여러 개를 한 문자열로 이어 `DBselect()` 한 번에 실행한다. 화면을 여는 요청이 요약 테이블을 채운다 | 요약 테이블을 만들지 않고 trends 를 직접 집계한다 |
+| 키 클래스 `inventoryWas()` | 내용이 `inventoryWeb()` 과 같다 | 인벤토리 필드를 쓰므로 해당 없음 |
+| 윈도우 패치 상세 | 값을 빈칸으로 나눠 표로 만들어서, 빈 열이 있으면 뒤의 값이 앞 열로 당겨진다 | 제목 줄의 열 위치로 잘라 제 열에 넣는다 |
+| 저사용 서버 트레잇 `host_ip()` | 줄마다 `API::HostInterface()->get()` 을 부른다 (호스트 수만큼 API 호출) | 호스트 조회 때 인터페이스를 같이 받아 온다 |
+
+### PHP 8 / 7버전에서 걸리는 곳
+
+| 등급 | 위치 | 문제 | 조치 |
+|---|---|---|---|
+| 치명 | 컨트롤러 전반 `check_fields()`, `T_ZBX_*`, `getRequest()`, `hasRequest()` | MVC 컨트롤러에서는 `checkInput()` 의 `validateInput()` 과 `getInput()` / `hasInput()` 을 쓴다 | 규칙 문자열로 다시 작성 |
+| 치명 | `disableSIDValidation()` | 7버전에 없다 | `disableCsrfValidation()` |
+| 치명 | `select_config()` | 7버전에 없다 | `CSettingsHelper::get()` |
+| 높음 | `$this->from`, `$this->to`, `$this->rows` 등 선언 없는 프로퍼티 | PHP 8.2 부터 Deprecated | 프로퍼티 선언 |
+| 높음 | `"... where tag='".$tagname."' and value='".$value."'"` 등 문자열을 이어 만든 SQL | 값에 따옴표가 있으면 깨진다. `zabbix.` 스키마 이름이 고정이다 | API 또는 `zbx_dbstr()`, `dbConditionId()` |
+| 높음 | `validateTimeSelectorPeriod(getRequest('from'), getRequest('to'))` | 전역 함수가 컨트롤러 메소드(`$this->validateTimeSelectorPeriod()`)로 바뀌었다 | 메소드 호출로 변경 |
+| 중간 | `if ($period = hasRequest('period1'))` | 비교가 아니라 대입이다. 동작은 하지만 의도가 불분명하다 | `hasInput()` 으로 다시 작성 |
+| 중간 | `$response->setTitle(_('Hosts'))` (일일점검) | 브라우저 제목이 "호스트"로 나온다 | 화면 제목으로 지정 |
+| 낮음 | 한글이 든 문자열에 `strlen()`, `substr()` | 글자가 깨진다 | `mb_*` 함수 |
+

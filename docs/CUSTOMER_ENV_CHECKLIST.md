@@ -1,107 +1,88 @@
 # 고객환경에서 확인할 것
 
-아직 확인하지 못해서 코드를 비워 둔 곳을 정리했다. 위에서부터 급한 순서다.
-각 항목의 "막힌 곳"이 이 내용을 몰라서 비워 둔 코드다.
+아직 확인하지 못해서 코드를 비워 두었거나 가정으로 만든 곳을 정리했다. 위에서부터 급한 순서다.
 
 ## 확인하는 방법
 
 - 5버전 소스와 화면은 **고객환경 안에서 열어 보고**, 필요한 내용(아이템 키, 기준 값, 컬럼 구성, 처리 순서)을 파악한다.
 - 고객 자료(소스 파일, 화면, 실제 서버 이름, IP, 계정, 접속 주소)는 **밖으로 가져오지 않는다.** 이 저장소에도 넣지 않는다.
 - 파악한 내용은 고객환경 안에서 이 모듈 코드의 `TODO(고객환경)` 자리에 직접 채운다.
-- 표의 "볼 것" 열은 어떤 파일/화면을 열어 봐야 하는지, "확인하려는 것" 열은 거기서 무엇을 알아내야 하는지다.
+- 소스에서 `TODO(고객환경)` 를 검색하면 아래 항목이 있는 자리가 모두 나온다.
 
-## 1순위: SW 인벤토리를 끝내는 데 필요한 것
+## 1. 설정 채우기 (코드는 되어 있고, 값을 넣어야 동작하는 것)
 
-| # | 볼 것 | 종류 | 확인하려는 것 | 막힌 곳 |
+이 저장소는 공개 저장소라서 고객 환경의 값(테이블 이름, 아이템 키, 태그)은 설정 파일에 비워 두었다.
+모듈을 고객 서버에 올린 뒤 `conf/` 의 파일 네 개를 먼저 채운다.
+
+| # | 확인할 것 | 방법 | 맞지 않으면 | 고칠 곳 |
 |---|---|---|---|---|
-| 1-1 | ITSM 트레잇(`controllers/...Itms.php`) 9~11행 | 값 확인 | `$itsmSchema`, `$itsmTable` 의 정확한 값 | `conf/itsm.conf.php` |
-| 1-2 | 7버전 DB 에 ITSM 테이블이 있는지 | 값 확인. `psql` 에서 `\dt *.itsm_info` | 7버전 DB 로 테이블이 옮겨졌는지, 스키마 이름, Zabbix DB 계정의 조회 권한 | `conf/itsm.conf.php` |
-| 1-3 | Agent 판정 클래스 (`new ...HostAgent(...)` 로 쓰이는 클래스 파일 전체) | 소스 | `_hostAgent_checkAll()`, `get()` 의 로직. **"예외"(값 4)를 어떤 기준으로 정하는지** | `includes/SwInventoryService.php` 의 `resolveAgentStatus()` |
-| 1-4 | `CControllerSwinventories.php` 288행 이후 끝까지 | 소스 | 288행까지만 검토했다. 정렬, CSV, 응답 부분 | 동작 차이 확인 |
-| 1-5 | SW 인벤토리 뷰 (`sw.list.php`) 전체 | 소스 | 컬럼별 표시 방식(말줄임, 말풍선, 색) | `views/inventory/swinventory.list.php` |
-| 1-6 | 5버전 `conf/rules/swinventory.json` 전체 | 소스 | `table->func`, `displayField`, 미들웨어 실행 순서. OS/WEB/WAS/DB 를 **인벤토리에서 읽는지 아이템 값(history_str)에서 읽는지** 여기서 정해진다 | `includes/SoftwareResolver.php` |
-| 1-7 | 아이템 키 클래스 (`new ...Key()` 로 쓰이는 클래스 파일 전체) | 소스 | `osName()`, `osVersion()`, `inventoryWeb()`, `inventoryWas()`, `inventoryDB()`, `inventoryDuplex()` 가 돌려주는 아이템 키 목록 | 1-6 에서 아이템 값을 쓴다고 확인되면 필요 |
-| 1-8 | 미들웨어 클래스 (`...Middle` 파일 전체), 데이터 트레잇(`...Data` 파일 전체) | 소스 | `before()` 가 규칙 파일을 읽어 `middle_*` 함수를 부르는 순서 | 1-6 과 같이 봐야 한다 |
-| 1-9 | SW 인벤토리 화면 (5버전, 필터 펼친 상태) | 화면 | 실제 표시 모양 | 뷰 모양 맞추기 |
+| 1-1 | ITSM 테이블의 스키마/테이블 이름 | `psql` 에서 `\dt *.itsm_info`. 5버전 값은 ITSM 트레잇(`...Itms.php`) 맨 위 두 줄 | SW 인벤토리가 Zabbix 호스트 기준으로만 나오고, 다른 화면의 Description 이 Zabbix 호스트 설명으로 나온다 | `conf/itsm.conf.php` |
+| 1-2 | 일일점검용 트리거 태그의 이름과 항목별 값 7개. 그리고 7버전 서버의 트리거에 그 태그가 달려 있는가 | 5버전 일일점검 트레잇(`...Daily.php`)의 `$tag_*` 값. 서버에서는 데이터 수집 > 호스트(또는 템플릿) > 트리거의 태그 | 설정이 비어 있으면 일일점검에 '-' 와 설정 안내가 나온다. 태그가 달린 트리거가 없으면 점검대상 0 으로 나온다 | `conf/dailycheck.conf.php`, 서버의 트리거/템플릿 |
+| 1-3 | CPU 사용률 아이템 키 3종 (리눅스, 유닉스, 윈도우) | 5버전 키 클래스(`...Key.php`)의 `serverCpuUsage()`. 서버에서는 종류별 호스트 하나씩 아이템 목록의 키 | 설정이 비어 있으면 저사용/고사용 서버 화면에 설정 안내가 나온다. 키가 다르면 호스트가 안 나온다 | `conf/serverusage.conf.php` |
+| 1-4 | 윈도우 패치 목록 파일 아이템 키 | 5버전 키 클래스의 `patchFile()`. 서버에서는 윈도우 호스트의 아이템 목록의 키 | 설정이 비어 있으면 윈도우즈 패치 현황에 설정 안내가 나온다. 키가 다르면 호스트가 안 나온다 | `conf/winpatch.conf.php` |
+| 1-5 | 패치 목록 파일의 형식 (첫 줄이 `Caption CSName Description ...` 인 칸 맞춤 표인가) | 최신 데이터 화면에서 그 아이템의 값을 열어 본다 | 상세보기 표의 열이 어긋난다 | `includes/WinPatchService.php` 의 `parse()` |
+| 1-6 | 인벤토리 필드 `os`, `software_app_a~d` 에 값이 들어 있는가 | 호스트의 인벤토리 탭 | SW 인벤토리의 OS/WEB/WAS/DB/이중화가 빈칸으로 나온다 | 서버의 인벤토리 수집 설정, 또는 `includes/SoftwareResolver.php` |
 
-## 2순위: 서버 시간 확인, 장기 미접속 계정 현황
+## 2. 가정으로 구현한 것 (5버전과 결과가 같은지 비교)
 
-화면 구성은 5버전과 같게 만들어 두었고 데이터 조회만 비어 있다.
+같은 조건으로 5버전 화면과 7버전 화면을 나란히 열어 숫자와 목록을 비교한다.
 
-| # | 볼 것 | 종류 | 확인하려는 것 | 막힌 곳 |
+| # | 화면 | 가정한 내용 | 5버전에서 볼 것 | 고칠 곳 |
 |---|---|---|---|---|
-| 2-1 | `CControllerUptimeView.php` 전체 | 소스 | 서버 Time / 서버 start 를 읽는 아이템 키, OS 와 Description 의 출처, "day 이상" 비교 방식, 표시 형식 | `actions/reports/uptime/UptimeList.php` 의 `getRows()` |
-| 2-2 | 서버 시간 확인의 뷰 파일 전체 | 소스 | 컬럼 표시 방식, 정렬 가능한 컬럼 | `views/reports/uptime.list.php` |
-| 2-3 | `routing.php` 에서 `uptime.view` 줄 | 값 확인 | 컨트롤러/뷰 파일 이름 | 2-1, 2-2 파일 찾기 |
-| 2-4 | 장기 미접속 계정 현황 컨트롤러 전체 (`routing.php` 의 `user.unconnect` 줄에 적힌 클래스) | 소스 | **"장기"의 기준 일수**, 최근접속일시의 출처(테이블/컬럼), 비활성 계정과 미접속 계정 처리 | `actions/users/userunconnect/UserUnconnectList.php` 의 `getRows()` |
-| 2-5 | 장기 미접속 계정 현황 뷰 전체 | 소스 | 오른쪽 위 "유저 그룹" 선택 동작, 컬럼 표시 | `views/users/userunconnect.list.php` |
-| 2-6 | 장기 미접속 계정 화면에 데이터가 나온 상태 | 화면 | 최근접속일시 표시 형식, 그룹 표시 방식 (계정명은 가려도 된다) | 표시 형식 |
+| 2-1 | 고사용 서버 사용현황 | 평균 50% 이상 **그리고** Peak 70% 이상인 서버 | 고사용 컨트롤러(`CControllerHighserver.php`)의 판정 조건(그리고/또는, Peak 방향과 값) | `actions/reports/highserver/HighServerList.php` 의 `matches()`, `conf/serverusage.conf.php` |
+| 2-2 | 저사용/고사용 서버 | 업무시간을 고르면 Peak 도 업무시간 안의 최대 | 서버 CPU 집계 클래스(`...CPU.php`)의 업무시간 Peak 계산. 숫자가 다르면 이 부분이다 | `includes/ServerUsageService.php` |
+| 2-3 | 저사용 서버 | 저사용 평균 기준 30% | 저사용 컨트롤러의 기본값(30 또는 20) | `conf/serverusage.conf.php` |
+| 2-4 | Peak 이벤트 분석 | 기간 안의 장애 이벤트 수를 트리거별로 센 상위 100개 | `peak_event.php` 의 집계 쿼리(대상 트리거, 세는 기준, 건수 제한) | `actions/reports/peakevent/PeakEventList.php` 의 `getRows()` |
+| 2-5 | 윈도우즈 패치 현황 | HotFix ID = 그 달의 패치 목록에 입력한 글자가 들어 있는 호스트. 수집월 기본값 = 지난달 1일 | 윈도우 패치 컨트롤러의 필터 처리와 기본값 | `includes/WinPatchService.php`, `actions/reports/winpatch/WinPatchList.php` |
+| 2-6 | SW 인벤토리 | Agent "예외" 판정은 비워 두었다 (설치/미설치만 구분) | Agent 판정 클래스(`...HostAgent`)의 `_hostAgent_checkAll()`, `get()` | `includes/SwInventoryService.php` 의 `resolveAgentStatus()` |
 
-## 3순위: 껍데기만 있는 보고서 7개
+## 3. 아직 만들지 못한 것 (5버전 소스를 봐야 하는 것)
 
-화면마다 아래 3가지를 확인한다. **화면 구성이 가장 중요하다.** (필터와 컬럼을 알아야 뷰를 만들 수 있다)
-
-1. 화면 구성 (필터 펼친 상태 + 표 제목 줄 + CSV 등 버튼이 있으면 그 부분)
-2. 컨트롤러 파일 전체
-3. 뷰 파일 전체
-
-| # | 화면 | 7버전 액션 | 5버전 액션(추정) | 화면 | 컨트롤러 | 뷰 |
-|---|---|---|---|---|---|---|
-| 3-1 | 저사용 서버 사용현황 | `lowserver.list` | `lowserver` | ☐ | ☐ | ☐ |
-| 3-2 | 고사용 서버 사용현황 | `highserver.list` | `highserver` | ☐ | ☐ | ☐ |
-| 3-3 | 성능 데이터 추세 분석 | `perftrend.list` | 모름 | ☐ | ☐ | ☐ |
-| 3-4 | 일일점검 | `dailycheck.list` | `daily` | ☐ | ☐ | ☐ |
-| 3-5 | Peak 이벤트 분석 | `peakevent.list` | 모름 | ☐ | ☐ | ☐ |
-| 3-6 | 윈도우즈 패치 현황 | `winpatch.list` | `windows`, `windowsall` | ☐ | ☐ | ☐ |
-| 3-7 | CPU/Memory 전체 사용률 추출 | `usageexport.list` | 모름 | ☐ | ☐ | ☐ |
-
-같이 필요한 것:
-
-| # | 볼 것 | 종류 | 확인하려는 것 |
+| # | 화면 / 기능 | 7버전 상태 | 5버전에서 볼 것 |
 |---|---|---|---|
-| 3-8 | `routing.php` 전체 | 소스 | 위 표의 "5버전 액션"을 확정한다. 각 화면의 컨트롤러/뷰 파일 이름, CSV·팝업 액션(`*.csv`, `popup.*`, `hostbox`, `hostesxi`)이 어느 화면에 딸린 것인지 |
-| 3-9 | 각 화면이 쓰는 `conf/rules/*.json` | 소스 | 화면별 컬럼/함수 규칙 |
-| 3-10 | 화면에서 팝업이 뜨는 경우 그 팝업 | 화면 | 팝업 화면은 별도 액션으로 만들어야 한다 |
-| 3-11 | 날짜 선택 부품 (`src/CDateChoice.php`) | 소스 | 추세 분석, Peak 분석처럼 기간을 고르는 화면에서 쓰였을 가능성이 높다 |
+| 3-1 | 서버 시간 확인 | 필터와 표만 있음 | `CControllerUptimeView.php`: 서버 Time / 서버 start 를 읽는 아이템 키, OS 와 Description 의 출처, "day 이상" 비교 방식 |
+| 3-2 | 장기 미접속 계정 현황 | 필터와 표만 있음 | `user.unconnect` 컨트롤러: "장기"의 기준 일수, 최근접속일시의 출처, 접속 기록이 없는 계정의 처리 |
+| 3-3 | CPU/Memory 전체 사용률 추출 | 필터만 있음 | `perf.analysis.view` 컨트롤러: 기간을 정하는 방법, CSV 의 열 구성, 파일이 여러 개로 나뉘는 기준. (메모리 아이템 키는 키 클래스의 `serverMemoryUsage()` 에 있다) |
+| 3-4 | 성능 데이터 추세 분석 | 빈 페이지 | 먼저 방향을 정한다: 대시보드 "그래프" 위젯으로 대체할지, 독립 화면으로 만들지. 독립 화면이면 `data.analysis` 컨트롤러와 CSV 구성 |
+| 3-5 | 저사용/고사용 서버의 [기준설정] 버튼 | 없음 (설정 파일로 대체) | 버튼이 여는 화면과 저장 방식. 사용자별 저장인지 전체 공통인지 |
+| 3-6 | 일일점검의 [CPU 사용률 Top 10] [Memory 사용률 Top 10] 버튼 | 없음 | 버튼이 여는 화면과 집계 방식 |
+| 3-7 | Box 사용현황 (`hostbox`) | 없음 | 메뉴 위치, 화면 구성, 컨트롤러. 규칙 파일의 열은 호스트 / CPU 전체 Core / CPU 할당 Core / 전체 메모리 / 할당 메모리 / 할당 Disk / 최근 데이터 |
+| 3-8 | 그 밖의 액션 (`routing.php` 전체) | 없음 | 지금까지 확인한 것 외에 남은 화면/팝업 액션이 있는지 (`hostesxi`, `popup.*` 등) |
 
-## 4순위: 메뉴, 화면 꾸밈
+## 4. 메뉴, 화면 꾸밈
 
-| # | 볼 것 | 종류 | 확인하려는 것 | 막힌 곳 |
-|---|---|---|---|---|
-| 4-1 | `src/menu.inc.php` 에서 커스텀 메뉴를 추가한 부분 | 소스. 가장 오래된 백업(`menu.inc.php.날짜`)과 `diff` 한 결과면 더 좋다 | 메뉴별 접근 권한(유저 종류 조건), 사이드바 아래 "Agent 설치파일", "사용자메뉴얼" 의 링크 주소 | `Module.php` 의 TODO |
-| 4-2 | `src/CMenu.php` 의 변경 부분 | `diff` 결과 | 메뉴 표시를 바꾼 내용 | `Module.php` |
-| 4-3 | `src/blue-theme.css` 에서 추가한 부분 | `diff` 결과 | 커스텀 CSS (로고, 색) | `assets/css/dmove.css` |
-| 4-4 | `src/jsLoader.php` 의 변경 부분 | `diff` 결과 | 추가로 불러오는 JS 파일 | 화면별 JS |
-| 4-5 | 사이드바 왼쪽 위 로고 설정 방법 | 값 확인 | 로고 이미지를 파일로 바꿨는지, 브랜딩 설정(`local/conf/brand.conf.php`)을 썼는지 | 로고 |
+| # | 볼 것 | 확인하려는 것 | 고칠 곳 |
+|---|---|---|---|
+| 4-1 | `src/menu.inc.php` 에서 커스텀 메뉴를 추가한 부분 | 메뉴별 접근 권한(유저 종류 조건), 사이드바 아래 "Agent 설치파일", "사용자메뉴얼" 의 링크 주소 | `Module.php` |
+| 4-2 | `src/blue-theme.css` 에서 추가한 부분 | 커스텀 CSS (로고, 색) | `assets/css/dmove.css` |
+| 4-3 | `src/jsLoader.php` 의 변경 부분 | 추가로 불러오는 JS 파일 | 화면별 JS (`views/js/`) |
+| 4-4 | 사이드바 왼쪽 위 로고 설정 방법 | 로고 이미지를 파일로 바꿨는지, 브랜딩 설정을 썼는지 | 브랜딩 설정 |
 
-`diff` 는 5버전 서버에서 이렇게 만든다. (원본이 `파일명.날짜` 로 남아 있다)
+5버전에서 코어 파일의 변경 부분만 보려면 원본 백업과 비교한다. (원본이 `파일명.날짜` 로 남아 있다)
 
 ```bash
 ls -la include/menu.inc.php*                                 # 가장 오래된 백업을 찾는다
 diff include/menu.inc.php.<가장오래된날짜> autoever/src/menu.inc.php
 ```
 
-## 5순위: 로그인 (OTP, mypass)
+## 5. 로그인 (OTP, mypass)
 
 자세한 배경은 `docs/LOGIN_CUSTOMIZATION.md` 1장에 있다.
 
-| # | 볼 것 | 종류 | 확인하려는 것 |
-|---|---|---|---|
-| 5-1 | 5버전 로그인 화면 | 화면 | 입력창 구성 (OTP 입력창이 같은 화면에 있는지) |
-| 5-2 | `index.php` 의 변경 부분 | `diff` 결과 | OTP/mypass 검증을 언제, 어떻게 부르는지 |
-| 5-3 | `include/views/general.login.php` 의 변경 부분 | `diff` 결과 | 추가된 입력창, 스크립트 |
-| 5-4 | `grep -rn -i "otp\|mypass" --include=*.php .` 결과 | 소스 | 관련 코드가 있는 파일 전체 목록 |
-| 5-5 | 5-4 에서 나온 파일 중 검증 함수가 있는 파일 | 소스 | 어느 서버로 무엇을 보내는지 (주소와 비밀값은 옮겨 적지 않는다) |
-| 5-6 | `docs/LOGIN_CUSTOMIZATION.md` 1.4 의 질문 7개 | 값 확인 | 담당자에게 물어볼 내용 |
+| # | 볼 것 | 확인하려는 것 |
+|---|---|---|
+| 5-1 | 5버전 로그인 화면 | 입력창 구성 (OTP 입력창이 같은 화면에 있는지) |
+| 5-2 | `index.php`, `include/views/general.login.php` 의 변경 부분 (`diff`) | OTP/mypass 검증을 언제, 어떻게 부르는지. 추가된 입력창과 스크립트 |
+| 5-3 | `grep -rn -i "otp\|mypass" --include=*.php .` 결과 | 관련 코드가 있는 파일 목록, 검증 함수의 위치 |
+| 5-4 | `docs/LOGIN_CUSTOMIZATION.md` 1.4 의 질문 7개 | 담당자에게 물어볼 내용 |
 
-## 환경 정보
+## 6. 환경 정보
 
 | # | 항목 | 확인 명령 | 왜 필요한가 |
 |---|---|---|---|
-| E-1 | 7버전 서버의 PHP 버전 | `php -v` | 8.2 이상이면 동적 프로퍼티 경고까지 확인해야 한다 |
-| E-2 | 7버전 DB 종류와 버전 | `psql --version` 또는 `mysql --version` | 5버전 쿼리에 PostgreSQL 전용 문법(`ilike`)이 있다 |
-| E-3 | 7버전 DB 의 Zabbix 스키마 이름 | `psql` 에서 `\dn` | 5버전 쿼리는 `zabbix.items` 처럼 스키마를 고정해 썼다 |
-| E-4 | Zabbix 정확한 버전 | 화면 맨 아래 또는 `zabbix_server -V` | 이 저장소는 7.2.15 기준이다 |
-| E-5 | 프론트엔드 설치 경로 | `ls /usr/share/zabbix/modules` | 모듈을 올릴 위치 |
-| E-6 | 유저들이 쓰는 화면 언어 | 유저 설정 > 언어 | 한국어 번역 표(`lang/ko.php`)가 적용되는지 |
-| E-7 | 5버전 주소를 즐겨찾기나 다른 시스템 링크로 쓰는지 | 담당자 확인 | 쓰고 있다면 5버전 액션 이름(`uptime.view` 등)으로도 열리게 맞춰야 한다 |
+| 6-1 | Zabbix 정확한 버전 (7.0.몇) | 화면 맨 아래 또는 `zabbix_server -V` | 저장소의 코어 원본을 같은 버전으로 맞추기 위해 |
+| 6-2 | PHP 버전 | `php -v` | 8.2 이상이면 동적 프로퍼티 경고까지 확인해야 한다 |
+| 6-3 | DB 종류와 버전 | `psql --version` 또는 `mysql --version` | 저사용/고사용 서버 집계 쿼리는 PostgreSQL 과 MySQL 양쪽 문법에 맞췄다. 그 밖의 DB 면 확인 필요 |
+| 6-4 | 서버(PHP)의 시간대 | 관리 > 일반 > GUI 의 기본 시간대 | 업무시간(09~18시) 구분과 일일점검 구간이 이 시간대로 계산된다 |
+| 6-5 | 유저들이 쓰는 화면 언어 | 유저 설정 > 언어 | 한국어 번역 표(`lang/ko.php`)가 적용되는지 |
+| 6-6 | 5버전 주소를 즐겨찾기나 다른 시스템 링크로 쓰는지 | 담당자 확인 | 쓰고 있다면 5버전 액션 이름(`uptime.view`, `lowserver` 등)으로도 열리게 맞춰야 한다 |

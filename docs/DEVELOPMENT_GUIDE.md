@@ -28,13 +28,14 @@ C:\zabbix
 │           ├── manifest.json        모듈 정의 + 액션(URL) 등록   (5버전 routing.php 역할)
 │           ├── Module.php           사이드바 메뉴 등록           (5버전 menu.inc.php 패치 역할)
 │           ├── actions/<카테고리>/<화면>/  컨트롤러 (요청 검증, 권한, 응답). 카테고리 = 사이드바 1단계 메뉴
-│           ├── views/<카테고리>/    화면, CSV 출력. 사이드바 1단계 메뉴마다 폴더 하나
-│           │                        (inventory, reports, users)
+│           ├── views/<카테고리>/    화면 뷰. 사이드바 1단계 메뉴마다 폴더 하나 (inventory, reports, users)
+│           │   └── js/<카테고리>/   화면 전용 스크립트 (필요한 화면만)
 │           ├── includes/            여러 화면이 같이 쓰는 클래스, 데이터/업무 로직
 │           │                        (5버전 C* 트레잇 역할. Lang, ItsmRepository ...)
-│           │   └── export/          내보내기 플러그인 (CSV / Excel). 사용법: ExportTrait.php 머리말
+│           │   ├── export/          내보내기 플러그인 (CSV / Excel). 사용법: ExportTrait.php 머리말
+│           │   └── filter/          호스트 그룹/호스트 선택 필터 플러그인. 사용법: HostFilter.php 머리말
 │           ├── lang/ko.php          한국어 번역 표 (영어/한국어 전환)
-│           ├── conf/                설정 (itsm.conf.php)
+│           ├── conf/                설정 (ITSM 테이블, 아이템 키, 판정 기준). 고객환경에서 값을 확인해 맞춘다
 │           ├── assets/css, img      정적 파일
 │           └── template/            ★ 새 페이지용 복사 템플릿 + 사용법(README.md)
 ├── dev/                         로컬에서 띄워 보는 Docker 구성 (dev/README.md)
@@ -175,18 +176,29 @@ find /usr/share/zabbix/modules/dmove -name '*.php' -exec php -l {} \;
 
 | 메뉴 | 액션 | 상태 |
 |---|---|---|
-| 인벤토리 > SW 인벤토리 | `swinventory.list`, `swinventory.export` | 구현. ITSM 테이블 이름과 "예외" 기준만 남음 |
+| 인벤토리 > SW 인벤토리 | `swinventory.list`, `.export` | 구현. ITSM 테이블 이름 설정과 Agent "예외" 기준만 남음 |
+| 보고서 > 저사용 서버 사용현황 | `lowserver.list`, `.export` | 구현 (5버전 소스 기준) |
+| 보고서 > 고사용 서버 사용현황 | `highserver.list`, `.export` | 구현. 판정 조건은 가정 (확인 필요) |
+| 보고서 > 일일점검 | `dailycheck.list` | 구현 (5버전 소스 기준). 태그 설정(`conf/dailycheck.conf.php`)을 채워야 한다 |
+| 보고서 > Peak 이벤트 분석 | `peakevent.list`, `.export` | 구현. 집계 기준은 가정 (확인 필요) |
+| 보고서 > 윈도우즈 패치 현황 | `winpatch.list`, `.export`, `.detail` | 구현 (5버전 소스 기준). 필터의 세부 동작은 가정 |
 | 보고서 > 서버 시간 확인 | `uptime.list` | 필터/표 구성 완료, 데이터 조회 TODO |
 | 유저 > 장기 미접속 계정 현황 | `userunconnect.list` | 필터/표 구성 완료, 데이터 조회 TODO |
-| 보고서 > 저사용 서버 사용현황 | `lowserver.list` | 껍데기 (메뉴 + 빈 페이지) |
-| 보고서 > 고사용 서버 사용현황 | `highserver.list` | 껍데기 |
-| 보고서 > 성능 데이터 추세 분석 | `perftrend.list` | 껍데기 |
-| 보고서 > 일일점검 | `dailycheck.list` | 껍데기 |
-| 보고서 > Peak 이벤트 분석 | `peakevent.list` | 껍데기 |
-| 보고서 > 윈도우즈 패치 현황 | `winpatch.list` | 껍데기 |
-| 보고서 > CPU/Memory 전체 사용률 추출 | `usageexport.list` | 껍데기 |
+| 보고서 > CPU/Memory 전체 사용률 추출 | `usageexport.list` | 필터 구성 완료, 추출 기능 TODO |
+| 보고서 > 성능 데이터 추세 분석 | `perftrend.list` | 빈 페이지. 대시보드 그래프 위젯으로 대체할지 먼저 결정 |
 
-껍데기를 채우려면 5버전 화면과 소스를 확인해야 한다. 확인할 내용은 `docs/CUSTOMER_ENV_CHECKLIST.md` 에 정리했다.
+"구현"인 화면도 `conf/` 의 설정(ITSM 테이블, 아이템 키, 태그)을 채워야 값이 나온다. 공개 저장소라서 그 값은 비워 두었다.
+서버에서 확인할 것, 가정으로 만든 것, 아직 못 만든 것은 `docs/CUSTOMER_ENV_CHECKLIST.md` 에 정리했다.
+
+### 5.2 꽂아 쓰는 공용 부품
+
+| 부품 | 하는 일 | 사용법이 적힌 곳 |
+|---|---|---|
+| 내보내기 | 화면에 [CSV 내보내기] [Excel 내보내기] 버튼 | `includes/export/ExportTrait.php` 머리말 |
+| 호스트 필터 | 필터의 "호스트 그룹", "호스트" 선택창 두 줄 | `includes/filter/HostFilter.php` 머리말 |
+| 다국어 | 영어/한국어 문구 전환 | `includes/Lang.php` 머리말 |
+| 호스트 도우미 | 호스트의 대표 IP | `includes/HostHelper.php` |
+| ITSM | ITSM 목록, 호스트명으로 Description 찾기 | `includes/ItsmRepository.php` |
 
 ## 6. SW 인벤토리: 고객환경에서 채워야 할 곳
 

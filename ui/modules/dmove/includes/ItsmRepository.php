@@ -70,6 +70,33 @@ class ItsmRepository {
 	}
 
 	/**
+	 * ITSM 의 호스트명 => Description 표. (저사용/고사용 서버 화면 등, Description 열에 ITSM 값을 쓰는 화면용)
+	 *
+	 * 5버전 대응: ITSM 트레잇의 itsm_description()
+	 *   5버전은 호스트마다 쿼리를 한 번씩 실행했다. 여기서는 한 번에 읽어 이름으로 찾는다.
+	 *
+	 * @return array  [소문자로 바꾼 ci_name => description]  ITSM 을 쓸 수 없으면 빈 배열.
+	 *
+	 * 사용 예:
+	 *   $itsm_descriptions = (new ItsmRepository())->fetchDescriptions();
+	 *   $description = $itsm_descriptions[mb_strtolower($host['name'])] ?? $host['description'];
+	 */
+	public function fetchDescriptions(): array {
+		$descriptions = [];
+
+		// ?? [] : fetch() 가 null(ITSM 미연동)을 돌려주면 빈 배열로 바꿔 반복문을 건너뛴다.
+		foreach ($this->fetch() ?? [] as $row) {
+			$name = mb_strtolower(trim((string) ($row['ci_name'] ?? '')));
+
+			if ($name !== '') {
+				$descriptions[$name] = (string) ($row['description'] ?? '');
+			}
+		}
+
+		return $descriptions;
+	}
+
+	/**
 	 * 설정을 읽어 "스키마.테이블" 문자열을 만든다. 쓸 수 없는 상태면 null.
 	 */
 	private function getQualifiedTableName(): ?string {

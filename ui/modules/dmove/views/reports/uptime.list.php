@@ -12,55 +12,14 @@
  * @var array $data
  */
 
+use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\Lang;
 
 // ── 1) 필터 영역 ────────────────────────────────────────────────────────────
 // 입력 이름(filter_xxx)은 컨트롤러 checkInput() 의 키와 같아야 한다.
 
-$filter_form = (new CFormList())
-	/*
-	 * 선택창(멀티셀렉트). [선택] 버튼을 누르면 코어의 팝업이 떠서 고를 수 있고, 입력하면 자동완성이 된다.
-	 *   name         : 폼으로 넘어가는 이름. 여러 개라서 끝에 [] 를 붙인다.
-	 *   object_name  : 자동완성 대상 종류. 호스트 그룹은 'hostGroup', 호스트는 'hosts'.
-	 *   data         : 이미 선택된 값. [['id' => .., 'name' => ..], ...]
-	 *   popup        : [선택] 팝업 설정. srctbl 이 팝업 종류, dstfrm 은 필터 폼 이름(항상 'zbx_filter'),
-	 *                  dstfld1 은 name 에서 [] 를 _ 로 바꾼 값이다.
-	 * 라벨의 두 번째 인자 'filter_groupids__ms' 는 "name 에서 [] 를 뺀 것 + __ms" 로, 라벨을 누르면 입력창에 커서가 간다.
-	 */
-	->addRow((new CLabel(_('Host groups'), 'filter_groupids__ms')),
-		(new CMultiSelect([
-			'multiple' => true,
-			'name' => 'filter_groupids[]',
-			'object_name' => 'hostGroup',
-			'data' => $data['filter']['groups'],
-			'popup' => [
-				'parameters' => [
-					'srctbl' => 'host_groups',
-					'srcfld1' => 'groupid',
-					'dstfrm' => 'zbx_filter',
-					'dstfld1' => 'filter_groupids_',
-					'with_hosts' => true,
-					'enrich_parent_groups' => true
-				]
-			]
-		]))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH)
-	)
-	->addRow((new CLabel(_('Hosts'), 'filter_hostids__ms')),
-		(new CMultiSelect([
-			'multiple' => true,
-			'name' => 'filter_hostids[]',
-			'object_name' => 'hosts',
-			'data' => $data['filter']['hosts'],
-			'popup' => [
-				'parameters' => [
-					'srctbl' => 'hosts',
-					'srcfld1' => 'hostid',
-					'dstfrm' => 'zbx_filter',
-					'dstfld1' => 'filter_hostids_'
-				]
-			]
-		]))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH)
-	)
+// 호스트 그룹 / 호스트 선택창 두 줄은 공용 부품이 만들어 준다. (includes/filter/HostFilter.php)
+$filter_form = HostFilter::addRows(new CFormList(), $data['host_filter'])
 	->addRow(Lang::t('OS/Version'),
 		(new CTextBox('filter_os', $data['filter']['os']))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH)
 	)

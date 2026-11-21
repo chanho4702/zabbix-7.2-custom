@@ -126,7 +126,7 @@ class SwInventoryService {
 		$zbx_hosts = API::Host()->get([
 			'output' => ['hostid', 'host', 'name', 'description', 'inventory_mode'],
 			'selectInventory' => $this->software->getInventoryFields() ?: null,
-			'selectInterfaces' => ['ip', 'main', 'type'],
+			'selectInterfaces' => HostHelper::INTERFACE_FIELDS,
 			'preservekeys' => true
 		]);
 
@@ -185,7 +185,7 @@ class SwInventoryService {
 			$ip = trim((string) ($itsm_row['ip_address'] ?? ''));
 
 			if ($ip === '' && $zbx_host !== null) {
-				$ip = self::getMainInterfaceIp($zbx_host['interfaces']);
+				$ip = HostHelper::mainIp($zbx_host['interfaces']);
 			}
 
 			$description = trim((string) ($itsm_row['description'] ?? ''));
@@ -293,36 +293,5 @@ class SwInventoryService {
 		CArrayHelper::sort($rows, [['field' => $sort_field, 'order' => $sort_order]]);
 
 		return array_values($rows);
-	}
-
-	/**
-	 * 호스트의 대표 IP.
-	 *
-	 * 호스트는 인터페이스를 종류별(Agent, SNMP, IPMI, JMX)로 가질 수 있고 종류마다 기본(main)이 하나씩 있다.
-	 * 우선순위: Agent 기본 인터페이스 > 다른 종류의 기본 인터페이스 > 아무 인터페이스.
-	 */
-	private static function getMainInterfaceIp(array $interfaces): string {
-		$best_ip = '';
-		$best_rank = 0;
-
-		foreach ($interfaces as $interface) {
-			if ($interface['ip'] === '') {
-				continue;
-			}
-
-			if ($interface['main'] == INTERFACE_PRIMARY) {
-				$rank = $interface['type'] == INTERFACE_TYPE_AGENT ? 3 : 2;
-			}
-			else {
-				$rank = 1;
-			}
-
-			if ($rank > $best_rank) {
-				$best_rank = $rank;
-				$best_ip = $interface['ip'];
-			}
-		}
-
-		return $best_ip;
 	}
 }

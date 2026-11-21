@@ -14,3 +14,18 @@
  *   - 색상은 가능하면 코어 테마 클래스(.green .red .grey .yellow)를 쓴다. 다크 테마에서도 맞게 나온다.
  *   - 이미지 등 다른 정적 파일은 assets/img/ 에 두고 url("../img/파일명") 으로 참조한다.
  */
+
+/* 표 위에 날짜/버튼을 한 줄로 놓는 영역. (일일점검 화면의 날짜 줄) */
+.dm-toolbar {
+	margin: 0 0 10px;
+}
+
+.dm-toolbar .hor-list > li {
+	vertical-align: middle;
+}
+
+/* 표 위 오른쪽의 기준 안내문. (저사용/고사용 서버 화면) */
+.dm-criteria {
+	margin: 0 0 6px;
+	text-align: right;
+}
