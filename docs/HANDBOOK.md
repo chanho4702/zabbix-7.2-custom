@@ -508,7 +508,7 @@ class LowServerList extends ServerUsageController {
 | `hasRequest('x')`, `getRequest('x')` | 옛 방식 페이지 전용 | 검증을 거치지 않은 값 사용 | `$this->hasInput('x')`, `$this->getInput('x')` |
 | `$page['file'] = 'swinventories.php';` | 의미 없음 | - | 삭제 |
 | `checkPermissions() { return true; }` | 동작은 함 | 로그인한 누구나 접근 | `$this->checkAccess(...)` |
-| `swinventory` DB 뷰 (`hosts` + `interface` 조인) | 동작은 함 | 인터페이스가 여러 개면 행 중복, 템플릿 섞임, 사용자 권한 무시 | `API::Host()->get()` |
+| `swinventory` DB 뷰 (`hosts` + `interface` 조인) | 동작은 함 | 인터페이스가 여러 개면 행 중복, 템플릿 섞임, 사용자 권한 무시 | 뷰 없이 DB 직접 조회(`SwInventoryService::fetchAllHosts()`). 중복/템플릿은 고치고, 권한과 관계없이 전체를 보는 동작은 5버전대로 유지 (2026-11-23 결정) |
 | 뷰에서 `CWidget`, `CTableInfo` 등 화면 클래스 | 일부 클래스 이름과 메소드가 바뀜 | 화면이 안 뜰 수 있음 | 미확인. 7.0 의 `CHtmlPage` 기준으로 새로 작성 |
 
 7.0 에 **그대로 있는** 것: `CProfile::get/update/updateArray/deleteIdx`, `DBstart()/DBend()`, `DBselect()/DBfetch()`,

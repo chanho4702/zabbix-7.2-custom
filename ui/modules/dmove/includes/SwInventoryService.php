@@ -108,25 +108,17 @@ class SwInventoryService {
 	 */
 	public function getRows(): array {
 		/*
-		 * 1) Zabbix 호스트 조회.
-		 *    API 를 쓰므로 로그인한 사용자가 권한을 가진 호스트만 나온다.
-		 *    (5버전의 swinventory SQL 뷰는 권한을 무시하고, 인터페이스가 여러 개면 행이 중복되어 쓰지 않는다.)
-		 */
-		/*
-		 * host.get 옵션 설명 (공식 문서의 host.get 과 동일):
-		 *   output            호스트 테이블에서 가져올 컬럼. 필요한 것만 적어야 빠르다.
-		 *                       host = 기술적 호스트명(고유), name = 화면 표시명, inventory_mode = -1 이면 인벤토리 꺼짐
-		 *   selectInventory   각 호스트 결과에 'inventory' => [필드 => 값] 을 붙인다.
-		 *                       (?: null  -> 필드 목록이 비어 있으면 아예 요청하지 않는다)
-		 *   selectInterfaces  각 호스트 결과에 'interfaces' => [[ip, main, type], ...] 를 붙인다.
-		 *   preservekeys      결과 배열의 키를 hostid 로 한다. $zbx_hosts[$hostid] 로 바로 찾을 수 있다.
+		 * 1) Zabbix 호스트 조회. 로그인한 사용자의 호스트 권한과 관계없이 전체 호스트를 읽는다. (5버전과 같다)
 		 *
-		 * 템플릿은 host.get 에 나오지 않는다(템플릿은 template.get). 5버전 SQL 뷰와 달리 섞이지 않는다.
+		 *    이 화면은 "ITSM 서버 목록 중 Zabbix 에 등록된 것/안 된 것"을 보는 화면이고, ITSM 목록은 권한과 관계없이
+		 *    전부 나온다. Zabbix 호스트만 권한으로 줄이면, 권한 밖 호스트가 실제로는 등록돼 있는데도 "미설치"로 보인다.
+		 *    그래서 Zabbix 호스트도 전체를 읽는다. 결정: 2026-11-23, 5버전 동작 유지.
+		 *
+		 *    단, 코어의 인벤토리 상세 화면 링크는 사용자가 볼 수 있는 호스트에만 단다. (권한 밖이면 코어가 오류를 띄운다)
 		 */
-		$zbx_hosts = API::Host()->get([
-			'output' => ['hostid', 'host', 'name', 'description', 'inventory_mode'],
-			'selectInventory' => $this->software->getInventoryFields() ?: null,
-			'selectInterfaces' => HostHelper::INTERFACE_FIELDS,
+		$zbx_hosts = $this->fetchAllHosts();
+		$visible_hostids = API::Host()->get([
+			'output' => ['hostid'],
 			'preservekeys' => true
 		]);
 
@@ -197,8 +189,9 @@ class SwInventoryService {
 			$rows[] = [
 				'rowid' => $zbx_host !== null ? $zbx_host['hostid'] : 'itsm_'.($itsm_row['id'] ?? $ci_name),
 				'hostid' => $zbx_host !== null ? $zbx_host['hostid'] : null,
-				// 인벤토리가 켜진 호스트만 코어의 인벤토리 상세 화면으로 링크할 수 있다.
-				'has_inventory' => $zbx_host !== null && $zbx_host['inventory_mode'] != HOST_INVENTORY_DISABLED,
+				// 인벤토리가 켜져 있고 사용자가 볼 수 있는 호스트만 코어의 인벤토리 상세 화면으로 링크한다.
+				'has_inventory' => $zbx_host !== null && $zbx_host['inventory_mode'] != HOST_INVENTORY_DISABLED
+					&& array_key_exists($zbx_host['hostid'], $visible_hostids),
 				'host' => $ci_name,
 				'name' => $zbx_host !== null ? $zbx_host['name'] : '',
 				'ip' => $ip,
@@ -209,6 +202,84 @@ class SwInventoryService {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * 권한과 관계없이 전체 Zabbix 호스트를 읽는다. host.get 결과와 같은 모양으로 돌려준다.
+	 *
+	 * host.get 은 항상 로그인한 사용자의 권한으로 걸러서 여기서는 DB 를 직접 읽는다.
+	 * (5버전은 swinventory DB 뷰를 읽었다. 그 뷰는 인터페이스가 여러 개면 행이 중복되고 템플릿이 섞였다.
+	 *  여기서는 호스트 한 줄에 인터페이스를 따로 붙여 중복이 없고, 템플릿은 빼고 읽는다.)
+	 *
+	 *   status IN (0, 1)  : 모니터링 중 / 중지된 호스트. 템플릿(3)은 뺀다.
+	 *   flags IN (0, 4)   : 일반 호스트 / 디스커버리로 만들어진 호스트. host.get 기본값과 같다. (호스트 프로토타입 2 는 뺀다)
+	 *   host_inventory    : 인벤토리가 꺼진 호스트는 이 표에 줄이 없다. 그래서 LEFT JOIN 하고 없으면 -1(꺼짐)로 본다.
+	 *
+	 * @return array  [hostid => ['hostid', 'host', 'name', 'description', 'inventory_mode',
+	 *                            'inventory' => [필드 => 값], 'interfaces' => [[ip, main, type], ...]]]
+	 */
+	private function fetchAllHosts(): array {
+		/*
+		 * 인벤토리 필드 이름은 host_inventory 표의 열 이름이다. (SoftwareResolver::INVENTORY_FIELDS)
+		 * 쿼리에 이어 붙이므로 영문자/숫자/밑줄로 된 이름만 쓴다.
+		 */
+		$inventory_fields = array_values(array_filter($this->software->getInventoryFields(),
+			static fn($field): bool => preg_match('/^[a-z_][a-z0-9_]*$/', (string) $field) === 1
+		));
+
+		$inventory_columns = '';
+
+		foreach ($inventory_fields as $field) {
+			$inventory_columns .= ',hi.'.$field.' AS inv_'.$field;
+		}
+
+		$result = DBselect(
+			'SELECT h.hostid,h.host,h.name,h.description,'.
+				'COALESCE(hi.inventory_mode,'.HOST_INVENTORY_DISABLED.') AS inventory_mode'.$inventory_columns.
+			' FROM hosts h'.
+			' LEFT JOIN host_inventory hi ON hi.hostid=h.hostid'.
+			' WHERE '.dbConditionInt('h.status', [HOST_STATUS_MONITORED, HOST_STATUS_NOT_MONITORED]).
+				' AND '.dbConditionInt('h.flags', [ZBX_FLAG_DISCOVERY_NORMAL, ZBX_FLAG_DISCOVERY_CREATED])
+		);
+
+		$hosts = [];
+
+		while ($result !== false && $row = DBfetch($result)) {
+			$inventory = [];
+
+			// host.get 처럼 인벤토리가 꺼진 호스트는 빈 배열.
+			if ($row['inventory_mode'] != HOST_INVENTORY_DISABLED) {
+				foreach ($inventory_fields as $field) {
+					$inventory[$field] = (string) $row['inv_'.$field];
+				}
+			}
+
+			$hosts[$row['hostid']] = [
+				'hostid' => $row['hostid'],
+				'host' => $row['host'],
+				'name' => $row['name'],
+				'description' => $row['description'],
+				'inventory_mode' => $row['inventory_mode'],
+				'inventory' => $inventory,
+				'interfaces' => []
+			];
+		}
+
+		if ($hosts) {
+			$result = DBselect(
+				'SELECT hostid,ip,main,type FROM interface WHERE '.dbConditionId('hostid', array_keys($hosts))
+			);
+
+			while ($result !== false && $row = DBfetch($result)) {
+				$hosts[$row['hostid']]['interfaces'][] = [
+					'ip' => $row['ip'],
+					'main' => $row['main'],
+					'type' => $row['type']
+				];
+			}
+		}
+
+		return $hosts;
 	}
 
 	/**
