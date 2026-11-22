@@ -16,6 +16,27 @@
 | 빈 페이지 | 성능 데이터 추세 분석 |
 | 없음 | 일일점검 Top 10 버튼, [기준설정] 버튼, 윈도우 전체, ESXi, 사이드바 하단 링크, 커스텀 CSS, 로그인 OTP / mypass |
 
+## 받아올 5버전 소스 목록
+
+5버전 서버에서 가져올 파일을 한곳에 모았다. 받으면 `[ ]` 를 `[x]` 로 바꾸고 받은 날짜를 적는다.
+"컨트롤러"를 받을 때는 **그 컨트롤러가 `use` 하는 트레잇 파일도 같이** 받는다. 실제 계산이 트레잇에 있는 경우가 많았다. (찾는 방법: 5장)
+
+| 받음 | 순위 | 파일 | 쓰는 곳 | 받은 뒤 할 일 |
+|---|---|---|---|---|
+| [ ] | 1 | `routing.php` 전체 | 모든 화면 | 아래 액션들의 컨트롤러 클래스 / 뷰 이름 확인, 남은 액션 목록 확정 |
+| [ ] | 1 | `user.unconnect` 액션의 컨트롤러 + 뷰 + 트레잇 | 장기 미접속 계정 현황 | **소스를 보고 판단하기로 함** (2026-11-22). 5버전대로 옮길지, 7.0 데이터(`user.get` + 세션의 마지막 접속 시각)로 새로 만들지 정한다 |
+| [ ] | 1 | `controllers/CControllerUptimeView.php` + 뷰 + 트레잇 | 서버 시간 확인 | 아이템 키, "N day 이상" 비교, OS / Description 출처 확인 후 `getRows()` 구현 |
+| [ ] | 1 | `perf.analysis.view` 액션의 컨트롤러 + 뷰 + 트레잇 | CPU/Memory 전체 사용률 추출 | 기간, CSV 열, 파일 분할 기준 확인 후 추출 구현 |
+| [ ] | 2 | `controllers/CControllerHighserver.php` | 고사용 서버 | 판정 조건(그리고/또는, 기준값) 확정 |
+| [ ] | 2 | 저사용 컨트롤러(`CControllerLowserver.php`)의 기본값 부분 | 저사용 서버 | 평균 기준 30 / 20 확정 |
+| [ ] | 2 | `peak_event.php` | Peak 이벤트 분석 | 집계 기준(대상 이벤트, 세는 방법, 건수 제한) 확정 |
+| [ ] | 2 | Agent 판정 트레잇(`...HostAgent`) | SW 인벤토리 | "예외" 판정 기준 확인. ITSM 표의 실제 열 이름도 같이 확인 |
+| [ ] | 2 | `popup.topcpu`, `popup.topmemory`, `popup.lowserver` 컨트롤러 | 일일점검 Top 10, [기준설정] | 대시보드 위젯 대체 여부와 같이 판단 |
+| [ ] | 3 | `src/menu.inc.php` 의 원본과의 차이(`diff`) | 메뉴 전체 | 메뉴 위치(Box 사용현황 포함), 메뉴별 권한, 사이드바 하단 링크 |
+| [ ] | 3 | `src/blue-theme.css` 의 원본과의 차이(`diff`) | 화면 꾸밈 | 커스텀 CSS, 로고 |
+| [ ] | 3 | `index.php`, `include/views/general.login.php` 의 원본과의 차이 + `grep -rn -i "otp\|mypass"` 결과 | 로그인 | OTP / mypass 구조 확인 후 7.0 기본 MFA 대체 여부 판단 |
+| [ ] | 3 | `windowsall`, `popup.windows.all`, `hostesxi` 컨트롤러 | 윈도우 전체, ESXi | 필요 여부부터 판단 |
+
 ---
 
 ## 1. 껍데기 화면 (1순위)
