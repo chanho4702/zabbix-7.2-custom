@@ -16,6 +16,7 @@ return [
 	'Performance trend analysis' => '성능 데이터 추세 분석',
 	'Daily check' => '일일점검',
 	'Peak event analysis' => 'Peak 이벤트 분석',
+	'Number of status changes' => '상태 변경 횟수',
 	'Windows patch status' => '윈도우즈 패치 현황',
 	'CPU/Memory usage export' => 'CPU/Memory 전체 사용률 추출',
 	'Long-term inactive accounts' => '장기 미접속 계정 현황',

@@ -48,7 +48,7 @@
 | 저사용 서버 | 평균 기준 30% | 저사용 컨트롤러(`CControllerLowserver.php`)의 기본값 | `conf/serverusage.conf.php` |
 | 저사용/고사용 | 업무시간 Peak = 업무일 하루 전체의 최대 (5버전과 같게 둠) | 확인 끝. 고칠지 합의만 필요 | `conf/serverusage.conf.php` 의 `business_peak_whole_day` |
 | Peak 이벤트 분석 | 기간 안 장애 이벤트 수를 트리거별로 센 상위 100개 | `peak_event.php` | `actions/reports/peakevent/PeakEventList.php` 의 `getRows()` |
-| SW 인벤토리 | Agent "예외" = ITSM 행의 `agent_exception` 값 | Agent 판정 트레잇(`...HostAgent`) | `includes/SwInventoryService.php` |
+| SW 인벤토리 | Agent "예외" = ITSM 행의 `agent_exception` 값. 단, ITSM 조회가 이 열을 읽지 않아 지금은 예외가 나오지 않는다 (ITSM 표의 실제 열 이름을 알면 `ItsmRepository::fetch()` 의 SELECT 에 추가) | Agent 판정 트레잇(`...HostAgent`) | `includes/SwInventoryService.php` |
 | SW 인벤토리 | 소프트웨어 판별 = 인벤토리 필드만 | 같은 트레잇, 또는 SW 인벤토리 컨트롤러가 쓰는 트레잇 | `includes/SoftwareResolver.php` |
 | 윈도우즈 패치 현황 | HotFix ID = 그 달 패치 목록에 글자가 들어 있는 호스트, 수집월 기본값 = 지난달 | 윈도우 패치 컨트롤러 | `includes/WinPatchService.php`, `actions/reports/winpatch/WinPatchList.php` |
 | Box 사용현황 | 메뉴는 보고서 맨 끝, 필터는 호스트 그룹/호스트 | `src/menu.inc.php`, `hostbox` 컨트롤러 | `Module.php`, `actions/reports/hostbox/HostBoxList.php` |

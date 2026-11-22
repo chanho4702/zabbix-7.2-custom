@@ -34,7 +34,7 @@
 | 2-3 | 저사용 서버 | 저사용 평균 기준 30% | 저사용 컨트롤러의 기본값(30 또는 20) | `conf/serverusage.conf.php` |
 | 2-4 | Peak 이벤트 분석 | 기간 안의 장애 이벤트 수를 트리거별로 센 상위 100개 | `peak_event.php` 의 집계 쿼리(대상 트리거, 세는 기준, 건수 제한) | `actions/reports/peakevent/PeakEventList.php` 의 `getRows()` |
 | 2-5 | 윈도우즈 패치 현황 | HotFix ID = 그 달의 패치 목록에 입력한 글자가 들어 있는 호스트. 수집월 기본값 = 지난달 1일 | 윈도우 패치 컨트롤러의 필터 처리와 기본값 | `includes/WinPatchService.php`, `actions/reports/winpatch/WinPatchList.php` |
-| 2-6 | SW 인벤토리 | Agent "예외" 판정은 비워 두었다 (설치/미설치만 구분) | Agent 판정 클래스(`...HostAgent`)의 `_hostAgent_checkAll()`, `get()` | `includes/SwInventoryService.php` 의 `resolveAgentStatus()` |
+| 2-6 | SW 인벤토리 | Agent "예외" 는 ITSM 행의 `agent_exception` 으로 가정했지만, ITSM 조회(`ItsmRepository::fetch()`)가 그 열을 읽지 않아 지금은 설치/미설치만 구분된다. OS/WEB/WAS/DB/이중화도 같은 이유로 인벤토리 값만 쓴다 | Agent 판정 클래스(`...HostAgent`)의 `_hostAgent_checkAll()`, `get()` | `includes/SwInventoryService.php` 의 `resolveAgentStatus()` |
 | 2-7 | Box 사용현황 | 메뉴 위치는 보고서 맨 끝, 필터는 호스트 그룹/호스트 | 5버전 화면이 있던 메뉴와 필터 구성 (화면과 컨트롤러는 확인하지 못했다) | `Module.php`, `actions/reports/hostbox/HostBoxList.php` |
 
 ## 3. 아직 만들지 못한 것 (5버전 소스를 봐야 하는 것)

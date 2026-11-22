@@ -1,0 +1,282 @@
+# 일일점검 (`dailycheck.list`)
+
+## 1. 한눈에
+
+| 항목 | 내용 |
+|---|---|
+| 메뉴 위치 | 보고서 > 일일점검 (`Module.php` 의 `REPORT_MENUS`) |
+| 주소 | `zabbix.php?action=dailycheck.list` (기본), `&period=1` (D-1), `&period=2` (D-2) |
+| 상태 | 완성. 단 `conf/dailycheck.conf.php` 에 트리거 태그 이름과 항목별 값을 채워야 숫자가 나온다. [CPU/Memory 사용률 Top 10] 버튼은 없음 |
+| 5버전 액션 | `daily`, `&period1=1`, `&period2=1` (컨트롤러 `CControllerDaily.php`, 일일점검 트레잇, 규칙 `daily.json`) |
+| 내보내기 | 없음 (5버전에도 없었다) |
+| 권한 | 사용자 유형 Zabbix User 이상. 세는 호스트와 이벤트는 API 가 사용자 권한대로 거른다 |
+
+## 2. 이 화면은 무엇을 하나
+
+매일 아침 운영 담당자가 "어젯밤 사이 문제가 있었던 서버가 몇 대인가" 를 항목별로 한 표에서 확인하는 점검표다.
+점검 구간은 **어제 07:00 ~ 오늘 06:59:59** 이고, OS 기동, 업무 프로세스, 디스크, CPU 급증, Paging, 이중화 7개 항목마다 정상 / 장애발생 / 점검대상 호스트 수를 보여 준다.
+장애발생 숫자를 누르면 해당 호스트 목록이 뜨고, 호스트 이름을 누르면 그 장애를 코어 "장애" 화면에서 바로 볼 수 있다. [D-1] [D-2] 로 하루, 이틀 전 구간도 본다(주말 뒤 월요일 점검 등).
+
+## 3. 화면 구성
+
+### 필터
+
+없다. 대신 날짜 줄의 버튼으로 구간을 바꾼다.
+
+| 이름 | 입력 방식 | 기본값 | 저장 여부 |
+|---|---|---|---|
+| [D-1] [D-2] | 버튼(`CRedirectButton`). 누르면 `period=1` / `period=2` 로 같은 화면을 다시 연다. 선택된 버튼은 파란 기본 버튼, 아닌 버튼은 흐린 버튼. 선택된 버튼을 한 번 더 누르면 기본 구간으로 돌아간다 | 기본 구간 (period 없음 = 0) | 저장 안 함 (주소에만 있음) |
+
+### 표
+
+| 열 | 값의 출처 | 표시 방식 |
+|---|---|---|
+| 점검항목 | 컨트롤러 `CHECKS` 상수의 이름(번역) | 글자 |
+| 정상호스트 | 점검대상 − 장애발생 | 숫자. 설정이 비면 `-` |
+| 장애발생 호스트 | 그 태그가 달린 트리거 중 하나라도 구간 안에 장애(PROBLEM) 이벤트가 생긴 호스트 수 | 숫자. 0보다 크면 점선 밑줄 링크 모양, 누르면 말풍선. 설정이 비면 `-` |
+| 점검대상(*전체호스트) | 그 태그가 달린 트리거를 가진 호스트 수 | 숫자. 설정이 비면 `-` |
+
+행은 7개, 순서 고정:
+
+| 키 | 점검항목 |
+|---|---|
+| `os` | OS기동상태 |
+| `work` | 업무솔루션 프로세스 기동여부 |
+| `disk90` | Disk Usage 90% 초과 |
+| `disk30` | Disk Usage 전일 대비 30% 급증 |
+| `cpu20` | CPU Usage(업무시간) 전일 대비 20% 급증 |
+| `paging` | Paging space 기준 초과(1%) |
+| `duplex` | 이중화 솔루션 상태 |
+
+### 말풍선과 링크
+
+- 장애발생 숫자를 누르면 말풍선(`setHint(..., '', true)`, 누르면 고정되어 스크롤/클릭 가능)에 "호스트명" 한 열짜리 표가 뜬다. 이름순(대소문자 무시, 숫자 자연 정렬).
+- 호스트 이름은 코어 **모니터링 > 장애**(`problem.view`) 링크다. 조건: 그 호스트 + 그 항목의 태그(이름=값, 정확히 같음) + 점검 구간(from/to) + 해결된 장애 포함(`show=TRIGGERS_OPTION_ALL`).
+- 설정이 하나라도 비어 있으면 표 위에 노란 상자: "설정이 필요합니다: conf/dailycheck.conf.php".
+
+### 스케치
+
+```
+일일점검
+2026-11-22  [D-1] [D-2]  (2026-11-21 ~ 2026-11-22)
+
+ 점검항목                                | 정상호스트 | 장애발생 호스트 | 점검대상(*전체호스트)
+ OS기동상태                              |       98   |      2 ←누르면    |   100
+ 업무솔루션 프로세스 기동여부            |       30   |      0          |    30      ┌────────────┐
+ Disk Usage 90% 초과                     |       95   |      5          |   100      │ 호스트명   │
+ Disk Usage 전일 대비 30% 급증           |      100   |      0          |   100      │ host-a  ↗  │
+ CPU Usage(업무시간) 전일 대비 20% 급증  |       90   |      1          |    91      │ host-b  ↗  │
+ Paging space 기준 초과(1%)              |      100   |      0          |   100      └────────────┘
+ 이중화 솔루션 상태                      |       20   |      0          |    20
+```
+
+## 4. 어떻게 만들었나 (동작 순서)
+
+### 4.1 핵심 아이디어
+
+이 화면은 CPU, 디스크 값을 **직접 계산하지 않는다**. 항목마다 정해진 **트리거 태그**(예: 태그 이름 `T`, 값 `V`)가 있고, "그 태그가 달린 트리거가 점검 구간 안에 울렸는가" 만 센다. "90% 초과", "전일 대비 30%" 같은 판단은 트리거 식이 이미 하고 있다.
+
+```
+점검대상       = 태그(T=V)가 달린 트리거를 가진 호스트 수
+장애발생 호스트 = 그 트리거 중 하나라도 구간 안에 PROBLEM 이벤트가 생긴 호스트 수
+정상호스트     = 점검대상 − 장애발생 호스트
+```
+
+### 4.2 단계
+
+1. **액션 연결.** `zabbix.php?action=dailycheck.list` → `manifest.json` → `Modules\DMove\Actions\Reports\DailyCheck\DailyCheckList`, 뷰 `reports/dailycheck.list`.
+2. **`DailyCheckList::init()`** — 조회 전용이라 `disableCsrfValidation()`.
+3. **`DailyCheckList::checkInput()`** — `'period' => 'in 0,1,2'` 하나만 받는다. 다른 값이면 오류 화면.
+4. **`DailyCheckList::checkPermissions()`** — `getUserType() >= USER_TYPE_ZABBIX_USER`.
+5. **`DailyCheckList::doAction()`**
+   1. 점검 구간 계산:
+      ```php
+      $time_till = strtotime(date('Y-m-d').' 06:59:59') - $period * self::DAY;   // DAY = 86400
+      $time_from = $time_till - (self::DAY - 1);
+      ```
+      - `date('Y-m-d')` = 오늘 날짜, `strtotime()` = 그 날짜 06:59:59 의 유닉스 초. 시간대는 로그인한 사용자 시간대.
+      - 끝에서 86399초를 빼면 전날 07:00:00 이다.
+   2. 설정 읽기: `require dirname(__DIR__, 3).'/conf/dailycheck.conf.php'` → `tag_name`, `tag_values`.
+   3. `CHECKS` 의 7개 항목을 돌며, 태그 이름이나 그 항목의 값이 비어 있으면 숫자를 모두 `null`(화면 `-`)로 두고 `config_missing = true`. 아니면 `getCheckResult()`.
+   4. 뷰에 `today`, `date_from`, `date_till`(날짜 줄 표시용), `time_from`, `time_till`(장애 화면 링크용, `Y-m-d H:i:s`), `tag_name`, `rows` 를 넘긴다. 브라우저 제목은 "일일점검".
+6. **`DailyCheckList::getCheckResult($tag_name, $tag_value, $time_from, $time_till)`**
+   1. 태그가 달린 트리거와 그 호스트:
+      ```php
+      API::Trigger()->get([
+          'output' => ['triggerid'],
+          'tags' => [['tag' => $tag_name, 'value' => $tag_value, 'operator' => TAG_OPERATOR_EQUAL]],
+          'templated' => false,              // 템플릿의 원본 트리거는 빼고 호스트의 트리거만
+          'selectHosts' => ['hostid', 'name'],
+          'preservekeys' => true
+      ]);
+      ```
+      - `TAG_OPERATOR_EQUAL` 을 꼭 준다. 안 주면 기본이 "포함(Contains)" 이라 값이 `DISK` 인 항목에 `DISK30` 트리거까지 걸린다.
+      - 중지된 트리거/호스트도 센다(5버전도 상태를 가리지 않았다).
+      - 트리거가 없으면 `0 / 0 / 0` 을 돌려준다.
+   2. 점검대상 = 트리거들의 호스트를 `[hostid => 이름]` 배열에 키로 넣어 중복 없이 센다.
+   3. 구간 안에 울린 트리거:
+      ```php
+      API::Event()->get([
+          'countOutput' => true, 'groupBy' => ['objectid'],   // 트리거별 건수만
+          'source' => EVENT_SOURCE_TRIGGERS, 'object' => EVENT_OBJECT_TRIGGER,
+          'objectids' => array_keys($triggers),
+          'value' => TRIGGER_VALUE_TRUE,                       // PROBLEM 이벤트만
+          'time_from' => $time_from,
+          'time_till' => $time_till - 1                        // 5버전 "clock < 끝" 과 맞추려고 1초 뺌
+      ]);
+      ```
+      결과에 나온 트리거 = 구간 안에 한 번 이상 PROBLEM 이 된 트리거다.
+   4. 그 트리거들의 호스트 = 장애발생 호스트. `CArrayHelper::sort($fail_hosts, ['name'])` 로 이름순.
+   5. `ok = total − fail` 을 돌려준다.
+7. **뷰 `views/reports/dailycheck.list.php`** — 날짜 줄(`CHorList`: 오늘 날짜, [D-1], [D-2], `(시작일 ~ 종료일)`), 설정 안내 상자, 표(`CTableInfo`)를 `CHtmlPage` 에 붙인다. 장애발생 숫자가 있으면 `CSpan` + `ZBX_STYLE_LINK_ACTION` + `setHint(호스트 표)`. 호스트 링크는 `CUrl('zabbix.php')` 에 `action=problem.view`, `show`, `hostids[]`, `tags[]`, `filter_custom_time=1`, `from`, `to`, `filter_set=1` 을 붙여 만든다.
+
+### 4.3 예시 숫자로 따라가기
+
+**구간** (오늘이 2026-11-22 일 때)
+
+| 버튼 | `period` | 시작 | 끝 | 날짜 줄 표시 |
+|---|---|---|---|---|
+| (기본) | 0 | 2026-11-21 07:00:00 | 2026-11-22 06:59:59 | (2026-11-21 ~ 2026-11-22) |
+| D-1 | 1 | 2026-11-20 07:00:00 | 2026-11-21 06:59:59 | (2026-11-20 ~ 2026-11-21) |
+| D-2 | 2 | 2026-11-19 07:00:00 | 2026-11-20 06:59:59 | (2026-11-19 ~ 2026-11-20) |
+
+계산: 기본의 끝 = `strtotime('2026-11-22 06:59:59')`. D-1 은 여기서 86400초를 빼서 11-21 06:59:59, 시작은 다시 86399초를 빼서 11-20 07:00:00.
+
+**호스트 세기** (항목 "Disk Usage 90% 초과" 의 태그가 달린 트리거가 4개라고 하자)
+
+| 트리거 | 호스트 | 구간 안 PROBLEM 이벤트 |
+|---|---|---|
+| T1 `/` 90% 초과 | host-a | 없음 |
+| T2 `/data` 90% 초과 | host-a | 2번 |
+| T3 `/` 90% 초과 | host-b | 1번 |
+| T4 `/` 90% 초과 | host-c | 없음 |
+
+- 점검대상 = {host-a, host-b, host-c} = **3** (host-a 는 트리거가 2개지만 한 번만 센다)
+- 울린 트리거 = {T2, T3} → 장애발생 호스트 = {host-a, host-b} = **2** (T2 가 2번 울려도 호스트는 1)
+- 정상 = 3 − 2 = **1**
+
+**세지 않는 경우** (5버전과 같다)
+
+- host-c 의 T4 가 **11-21 05:00(구간 시작 전)에 PROBLEM 이 되어 지금까지 계속** 장애 상태라면, 구간 안에 새 PROBLEM 이벤트가 없으므로 장애발생으로 세지 않는다. "구간 안에 장애가 **발생**했나" 를 보는 것이지 "구간 안에 장애 **상태**였나" 가 아니다. 8장 제안 참고.
+
+## 5. 5버전과 비교
+
+| 항목 | 5버전 | 7버전 | 왜 |
+|---|---|---|---|
+| 기간 파라미터 | `period1=1`, `period2=1` 두 개. `if ($period = hasRequest('period1'))` 처럼 비교가 아니라 대입으로 썼다(동작은 함) | `period=0/1/2` 하나, `checkInput()` 으로 검증 | 단순화, 7버전 입력 방식 |
+| 점검 구간 | 어제 07:00 ~ 오늘 06:59:59, D-1/D-2 는 하루/이틀 전 | 같음 | |
+| 항목 목록 | `daily.json` 규칙 파일 + 트레잇 안에 태그 값 하드코딩 | 항목은 `CHECKS` 상수, 태그는 `conf/dailycheck.conf.php` | 공개 저장소라 고객 값을 코드에서 분리 |
+| 점검대상 계산 | `trigger_tag` → `functions` → `items` 를 문자열로 이어 붙인 SQL로 호스트를 구하고, 호스트 정보만 API 로 다시 조회 | `trigger.get`(`tags`, `templated=false`, `selectHosts`) | 따옴표 들어간 값에 깨지는 SQL 제거, `zabbix.` 스키마 고정 제거, 권한 적용 |
+| 장애발생 계산 | `events` 를 직접 SQL (`source=0, value=1, clock >= 시작 and clock < 끝, group by objectid`) | `event.get`(`countOutput`, `groupBy objectid`, `value=PROBLEM`, `time_till = 끝-1`) | 결과 같음. 5버전은 이 부분에 권한이 적용되지 않았다 |
+| 전일 대비 30% / 20% | 트레잇에 trends 로 직접 계산하는 함수(`middle_Disk30_key()`, `middle_CPU_key()`)가 있었으나 **호출되지 않았다**. 안에도 오류(전일 조건을 당일 쿼리에 붙임, 별칭 없는 `avg()` 를 `$row['avg']` 로 읽음)가 있었다 | 옮기지 않음. 다른 항목처럼 태그 달린 트리거로 센다 | 실제로 쓰이던 동작에 맞춤 |
+| 이중화 항목 링크 | `du_problems()` 가 이중화 항목인데 Paging 항목의 태그로 장애 화면 링크를 만들었다 | 항목마다 자기 태그로 링크 | 5버전 오류 수정 |
+| 호스트 링크 기간 | 장애 화면을 `from=now-5d` (또는 `now-2d`) 고정 기간으로 열었다 | 점검 구간 그대로 (`filter_custom_time=1`, `from`, `to`) | 화면 숫자와 링크 결과가 맞게 |
+| 숫자 링크 모양 | `ZBX_STYLE_BTN_LINK` + 말풍선 | `ZBX_STYLE_LINK_ACTION`(점선 밑줄) + 고정형 말풍선 | 7버전 스타일 |
+| 브라우저 제목 | `_('Hosts')` → "호스트" | "일일점검" | 5버전 오류 수정 |
+| Top 10 버튼 | 제목 오른쪽 [CPU 사용률 Top 10] [Memory 사용률 Top 10] (`popup.topcpu`, `popup.topmemory`) | 없음 (뷰에 TODO 주석과 붙이는 예시만) | 버튼이 여는 화면의 소스를 확인하지 못함 |
+| 설정 누락 | (해당 없음, 코드에 박혀 있음) | 숫자 `-` + 노란 안내 상자 | 빈 설정을 0 과 구분 |
+
+## 6. 설정
+
+파일: `conf/dailycheck.conf.php`
+
+| 값 | 기본 | 뜻 | 비어 있으면 |
+|---|---|---|---|
+| `tag_name` | `''` | 점검 항목을 구분하는 트리거 태그의 **이름**. 7개 항목이 모두 같은 이름을 쓴다 | 7개 항목 모두 `-`, 노란 안내 상자 |
+| `tag_values.os` | `''` | OS기동상태 항목의 태그 **값** | 그 항목만 `-`, 노란 안내 상자 |
+| `tag_values.work` | `''` | 업무솔루션 프로세스 기동여부 | 〃 |
+| `tag_values.disk90` | `''` | Disk Usage 90% 초과 | 〃 |
+| `tag_values.disk30` | `''` | Disk Usage 전일 대비 30% 급증 | 〃 |
+| `tag_values.cpu20` | `''` | CPU Usage(업무시간) 전일 대비 20% 급증 | 〃 |
+| `tag_values.paging` | `''` | Paging space 기준 초과(1%) | 〃 |
+| `tag_values.duplex` | `''` | 이중화 솔루션 상태 | 〃 |
+
+- 넣을 값: 5버전 일일점검 트레잇(`...Daily.php`)의 `$tag_os`, `$tag_work`, `$tag_disk`, `$tag_disk30`, `$tag_cpu`, `$tag_paging`, `$tag_duplex` 의 `'name'` 과 `'value'`. 공개 저장소라 비워 두었다.
+- 값을 채웠는데 그 태그가 달린 트리거가 7버전 서버에 하나도 없으면 그 항목은 `0 / 0 / 0` 으로 나온다(`-` 가 아니다). 템플릿을 옮길 때 트리거 태그가 빠지지 않았는지 확인해야 한다.
+- 항목을 추가하려면 `CHECKS` 에 한 줄, `tag_values` 에 한 줄, `lang/ko.php` 에 번역 한 줄.
+
+## 7. 비어 있는 부분과 가정
+
+| 구분 | 내용 | 확인할 5버전 파일 / 위치 | 고칠 곳 |
+|---|---|---|---|
+| TODO(고객환경) | 트리거 태그 이름과 항목별 값 7개 | 일일점검 트레잇(`...Daily.php`)의 `$tag_*` | `conf/dailycheck.conf.php` (CHECKLIST 1-2) |
+| TODO(고객환경) | 7버전 서버의 트리거(또는 템플릿)에 그 태그가 5버전과 같게 달려 있는가 | 서버의 데이터 수집 > 호스트/템플릿 > 트리거 > 태그 | 서버 설정 (CHECKLIST 1-2) |
+| 없음 (방향 결정) | [CPU 사용률 Top 10] [Memory 사용률 Top 10] 버튼. 대시보드 "Top hosts" 위젯으로 대체할지, 팝업으로 만들지 | `popup.topcpu`, `popup.topmemory` 컨트롤러 | `views/reports/dailycheck.list.php` 의 TODO 주석 자리 (UNIMPLEMENTED 2장, CHECKLIST 3-6) |
+| 가정 | 시간대 = 로그인한 사용자 시간대. 07:00 경계가 이 시간대로 계산된다 | - | 관리 > 일반 > GUI 기본 시간대 (CHECKLIST 6-4) |
+
+## 8. 개선점
+
+### 이미 반영한 개선
+
+- 직접 SQL(`trigger_tag`, `functions`, `items`, `events`) → `trigger.get`, `event.get`. 따옴표에 깨지는 SQL 과 고정 스키마 이름 제거, 모든 숫자에 사용자 권한 적용.
+- 태그 비교를 "정확히 같음" 으로 명시.
+- 이중화 항목 링크의 태그 오류 수정, 호스트 링크를 점검 구간과 일치.
+- 브라우저 제목 수정, 기간 파라미터 하나로 정리 + 입력 검증.
+- 호출되지 않던 trends 계산 함수(오류 포함)를 옮기지 않음.
+- 설정이 비면 `-` + 안내 상자, 다국어.
+
+### 남은 개선 제안
+
+| 제안 | 효과 | 5버전과 결과가 달라지나 (합의 필요?) |
+|---|---|---|
+| Top 10 버튼 → 대시보드 **Top hosts** 위젯으로 대체 (CPU 사용률 열 내림차순, 10개). 일일점검 화면에는 그 대시보드로 가는 버튼만 둔다 | 코드 없이 같은 정보. 위젯에서 기간, 집계 함수, 그룹을 바꿀 수 있다 | 5버전 팝업의 집계 방식(최신 값인지, 기간 평균인지)을 모르므로 숫자가 다를 수 있다 → 합의 필요 |
+| 구간 시작 전부터 이어진 장애도 "장애발생" 에 넣기 (구간 안에 PROBLEM 상태였던 트리거) | 밤새 내려가 있던 서버가 정상으로 보이는 일이 없어진다 | 장애발생 숫자가 늘 수 있다 → 합의 필요 |
+| 중지된 트리거/호스트를 점검대상에서 빼기 (`trigger.get` 에 `monitored => true`) | 폐기한 서버가 점검대상에 남는 것 방지 | 점검대상 숫자가 줄 수 있다 → 합의 필요 |
+| 유지보수 중 호스트 표시 또는 제외 | 계획 작업 때문에 생긴 장애 구분 | 제외하면 숫자가 달라진다 → 합의 필요 |
+| 표를 CSV/Excel 로 내보내기 (`ExportTrait`) | 점검 기록 보관 | 같다 (추가 기능) |
+| 날짜를 직접 고르는 입력 (D-3 이상) | 연휴 뒤 점검 | 같다 (추가 기능) |
+| 항목 행 이름에 "모니터링 > 장애" 전체 링크(호스트 구분 없이 그 태그 + 구간) | 항목 단위로 한 번에 확인 | 같다 |
+
+## 9. 확인 방법
+
+### 테스트 환경 (http://127.0.0.1:18972, Admin / zabbix, `dev/compose.yaml`)
+
+1. 보고서 > 일일점검. 설정이 비어 있으므로 7개 행 모두 `- / - / -` 와 노란 "설정이 필요합니다: conf/dailycheck.conf.php" 가 보이면 정상. 날짜 줄이 `오늘 [D-1] [D-2] (어제 ~ 오늘)` 인지 본다.
+2. [D-1] → 주소에 `period=1`, 날짜 줄이 하루씩 앞당겨지고 D-1 이 파란 버튼. [D-1] 을 다시 누르면 기본으로 돌아온다. 주소에 `period=3` 을 넣으면 오류 화면.
+3. 시험 태그로 숫자 확인 (**로컬 설정만, 확인 뒤 되돌린다**)
+   - 로컬 `conf/dailycheck.conf.php` 에 `'tag_name' => 'dmtest'`, `'os' => 'os'`, `'disk90' => 'disk'` 처럼 넣는다.
+   - 데이터 수집 > 호스트 > "Zabbix server" 에 트리거 두 개를 만든다. 서버 자체 내부 아이템을 쓰면 에이전트가 없어도 된다.
+     - 트리거 1: 식 `last(/Zabbix server/zabbix[uptime])>0` (항상 참), 태그 `dmtest` = `os`
+     - 트리거 2: 식 `last(/Zabbix server/zabbix[uptime])<0` (항상 거짓), 태그 `dmtest` = `disk`
+     - "Zabbix server" 호스트가 중지되어 있거나 이 아이템이 없으면 다른 내부 아이템을 쓴다(확인 필요).
+   - 1~2분 뒤 일일점검을 연다. 트리거 1의 PROBLEM 이벤트는 "지금" 생겼다. 지금이 07:00 이후라면 기본 구간(어제 07:00 ~ 오늘 06:59:59)이 이미 지난 시간이라 **이 이벤트는 잡히지 않는다.** 그래서 "OS기동상태" 는 `1 / 0 / 1`(정상 1, 장애 0, 대상 1), "Disk Usage 90% 초과" 도 `1 / 0 / 1` 로 나온다. 값을 넣지 않은 다른 5개 항목은 `-` 이고 노란 안내 상자는 그대로 있다.
+   - 장애발생 숫자를 보고 싶으면 이벤트가 구간 안에 있어야 한다. 테스트 DB 에서 이벤트 시각을 구간 안으로 옮긴다:
+     ```sql
+     -- 시험 트리거의 PROBLEM 이벤트를 어제 12:00 으로 옮긴다 (테스트 DB 전용)
+     UPDATE events SET clock = EXTRACT(EPOCH FROM
+             (((now() AT TIME ZONE 'Asia/Seoul')::date - 1) + TIME '12:00') AT TIME ZONE 'Asia/Seoul')::int
+     WHERE source = 0 AND object = 0 AND value = 1
+       AND objectid IN (SELECT triggerid FROM trigger_tag WHERE tag = 'dmtest' AND value = 'os');
+     ```
+     → "OS기동상태" 가 `0 / 1 / 1`. 숫자 1 을 누르면 말풍선에 "Zabbix server", 이름을 누르면 장애 화면이 그 호스트 + 태그 `dmtest: os` + 어제 07:00~오늘 06:59 로 열리는지 본다.
+   - [D-1] 을 누르면 이벤트가 구간 밖이라 다시 `1 / 0 / 1`.
+4. 사용자 언어를 영어로 바꿔 항목 이름과 열 제목이 영어로 나오는지.
+5. 끝나면 시험 트리거를 지우고 설정 파일을 되돌린다.
+
+### 고객환경에서 5버전과 비교
+
+1. 같은 날 같은 시각 가까이에 5버전 `zabbix.php?action=daily` 와 7버전 `dailycheck.list` 를 연다. D-1, D-2 도 각각 비교한다(D-1 은 5버전 `&period1=1`).
+2. 7개 행의 점검대상 숫자부터 맞춘다. 다르면 → 태그 이름/값 설정, 7버전 트리거의 태그, 템플릿 연결을 본다. 7버전은 로그인한 사용자가 볼 수 있는 호스트만 세므로 **관리자 계정으로** 비교한다.
+3. 장애발생 숫자가 다르면 → 숫자를 눌러 호스트 목록을 나란히 놓고 차이 나는 호스트의 장애 이력(모니터링 > 장애, 해결 포함, 같은 구간)을 본다. 5버전 링크는 최근 5일 고정이라 링크 결과가 다를 수 있다.
+4. 이중화 항목은 5버전 링크가 Paging 태그로 열렸으므로 링크 결과 비교에서 제외한다(숫자는 비교 대상).
+
+## 10. 파일 목록
+
+### 이 화면의 파일
+
+| 파일 | 역할 |
+|---|---|
+| `ui/modules/dmove/actions/reports/dailycheck/DailyCheckList.php` | 컨트롤러. 구간 계산, 항목별 `trigger.get` / `event.get` 집계 |
+| `ui/modules/dmove/views/reports/dailycheck.list.php` | 뷰. 날짜 줄과 D-1/D-2 버튼, 표, 말풍선, 장애 화면 링크, Top 10 버튼 TODO 자리 |
+| `ui/modules/dmove/conf/dailycheck.conf.php` | 트리거 태그 이름과 항목별 값 |
+| `ui/modules/dmove/manifest.json` | `dailycheck.list` 등록 |
+| `ui/modules/dmove/Module.php` | 보고서 메뉴 등록 |
+| `ui/modules/dmove/lang/ko.php` | 한국어 문구 (항목 이름, 열 제목) |
+| `ui/modules/dmove/assets/css/dmove.css` | 날짜 줄 여백(`dm-toolbar`) |
+
+### 같이 쓰는 부품
+
+| 파일 | 역할 |
+|---|---|
+| `includes/Lang.php` | 번역 (`Lang::t()`) |
+| 코어 `problem.view` (모니터링 > 장애) | 호스트 이름 링크가 여는 화면 |

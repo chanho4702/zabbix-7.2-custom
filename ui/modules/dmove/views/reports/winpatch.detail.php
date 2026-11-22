@@ -31,6 +31,11 @@ $output = [
 	'header' => $data['host'] !== '' ? $data['title'].': '.$data['host'] : $data['title'],
 	// toString(): 화면 클래스를 HTML 문자열로 바꾼다. 값의 HTML 이스케이프도 이때 된다.
 	'body' => $table->toString(),
+	/*
+	 * 팝업 창의 모양(class). 코어 PopUp() 은 응답을 받은 뒤 이 값으로 창 class 를 다시 정한다.
+	 * 빠뜨리면 창 class 가 "modal-popup undefined" 가 되어 처음 준 modal-popup-generic 이 사라진다. (코어 팝업 뷰도 같이 적는다)
+	 */
+	'dialogue_class' => 'modal-popup-generic',
 	'buttons' => [
 		[
 			'title' => _('Close'),

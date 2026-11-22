@@ -157,7 +157,7 @@ class PeakEventList extends CController {
 			'trigger' => Lang::t('Peak event type'),
 			'severity' => _('Severity'),
 			// 숫자 열로 지정하면 엑셀에 숫자로 들어가 정렬/합계가 된다.
-			'count' => ['label' => _('Number of status changes'), 'type' => 'number']
+			'count' => ['label' => Lang::t('Number of status changes'), 'type' => 'number']
 		];
 	}
 
