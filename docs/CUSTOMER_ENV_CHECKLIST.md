@@ -82,7 +82,7 @@ diff include/menu.inc.php.<가장오래된날짜> autoever/src/menu.inc.php
 
 | # | 항목 | 확인 명령 | 왜 필요한가 |
 |---|---|---|---|
-| 6-1 | Zabbix 정확한 버전 (7.0.몇) | 화면 맨 아래 또는 `zabbix_server -V` | 저장소의 코어 원본을 같은 버전으로 맞추기 위해 |
+| 6-1 | Zabbix 버전 | **확인됨: 7.0.26** | 저장소의 코어 원본(태그 `vendor/zabbix-7.0.26`)과 테스트 환경을 이 버전으로 맞췄다. 고객 서버를 올리면 다시 맞춘다 (`DEVELOPMENT_GUIDE.md` 2장) |
 | 6-2 | PHP 버전 | `php -v` | 8.2 이상이면 동적 프로퍼티 경고까지 확인해야 한다 |
 | 6-3 | PostgreSQL 버전, TimescaleDB 사용 여부 | `psql --version`, `psql` 에서 `\dx` (목록에 `timescaledb` 가 있는가) | DB 종류는 PostgreSQL 로 확인됐다. 테스트 환경도 PostgreSQL 이다. TimescaleDB 로 오래된 trends 를 압축해 두었으면 저사용/고사용 서버의 긴 기간 조회가 느릴 수 있어 실제 소요 시간을 재 본다 |
 | 6-4 | 서버(PHP)의 시간대 | 관리 > 일반 > GUI 의 기본 시간대 | 업무시간(09~18시) 구분과 일일점검 구간이 이 시간대로 계산된다 |

@@ -164,7 +164,7 @@ return $avg >= $thresholds['high_avg'] && $peak >= $thresholds['high_peak'];
 
 ## 9. 확인 방법
 
-### 테스트 환경 (http://127.0.0.1:18972, Admin / zabbix, `dev/compose.yaml`)
+### 테스트 환경 (http://127.0.0.1:18970, Admin / zabbix, `dev/compose.yaml`)
 
 1. 보고서 > 고사용 서버 사용현황. 키 설정이 비어 있으면 노란 안내 상자와 빈 표, 기준 문구 `※고사용 기준: 평균사용률 50% 이상 / Peak 70% 이상` 이 보이면 정상.
 2. [lowserver.md 9장](lowserver.md#9-확인-방법)의 3번(시험 호스트 `test-cpu` + trends 데이터 + 로컬 설정에 `test.cpu`)을 그대로 한다.

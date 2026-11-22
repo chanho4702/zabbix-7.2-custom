@@ -1,17 +1,17 @@
-# 5버전 커스텀 소스 검토: PHP 8 / Zabbix 7.2 호환성
+# 5버전 커스텀 소스 검토: PHP 8 / Zabbix 7.0 호환성
 
 일부 파일만 검토했다. 확인한 파일은 `routing.php`, `swinventory.sql`, `patch.sh`(35~84행),
 `CControllerSwinventories.php`(1~288행)이다. 뷰, `C*` 트레잇, `C*Middle`, `function.php`,
 CSV 컨트롤러, 289행 이후는 보지 못했으므로 3장의 점검 명령으로 고객환경에서 직접 확인해야 한다.
 
-Zabbix 7.2 는 PHP 8.0 이상이 필수다. Zabbix 는 PHP 경고를 화면 상단에 빨간 메시지로 그대로 보여 주므로,
+Zabbix 7.0 는 PHP 8.0 이상이 필수다. Zabbix 는 PHP 경고를 화면 상단에 빨간 메시지로 그대로 보여 주므로,
 "동작은 하지만 경고가 나는" 코드도 사용자 눈에 오류로 보인다.
 
 ## 1. 확인된 문제
 
 심각도: **치명** = 화면이 안 뜸, **경고** = 화면 상단에 오류 메시지 표시, **버그** = PHP 버전과 무관한 로직 오류
 
-### 1.1 Zabbix 7.2 에서 없어지거나 바뀐 것
+### 1.1 Zabbix 7.0 에서 없어지거나 바뀐 것
 
 | 심각도 | 위치 | 내용 | 조치 |
 |---|---|---|---|
@@ -19,14 +19,14 @@ Zabbix 7.2 는 PHP 8.0 이상이 필수다. Zabbix 는 PHP 경고를 화면 상�
 | 치명 | `patch.sh` 전체 | `include/menu.inc.php` 는 7버전에 파일 자체가 없다. `CMenu.php`, `jsLoader.php`, `blue-theme.css` 를 5버전 것으로 덮으면 프론트엔드 전체가 깨진다 | 사용 금지. 모듈로 대체 |
 | 치명 | `routing.php` | 코어 `ZBase.php`/`CRouter.php` 를 고쳐 읽어 들이던 구조. 7버전 코어에는 그 수정이 없다 | `manifest.json` 의 `actions` |
 | 치명 | 트레잇 `C*`, `C*Middle` 로딩 | 코어 오토로더가 `autoever/` 를 모른다 | 모듈 네임스페이스(`includes/`) |
-| 경고 | 24~64행 `check_fields`, `T_ZBX_STR`, `O_OPT`, `P_SYS` | 7.2 에 아직 있지만 레거시 페이지 전용이다. MVC 컨트롤러에서는 `validateInput()` 을 써야 한다 | `checkInput()` 규칙 문자열 |
+| 경고 | 24~64행 `check_fields`, `T_ZBX_STR`, `O_OPT`, `P_SYS` | 7.0 에 아직 있지만 레거시 페이지 전용이다. MVC 컨트롤러에서는 `validateInput()` 을 써야 한다 | `checkInput()` 규칙 문자열 |
 | 경고 | 85~215행 `hasRequest()`, `getRequest()` | 위와 같음 | `$this->hasInput()`, `$this->getInput()` |
 | 경고 | 79행 `$page['file'] = 'swinventories.php'` | 레거시 페이지 전역변수. MVC 에서는 의미 없음 | 삭제 |
 | 경고 | 68~71행 `checkPermissions()` 가 무조건 `true` | 로그인한 모든 사용자가 접근 | 역할 기반 `checkAccess()` |
 | 경고 | `swinventory.sql` | `interface` 조인으로 인터페이스가 여러 개인 호스트는 행이 중복된다. 템플릿도 섞여 나온다. 스키마명 `zabbix.` 가 고정이다. 사용자 권한을 무시한다 | 뷰를 쓰지 않고 `API::Host()->get()` |
 
 `getSubGroups()`, `CProfile::update/updateArray/deleteIdx`, `DBstart()/DBend()`, `CArrayHelper::renameObjectsKeys()`,
-`API::Host()->get()`, `API::HostGroup()->get()` 은 7.2.15 에 그대로 있어 호출 자체는 문제없다.
+`API::Host()->get()`, `API::HostGroup()->get()` 은 7.0.26 에 그대로 있어 호출 자체는 문제없다.
 
 ### 1.2 PHP 8 문법/동작 문제
 
@@ -41,7 +41,7 @@ Zabbix 7.2 는 PHP 8.0 이상이 필수다. Zabbix 는 PHP 경고를 화면 상�
 | 성능 | 217~224행 | ITSM 행마다 전체 호스트를 도는 이중 반복문 | 호스트명 색인 배열 |
 
 검토한 범위 안에서 PHP 8 에서 **구문 오류(Parse error)** 가 나는 문장은 없었다.
-`protected function doAction()` 에 반환 타입이 없는 것도 7.2 의 부모 클래스 선언과 호환된다.
+`protected function doAction()` 에 반환 타입이 없는 것도 7.0 의 부모 클래스 선언과 호환된다.
 
 ## 2. 새 모듈에서 처리한 방식
 

@@ -1,6 +1,6 @@
-# DMove Zabbix 7.2 커스터마이징 개발 가이드
+# DMove Zabbix 7.0 커스터마이징 개발 가이드
 
-Zabbix 5 에서 `autoever/` + `patch.sh` 로 넣었던 커스텀 화면을 Zabbix 7.2 로 옮기기 위한 저장소다.
+Zabbix 5 에서 `autoever/` + `patch.sh` 로 넣었던 커스텀 화면을 Zabbix 7.0 (고객 서버와 같은 7.0.26) 으로 옮기기 위한 저장소다.
 원칙은 하나다. **본 소스(코어)의 동작은 고치지 않고, 모든 커스텀 코드는 `ui/modules/dmove/` 안에만 둔다.**
 
 코어 파일 27개에는 학습용 한국어 주석(`// [DM 해설]`)만 추가되어 있다. 코드 변경은 없다.
@@ -9,9 +9,9 @@ Zabbix 5 에서 `autoever/` + `patch.sh` 로 넣었던 커스텀 화면을 Zabbi
 관련 문서:
 
 - `docs/HANDBOOK.md` : **해설집.** 처음 읽을 문서. 페이지 추가 따라 하기, 5버전 코드 변환표, 오류 해결
-- `docs/LOGIN_CUSTOMIZATION.md` : 로그인 화면 수정과 추가 인증(OTP 등) 이관. 5버전/7.2 에서 볼 파일, 구현 방법 비교
+- `docs/LOGIN_CUSTOMIZATION.md` : 로그인 화면 수정과 추가 인증(OTP 등) 이관. 5버전/7.0 에서 볼 파일, 구현 방법 비교
 - `docs/ZABBIX_CORE_WALKTHROUGH.md` : 코어 소스가 요청/모듈/메뉴를 처리하는 과정을 파일:줄번호로 해설
-- `docs/LEGACY_V5_PHP8_REVIEW.md` : 5버전 커스텀 소스의 PHP 8 / 7.2 호환성 검토
+- `docs/LEGACY_V5_PHP8_REVIEW.md` : 5버전 커스텀 소스의 PHP 8 / 7.0 호환성 검토
 
 표기 안내
 - 5버전 커스텀 클래스 이름의 고객사 접두어는 `C*` 로 가려 적었다. 예) `C*Itms` = 5버전 `controllers/` 의 `...Itms.php` 트레잇.
@@ -22,7 +22,7 @@ Zabbix 5 에서 `autoever/` + `patch.sh` 로 넣었던 커스텀 화면을 Zabbi
 
 ```
 C:\zabbix
-├── ui/                          Zabbix 7.2.15 프론트엔드 원본 (= 서버의 /usr/share/zabbix)
+├── ui/                          Zabbix 7.0.26 프론트엔드 원본 (= 서버의 /usr/share/zabbix)
 │   └── modules/
 │       └── dmove/            ★ 커스텀 코드는 전부 여기
 │           ├── manifest.json        모듈 정의 + 액션(URL) 등록   (5버전 routing.php 역할)
@@ -57,31 +57,33 @@ C:\zabbix
 
 ## 2. 깃 운영 규칙
 
-- 첫 커밋(태그 `vendor/zabbix-7.2.15`)은 공식 소스 그대로다. 절대 수정하거나 덮어쓰지 않는다.
+- 코어 원본 커밋(태그 `vendor/zabbix-7.0.26`)은 공식 소스 그대로다. 절대 수정하거나 덮어쓰지 않는다.
+  처음에는 7.2.15 로 시작했다가 고객 버전이 7.0.26 으로 확인되어 원본을 교체했다. (옛 태그 `vendor/zabbix-7.2.15` 는 기록으로 남아 있다)
 - 코어 파일에 해설을 더 달 때는 반드시 `// [DM 해설] ...` 형식의 한 줄 주석을 **새 줄로 추가만** 한다.
   기존 줄을 고치거나 지우지 않는다. 커밋 머리말은 `docs(core):` 를 쓴다.
 - 그 이후 커밋이 곧 커스터마이징 내역이다.
 
 ```bash
 # 원본 대비 내가 바꾼 파일 목록
-git diff --stat vendor/zabbix-7.2.15
+git diff --stat vendor/zabbix-7.0.26
 
 # 코어 파일에서 주석이 달린 파일 목록
-git diff --stat vendor/zabbix-7.2.15 -- ui ':!ui/modules/dmove'
+git diff --stat vendor/zabbix-7.0.26 -- ui ':!ui/modules/dmove'
 
 # 코어 파일의 "코드"를 실수로 고치지 않았는지 확인 (아무것도 안 나와야 정상)
 # [DM 해설] 주석 줄 추가가 아닌 변경만 골라서 보여 준다.
-git diff vendor/zabbix-7.2.15 -- ui ':!ui/modules/dmove' | grep -E '^[+-][^+-]' | grep -vE '^\+\s*// \[DM 해설\]'
+git diff vendor/zabbix-7.0.26 -- ui ':!ui/modules/dmove' | grep -E '^[+-][^+-]' | grep -vE '^\+\s*// \[DM 해설\]'
 
 # 고객 서버에 반영할 변경분을 패치 파일로 만들기
-git diff vendor/zabbix-7.2.15 -- ui/modules/dmove > dmove-module.patch
+git diff vendor/zabbix-7.0.26 -- ui/modules/dmove > dmove-module.patch
 ```
 
 - 커밋 메시지 머리말: `feat(swinventory): ...`, `fix(swinventory): ...`, `docs: ...`, `vendor: ...`
 - 화면 하나를 옮길 때마다 커밋을 나눈다.
 - `.gitattributes` 의 `* -text` 는 줄바꿈 자동 변환을 막는 설정이다. 지우지 않는다.
-- 고객 서버의 실제 패치 버전이 7.2.15 가 아니면, 해당 버전 소스로 `vendor:` 커밋을 다시 만들고 그 위에 모듈 커밋을 올린다.
-  모듈이 코어를 고치지 않으므로 충돌 없이 그대로 올라간다.
+- 고객 서버를 다른 버전으로 올리면, 그 버전 소스로 `ui/` 를 교체하는 `vendor:` 커밋을 만들고 `vendor/zabbix-<버전>` 태그를 단다.
+  모듈(`ui/modules/dmove`)은 코어를 고치지 않으므로 그대로 둔다. 코어의 `[DM 해설]` 주석은 이전 원본과의 차이를 패치로 떠서 다시 적용한다.
+  (7.2.15 → 7.0.26 교체 때 쓴 방법: `git diff <옛 태그> <교체 직전 커밋> -- ui ':!ui/modules/dmove' > dm.patch` 후 `git apply --recount --reject dm.patch`, 안 붙은 곳은 손으로)
 
 ### 부득이 코어 파일을 고쳐야 할 때
 
@@ -150,10 +152,10 @@ git diff vendor/zabbix-7.2.15 -- ui/modules/dmove > dmove-module.patch
 
 ### 4.4 검증 이력
 
-이 모듈은 공식 컨테이너 이미지(Zabbix 7.2.15, PHP 8.4, PostgreSQL)에서 다음을 확인했다.
+이 모듈은 공식 컨테이너 이미지(Zabbix 7.2.15 / PHP 8.4, Zabbix 7.0.32 / PHP 8.5, 그리고 고객과 같은 Zabbix 7.0.26, 모두 PostgreSQL)에서 다음을 확인했다.
 메뉴 표시와 선택 상태, 목록 표시, 텍스트/Agent 필터, 정렬, 필터 초기화, CSV 다운로드,
 ITSM 미연동 경고, ITSM 행과 Zabbix 호스트 매칭(대소문자 무시), HTML 이스케이프, PHP 경고 없음.
-고객 서버도 PostgreSQL 이다. Zabbix 정확한 버전(7.0.x)과 PHP 버전은 다를 수 있으므로 반영 후 같은 항목을 다시 확인한다.
+고객 서버는 Zabbix 7.0.26 + PostgreSQL 이다. PHP 버전은 다를 수 있으므로 반영 후 같은 항목을 다시 확인한다.
 
 ### 4.5 서버에서 문법 검사
 

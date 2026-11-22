@@ -303,7 +303,7 @@ http://support.microsoft.com/?kbid=4601060  WIN-A01  Update                     
 
 ## 9. 확인 방법
 
-테스트 환경: `dev/compose.yaml` 로 띄운 http://127.0.0.1:18972 , Admin / zabbix
+테스트 환경: `dev/compose.yaml` 로 띄운 http://127.0.0.1:18970 , Admin / zabbix
 
 1. 보고서 > 윈도우즈 패치 현황 을 연다. 키 설정이 비어 있으므로 노란 "설정이 필요합니다: conf/winpatch.conf.php" 안내와 빈 표가 나와야 한다. 수집월 칸에는 지난달 1일이 들어 있다.
 2. 시험용 아이템을 만든다. 테스트 호스트에 **트래퍼** 아이템(정보 종류: 텍스트, 키는 아무 이름 예 `test.winpatch`)을 하나 만들고, `conf/winpatch.conf.php` 의 `item_key` 에 같은 키를 넣는다.

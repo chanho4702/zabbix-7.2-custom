@@ -1,9 +1,9 @@
-# 로컬 테스트용 Zabbix 7.2 (PostgreSQL + 서버 + 웹). 운영/고객 환경에는 쓰지 않는다.
+# 로컬 테스트용 Zabbix 7.0.26 (PostgreSQL + 서버 + 웹). 고객 환경과 같은 버전이다. 운영/고객 환경에는 쓰지 않는다.
 # 사용법: dev/README.md
 #
 # ui/modules/dmove 폴더를 컨테이너 안에 그대로 연결(mount)한다.
 # 그래서 PC 에서 파일을 고치고 저장한 뒤 브라우저를 새로고침하면 바로 반영된다.
-name: zbx72test
+name: zbx70test
 services:
   db:
     image: postgres:16-alpine
@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: zabbix      # 로컬 테스트 전용 값
       POSTGRES_DB: zabbix
   server:
-    image: zabbix/zabbix-server-pgsql:alpine-7.2-latest
+    image: zabbix/zabbix-server-pgsql:alpine-7.0.26
     environment:
       DB_SERVER_HOST: db
       POSTGRES_USER: zabbix
@@ -20,7 +20,7 @@ services:
       POSTGRES_DB: zabbix
     depends_on: [db]
   web:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.2-latest
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0.26
     environment:
       DB_SERVER_HOST: db
       POSTGRES_USER: zabbix
@@ -29,8 +29,8 @@ services:
       ZBX_SERVER_HOST: server
       PHP_TZ: Asia/Seoul
     ports:
-      # 이 PC 에서만 접속 가능 (127.0.0.1). 포트가 겹치면 앞의 18972 만 바꾼다.
-      - "127.0.0.1:18972:8080"
+      # 이 PC 에서만 접속 가능 (127.0.0.1). 포트가 겹치면 앞의 18970 만 바꾼다.
+      - "127.0.0.1:18970:8080"
     volumes:
       - "../ui/modules/dmove:/usr/share/zabbix/modules/dmove:ro"
     depends_on: [db, server]

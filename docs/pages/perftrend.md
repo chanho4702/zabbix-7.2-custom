@@ -155,7 +155,7 @@ API 호출, SQL, 계산이 없다.
 
 ## 9. 확인 방법
 
-### 테스트 환경 (http://127.0.0.1:18972, Admin / zabbix, `dev/compose.yaml`)
+### 테스트 환경 (http://127.0.0.1:18970, Admin / zabbix, `dev/compose.yaml`)
 
 지금 화면:
 

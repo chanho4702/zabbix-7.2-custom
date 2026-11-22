@@ -149,7 +149,7 @@ CPU/Memory 전체 사용률 추출                         (내보내기 버튼 
 
 ## 9. 확인 방법
 
-### 테스트 환경 (http://127.0.0.1:18972, `Admin` / `zabbix`, `dev/compose.yaml`)
+### 테스트 환경 (http://127.0.0.1:18970, `Admin` / `zabbix`, `dev/compose.yaml`)
 
 1. 보고서 > CPU/Memory 전체 사용률 추출을 연다.
    - 기대: 필터 4줄과 빨간 안내 2줄, 노란 "구현 안 됨" 안내. 표와 내보내기 버튼은 없다. 빨간 PHP 경고 없음.

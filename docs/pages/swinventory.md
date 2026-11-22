@@ -240,7 +240,7 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
 
 ## 9. 확인 방법
 
-### 테스트 환경 (http://127.0.0.1:18972, `Admin` / `zabbix`, `dev/compose.yaml`)
+### 테스트 환경 (http://127.0.0.1:18970, `Admin` / `zabbix`, `dev/compose.yaml`)
 
 1. `dev` 폴더에서 `docker compose up -d`, 모듈 켜기(`dev/README.md`).
 2. 인벤토리 > SW 인벤토리를 연다.

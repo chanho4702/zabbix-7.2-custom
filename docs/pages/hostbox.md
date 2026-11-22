@@ -204,7 +204,7 @@ esxi-02  | 32            | -             | 768 GB      | -           | -        
 
 ## 9. 확인 방법
 
-테스트 환경: `dev/compose.yaml` 로 띄운 http://127.0.0.1:18972 , Admin / zabbix
+테스트 환경: `dev/compose.yaml` 로 띄운 http://127.0.0.1:18970 , Admin / zabbix
 
 1. 보고서 > Box 사용현황 을 연다. 키 설정이 비어 있으므로 노란 "설정이 필요합니다: conf/hostbox.conf.php" 안내와 빈 표가 나와야 한다. 머리줄에 "전체 Disk" 열이 없어야 한다.
 2. 시험용 아이템을 만든다. 테스트 호스트에 트래퍼 아이템 5개(숫자 부호 없음, 키 예 `test.box.core.total`, `test.box.core.use`, `test.box.mem.total`, `test.box.mem.use`, `test.box.disk.use`)를 만들고 `conf/hostbox.conf.php` 에 같은 키를 넣는다. `total_disk` 는 비워 둔다.

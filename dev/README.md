@@ -10,7 +10,7 @@ docker compose up -d
 
 DB 가 처음 만들어지는 데 1~2분 걸린다. 아래 주소에서 로그인 화면이 나오면 준비된 것이다.
 
-- 주소: http://127.0.0.1:18972
+- 주소: http://127.0.0.1:18970
 - 계정: `Admin` / `zabbix` (Zabbix 기본 계정. 로컬 테스트 전용)
 
 모듈을 켠다. (한 번만 하면 된다)
@@ -23,9 +23,9 @@ docker compose exec -T db psql -U zabbix zabbix < enable-module.sql
 
 | 화면 | 주소 |
 |---|---|
-| SW 인벤토리 | http://127.0.0.1:18972/zabbix.php?action=swinventory.list |
-| 서버 시간 확인 | http://127.0.0.1:18972/zabbix.php?action=uptime.list |
-| 장기 미접속 계정 현황 | http://127.0.0.1:18972/zabbix.php?action=userunconnect.list |
+| SW 인벤토리 | http://127.0.0.1:18970/zabbix.php?action=swinventory.list |
+| 서버 시간 확인 | http://127.0.0.1:18970/zabbix.php?action=uptime.list |
+| 장기 미접속 계정 현황 | http://127.0.0.1:18970/zabbix.php?action=userunconnect.list |
 
 나머지 보고서 화면은 사이드바의 보고서 메뉴 아래에 있다.
 

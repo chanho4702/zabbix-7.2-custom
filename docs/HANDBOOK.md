@@ -1,7 +1,7 @@
-# 해설집: Zabbix 5 커스텀 화면을 7.2 로 옮기기
+# 해설집: Zabbix 5 커스텀 화면을 7.0 로 옮기기
 
 고객환경에서 이 문서 하나만 보고 작업할 수 있게 만든 안내서다.
-여기 실린 예제 코드는 Zabbix 7.2.15 + PHP 8.4 에서 실제로 돌려 확인했다.
+여기 실린 예제 코드는 Zabbix 7.2.15 + PHP 8.4 에서 확인했다. 모듈의 모든 화면은 고객과 같은 Zabbix 7.0.26 (+ PHP 8.5) 에서 다시 확인했다.
 
 | 알고 싶은 것 | 볼 곳 |
 |---|---|
@@ -495,9 +495,9 @@ class LowServerList extends ServerUsageController {
 - **빨간 경고**: 화면은 뜨지만 상단에 오류 메시지가 보임. Zabbix 는 PHP 경고를 화면에 그대로 보여 준다
 - **값이 틀림**: 오류 없이 잘못된 결과가 나옴. 가장 찾기 어렵다
 
-### 3.1 Zabbix 7.2 에서 없어졌거나 바뀐 것
+### 3.1 Zabbix 7.0 에서 없어졌거나 바뀐 것
 
-| 5버전 코드 | 7.2 에서 | 결과 | 바꿀 코드 |
+| 5버전 코드 | 7.0 에서 | 결과 | 바꿀 코드 |
 |---|---|---|---|
 | `$this->disableSIDValidation();` | 메소드가 없어짐 | 화면이 안 뜸 | `$this->disableCsrfValidation();` |
 | `patch.sh` (코어 파일 덮어쓰기) | `include/menu.inc.php` 는 파일 자체가 없음. 나머지도 내용이 완전히 다름 | 프론트엔드 전체가 깨짐 | 실행 금지. 모듈로 대체 |
@@ -509,14 +509,14 @@ class LowServerList extends ServerUsageController {
 | `$page['file'] = 'swinventories.php';` | 의미 없음 | - | 삭제 |
 | `checkPermissions() { return true; }` | 동작은 함 | 로그인한 누구나 접근 | `$this->checkAccess(...)` |
 | `swinventory` DB 뷰 (`hosts` + `interface` 조인) | 동작은 함 | 인터페이스가 여러 개면 행 중복, 템플릿 섞임, 사용자 권한 무시 | `API::Host()->get()` |
-| 뷰에서 `CWidget`, `CTableInfo` 등 화면 클래스 | 일부 클래스 이름과 메소드가 바뀜 | 화면이 안 뜰 수 있음 | 미확인. 7.2 의 `CHtmlPage` 기준으로 새로 작성 |
+| 뷰에서 `CWidget`, `CTableInfo` 등 화면 클래스 | 일부 클래스 이름과 메소드가 바뀜 | 화면이 안 뜰 수 있음 | 미확인. 7.0 의 `CHtmlPage` 기준으로 새로 작성 |
 
-7.2 에 **그대로 있는** 것: `CProfile::get/update/updateArray/deleteIdx`, `DBstart()/DBend()`, `DBselect()/DBfetch()`,
+7.0 에 **그대로 있는** 것: `CProfile::get/update/updateArray/deleteIdx`, `DBstart()/DBend()`, `DBselect()/DBfetch()`,
 `API::Host()->get()`, `API::HostGroup()->get()`, `getSubGroups()`, `CArrayHelper::renameObjectsKeys()`, `zbx_toCSV()`.
 
 ### 3.2 PHP 8 에서 문제가 되는 문법과 동작
 
-5버전 서버는 PHP 7.x 였을 것이고, Zabbix 7.2 는 PHP 8.0 이상이 필수다.
+5버전 서버는 PHP 7.x 였을 것이고, Zabbix 7.0 는 PHP 8.0 이상이 필수다.
 
 **(1) 선언하지 않은 프로퍼티** → 빨간 경고 (PHP 8.2+)
 
@@ -626,7 +626,7 @@ grep -rnE '\b(each|create_function|money_format|ereg|eregi|split|mysql_[a-z_]+|m
 # 중괄호 접근 $a{0} (구문 오류)
 grep -rnE '\$[A-Za-z_][A-Za-z0-9_]*(\[[^]]*\])*\{[^}]+\}' --include='*.php' .
 
-# 7.2 에서 없어졌거나 모듈에서 쓰지 않는 것
+# 7.0 에서 없어졌거나 모듈에서 쓰지 않는 것
 grep -rnE 'disableSIDValidation|menu\.inc|CLegacyAction|check_fields|getRequest\(|hasRequest\(' --include='*.php' .
 
 # 선언이 필요한 프로퍼티 후보
@@ -653,7 +653,7 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 
 ### 파일 머리
 
-| 5버전 | 7.2 모듈 |
+| 5버전 | 7.0 모듈 |
 |---|---|
 | `class CControllerSwinventories extends CController {` | 파일 맨 위에 `namespace Modules\DMove\Actions\<화면>;` 과 `use CController;` 등을 추가. 클래스 이름은 `SwInventoryList` 처럼 짧게 |
 | `use C*; use C*Data; ...` (트레잇) | `includes/` 의 클래스로 옮기고 `new SwInventoryService()` 처럼 객체로 사용 |
@@ -661,7 +661,7 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 
 ### 입력
 
-| 5버전 | 7.2 모듈 |
+| 5버전 | 7.0 모듈 |
 |---|---|
 | `'groupids' => [T_ZBX_INT, O_OPT, P_SYS, DB_ID, null]` | `'groupids' => 'array_db hosts_groups.groupid'` |
 | `'hostid' => [T_ZBX_INT, O_OPT, P_SYS, DB_ID, null]` | `'hostid' => 'db hosts.hostid'` |
@@ -677,7 +677,7 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 
 ### 처리
 
-| 5버전 | 7.2 모듈 |
+| 5버전 | 7.0 모듈 |
 |---|---|
 | `$this->disableSIDValidation();` | `$this->disableCsrfValidation();` |
 | `protected function doAction() {` | `protected function doAction(): void {` |
@@ -692,14 +692,14 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 
 ### 뷰
 
-| 5버전 | 7.2 모듈 |
+| 5버전 | 7.0 모듈 |
 |---|---|
 | `(new CWidget())->setTitle(...)->addItem(...)->show();` | `(new CHtmlPage())->setTitle(...)->addItem(...)->show();` |
 | 필터 폼을 직접 조립 | `CFilter` + `CFormList` (2장 ③ 참고) |
 | `$data['rules']->columns` (객체) | `$data['rules']['columns']` (배열. `json_decode(..., true)` 를 쓴 경우) |
 | HTML 문자열을 `echo` | `CSpan`, `CLink`, `CCol` 등 클래스로 조립 (자동 이스케이프) |
 
-5버전 뷰는 검토하지 못해서 이 부분은 일반적인 차이만 적었다. 옮길 때 7.2 의 `ui/app/views/reports.actionlog.list.php` 를 옆에 두고 맞춘다.
+5버전 뷰는 검토하지 못해서 이 부분은 일반적인 차이만 적었다. 옮길 때 7.0 의 `ui/app/views/reports.actionlog.list.php` 를 옆에 두고 맞춘다.
 
 ---
 
@@ -707,7 +707,7 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 
 5버전 `routing.php` 에 있던 액션 기준이다.
 
-| 5버전 액션 | 화면 | 7.2 상태 |
+| 5버전 액션 | 화면 | 7.0 상태 |
 |---|---|---|
 | `swinventories`, `swinventories.view.csv` | SW 인벤토리 | 완성. Agent "예외" 판정만 비어 있음 |
 | `lowserver`, `lowserver.view.csv` | 저사용 서버 | 완성. [기준설정] 버튼은 설정 파일로 대체 |
@@ -799,7 +799,7 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 | 오토로더 | 클래스 이름으로 파일을 찾아 자동으로 읽어 주는 장치. `require` 를 직접 쓰지 않아도 된다 |
 | 프로파일 | 사용자별 저장값(DB `profiles` 테이블). 필터와 정렬 상태를 기억하는 데 쓴다 |
 | 사용자 역할 | 사용자에게 화면, 모듈, API 권한을 묶어 주는 단위. 5버전의 사용자 유형보다 세분화됐다 |
-| 옛 방식 페이지 | `hostinventories.php` 처럼 파일 하나가 화면 하나인 예전 구조. 7.2 에도 일부 남아 있다 |
+| 옛 방식 페이지 | `hostinventories.php` 처럼 파일 하나가 화면 하나인 예전 구조. 7.0 에도 일부 남아 있다 |
 | CSRF 검사 | 다른 사이트가 사용자 몰래 요청을 보내는 것을 막는 토큰 검사. 조회 화면에서만 끈다 |
 | `[DM 해설]` | 이 저장소의 코어 파일에 달아 둔 한국어 해설 주석의 표시 |
 | `TODO(고객환경)` | 모듈 코드에서 고객환경의 실제 정보를 넣어야 하는 자리의 표시 |

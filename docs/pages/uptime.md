@@ -153,7 +153,7 @@
 
 ## 9. 확인 방법
 
-### 테스트 환경 (http://127.0.0.1:18972, `Admin` / `zabbix`, `dev/compose.yaml`)
+### 테스트 환경 (http://127.0.0.1:18970, `Admin` / `zabbix`, `dev/compose.yaml`)
 
 1. 보고서 > 서버 시간 확인을 연다 (`zabbix.php?action=uptime.list`).
    - 기대: 필터 4줄, 표 제목 6개, 노란 안내 "데이터 조회가 아직 구현되지 않았습니다.", 빨간 PHP 경고 없음.
