@@ -164,16 +164,29 @@ class ServerUsageService {
 		 */
 		$day_peak = $peak_whole_day ? 'MAX(value_max)' : 'MAX(CASE WHEN '.$in_hours.' THEN value_max END)';
 
+		/*
+		 *    숫자 아이템은 값 형식에 따라 요약이 다른 테이블에 쌓인다.
+		 *      소수(float)        → trends
+		 *      정수(unsigned int) → trends_uint
+		 *    CPU 키가 어느 형식으로 만들어져 있어도 읽히도록 두 테이블을 합쳐(UNION ALL) 읽는다.
+		 *    아이템 하나는 둘 중 한 테이블에만 있으므로 값이 두 번 세어지지 않는다.
+		 */
+		$item_condition = dbConditionId('itemid', array_keys($hostid_by_itemid)).
+			' AND clock>='.$time_from.
+			' AND clock<='.$time_till;
+
 		$result = DBselect(
 			'SELECT d.itemid,AVG(d.day_avg) AS usage_avg,MAX(d.day_max) AS usage_peak'.
 			' FROM ('.
 				'SELECT itemid,'.$day_number.' AS day_number,'.
 					'AVG(CASE WHEN '.$in_hours.' THEN value_avg END) AS day_avg,'.
 					$day_peak.' AS day_max'.
-				' FROM trends'.
-				' WHERE '.dbConditionId('itemid', array_keys($hostid_by_itemid)).
-					' AND clock>='.$time_from.
-					' AND clock<='.$time_till.
+				' FROM ('.
+					'SELECT itemid,clock,value_avg,value_max FROM trends WHERE '.$item_condition.
+					' UNION ALL'.
+					' SELECT itemid,clock,value_avg,value_max FROM trends_uint WHERE '.$item_condition.
+				') t'.
+				' WHERE 1=1'.
 					$day_condition.
 				' GROUP BY itemid,'.$day_number.
 			') d'.

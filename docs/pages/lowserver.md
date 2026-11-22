@@ -201,8 +201,10 @@ FROM (
     SELECT itemid, FLOOR((clock+32400)/86400) AS day_number,
            AVG(CASE WHEN <시간 조건> THEN value_avg END) AS day_avg,     -- ① 하루 평균
            MAX(value_max) 또는 MAX(CASE WHEN <시간 조건> THEN value_max END) AS day_max  -- ② 하루 최대
-    FROM trends
-    WHERE itemid IN (...) AND clock >= <시작> AND clock <= <끝> [AND <요일 조건>]
+    FROM (SELECT ... FROM trends      WHERE itemid IN (...) AND clock >= <시작> AND clock <= <끝>
+          UNION ALL
+          SELECT ... FROM trends_uint WHERE (같은 조건)) t     -- 소수형은 trends, 정수형은 trends_uint
+    WHERE 1=1 [AND <요일 조건>]
     GROUP BY itemid, day_number
 ) d
 WHERE d.day_avg IS NOT NULL                                              -- ③
@@ -413,7 +415,7 @@ ITSM 설명은 `conf/itsm.conf.php` 를 따른다(비어 있으면 Zabbix 호스
 1. 5버전과 7버전에서 같은 호스트 그룹, 같은 기간(예: 지난달 1일~말일), 같은 시간 선택으로 연다.
 2. 표의 서버 목록과 평균/Peak 를 비교한다. 소수 둘째 자리 차이는 반올림이므로 무시한다.
 3. 다를 때 볼 곳
-   - 서버가 7버전에만 없다 → 그 서버의 CPU 아이템 키가 `cpu_item_keys` 에 있는가, 실수형인가, 기간 안에 trends 가 있는가.
+   - 서버가 7버전에만 없다 → 그 서버의 CPU 아이템 키가 `cpu_item_keys` 에 있는가, 숫자형(소수 또는 정수)인가, 기간 안에 trends / trends_uint 가 있는가.
    - 숫자가 조금씩 다르다 → 5버전 요약표가 어느 날짜 구간으로 만들어졌는지(5장의 batch 구간 어긋남), 사용자 시간대가 같은지.
    - 한 서버만 크게 다르다 → 그 서버에 CPU 아이템이 둘 이상 걸리는지(5버전은 첫 줄, 7버전은 평균이 큰 쪽).
    - 업무시간 Peak 만 다르다 → `business_peak_whole_day` 가 `true` 인가.

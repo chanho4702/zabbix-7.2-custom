@@ -162,7 +162,12 @@ class WinPatchList extends CController {
 			'config_missing' => !$service->isConfigured()
 		];
 
-		$data['paging'] = CPagerHelper::paginate($this->getInput('page', 1), $rows, $sort_order,
+		/*
+		 * 페이징. 세 번째 인자는 항상 ZBX_SORT_UP 이다. $rows 는 위에서 이미 정렬을 끝낸 전체 목록이다.
+		 * ZBX_SORT_DOWN 을 넘기면 코어가 "API 가 결과 제한만큼만 가져온 목록"으로 보고 (전체 건수 - 결과 제한)
+		 * 만큼 건너뛴다. 그러면 1000건이 넘을 때 내림차순 1페이지가 501번째 줄부터 나온다. (include/classes/helpers/CPagerHelper.php)
+		 */
+		$data['paging'] = CPagerHelper::paginate($this->getInput('page', 1), $rows, ZBX_SORT_UP,
 			(new CUrl('zabbix.php'))->setArgument('action', $data['action'])
 		);
 		$data['rows'] = $rows;

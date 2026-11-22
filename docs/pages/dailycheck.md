@@ -122,7 +122,7 @@
           'objectids' => array_keys($triggers),
           'value' => TRIGGER_VALUE_TRUE,                       // PROBLEM 이벤트만
           'time_from' => $time_from,
-          'time_till' => $time_till - 1                        // 5버전 "clock < 끝" 과 맞추려고 1초 뺌
+          'time_till' => $time_till                            // 06:59:59 포함 (time_till 은 "이하")
       ]);
       ```
       결과에 나온 트리거 = 구간 안에 한 번 이상 PROBLEM 이 된 트리거다.
@@ -167,7 +167,7 @@
 | 점검 구간 | 어제 07:00 ~ 오늘 06:59:59, D-1/D-2 는 하루/이틀 전 | 같음 | |
 | 항목 목록 | `daily.json` 규칙 파일 + 트레잇 안에 태그 값 하드코딩 | 항목은 `CHECKS` 상수, 태그는 `conf/dailycheck.conf.php` | 공개 저장소라 고객 값을 코드에서 분리 |
 | 점검대상 계산 | `trigger_tag` → `functions` → `items` 를 문자열로 이어 붙인 SQL로 호스트를 구하고, 호스트 정보만 API 로 다시 조회 | `trigger.get`(`tags`, `templated=false`, `selectHosts`) | 따옴표 들어간 값에 깨지는 SQL 제거, `zabbix.` 스키마 고정 제거, 권한 적용 |
-| 장애발생 계산 | `events` 를 직접 SQL (`source=0, value=1, clock >= 시작 and clock < 끝, group by objectid`) | `event.get`(`countOutput`, `groupBy objectid`, `value=PROBLEM`, `time_till = 끝-1`) | 결과 같음. 5버전은 이 부분에 권한이 적용되지 않았다 |
+| 장애발생 계산 | `events` 를 직접 SQL (`source=0, value=1, clock >= 시작 and clock < 끝, group by objectid`) | `event.get`(`countOutput`, `groupBy objectid`, `value=PROBLEM`, `time_till = 끝`) | 5버전은 끝(06:59:59)을 `<` 로 비교해 마지막 1초가 빠졌다. 7버전은 06:59:59 까지 센다 (2026-11-23 수정). 5버전은 이 부분에 권한이 적용되지 않았다 |
 | 전일 대비 30% / 20% | 트레잇에 trends 로 직접 계산하는 함수(`middle_Disk30_key()`, `middle_CPU_key()`)가 있었으나 **호출되지 않았다**. 안에도 오류(전일 조건을 당일 쿼리에 붙임, 별칭 없는 `avg()` 를 `$row['avg']` 로 읽음)가 있었다 | 옮기지 않음. 다른 항목처럼 태그 달린 트리거로 센다 | 실제로 쓰이던 동작에 맞춤 |
 | 이중화 항목 링크 | `du_problems()` 가 이중화 항목인데 Paging 항목의 태그로 장애 화면 링크를 만들었다 | 항목마다 자기 태그로 링크 | 5버전 오류 수정 |
 | 호스트 링크 기간 | 장애 화면을 `from=now-5d` (또는 `now-2d`) 고정 기간으로 열었다 | 점검 구간 그대로 (`filter_custom_time=1`, `from`, `to`) | 화면 숫자와 링크 결과가 맞게 |

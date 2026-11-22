@@ -129,7 +129,16 @@ class ItsmRepository {
 			return null;
 		}
 
-		return $schema.'.'.$table;
+		/*
+		 * 이름을 따옴표로 감싸서 설정에 적은 글자 그대로(대소문자 포함) 찾게 한다.
+		 * 따옴표가 없으면 PostgreSQL 은 이름을 소문자로 바꿔서 찾는다. 그러면 위 tableExists() 는 통과했는데
+		 * 실제 조회에서는 테이블을 못 찾는 경우가 생긴다. (예: 대문자로 만든 테이블)
+		 * 따옴표 글자는 DB 종류마다 다르다. PostgreSQL 은 ", MySQL 은 ` 이다.
+		 */
+		global $DB;
+		$quote = ($DB['TYPE'] ?? '') === ZBX_DB_POSTGRESQL ? '"' : '`';
+
+		return $quote.$schema.$quote.'.'.$quote.$table.$quote;
 	}
 
 	/**

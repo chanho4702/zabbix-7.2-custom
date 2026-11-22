@@ -226,7 +226,8 @@ class DailyCheckList extends CController {
 		 * 2) 그 트리거들 중 구간 안에 장애 이벤트가 있었던 것.
 		 *    트리거별로 묶어 개수만 센다. 결과에 나온 트리거 = 한 번 이상 울린 트리거다.
 		 *
-		 *    5버전 조건이 "clock >= 시작 and clock < 끝" 이었다. API 의 time_till 은 "이하"라서 1초를 뺀다.
+		 *    time_till 은 "이하"다. $time_till 이 이미 06:59:59 라서 그대로 넘기면 06:59:59 까지 들어간다.
+		 *    (5버전은 끝을 06:59:59 로 잡고 "clock < 끝" 으로 비교해서 06:59:59 의 1초가 빠졌다. 그 경계 오류는 옮기지 않았다)
 		 */
 		$fired = API::Event()->get([
 			'countOutput' => true,
@@ -236,7 +237,7 @@ class DailyCheckList extends CController {
 			'objectids' => array_keys($triggers),
 			'value' => TRIGGER_VALUE_TRUE,
 			'time_from' => $time_from,
-			'time_till' => $time_till - 1
+			'time_till' => $time_till
 		]);
 
 		// 3) 울린 트리거가 속한 호스트 = 장애발생 호스트.
