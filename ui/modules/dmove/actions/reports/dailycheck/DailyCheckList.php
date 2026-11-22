@@ -58,6 +58,7 @@ use CArrayHelper;
 use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
+use CWebUser;
 use Modules\DMove\Includes\Lang;
 
 class DailyCheckList extends CController {
@@ -108,7 +109,8 @@ class DailyCheckList extends CController {
 	 * 접근 권한. 5버전처럼 로그인한 사용자(게스트 제외) 모두 허용한다.
 	 */
 	protected function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
+		// isGuest(): 로그인하지 않고 들어온 게스트 계정. 게스트도 사용자 유형은 User 라서 따로 막는다.
+		return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
 	}
 
 	protected function doAction(): void {

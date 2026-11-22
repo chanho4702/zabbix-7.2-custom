@@ -9,7 +9,7 @@
 | 상태 | **껍데기**. 필터와 표 제목만 있고 데이터 조회(`getRows()`)가 비어 있다. 화면에 "데이터 조회가 아직 구현되지 않았습니다." 안내가 뜬다 |
 | 5버전 액션 | `uptime.view` (컨트롤러 `CControllerUptimeView.php`) |
 | 내보내기 | 없음 (5버전에도 내보내기 버튼이 있었는지는 확인 필요) |
-| 권한 | 로그인한 사용자 중 게스트가 아닌 사람(`getUserType() >= USER_TYPE_ZABBIX_USER`). 표에 나올 호스트는 API 가 사용자 권한으로 거른다(구현 후) |
+| 권한 | 로그인한 사용자 중 게스트가 아닌 사람(`getUserType() >= USER_TYPE_ZABBIX_USER` 이고 `!CWebUser::isGuest()`). 표에 나올 호스트는 API 가 사용자 권한으로 거른다(구현 후) |
 
 ## 2. 이 화면은 무엇을 하나
 
@@ -66,7 +66,7 @@
 2. **입력 검증** - `UptimeList::checkInput()`
    `page`, `filter_set`, `filter_rst`, `filter_os`(문자열), `filter_uptime_days`(문자열) + `HostFilter::INPUT_FIELDS`(`filter_groupids`, `filter_hostids` = 숫자 ID 배열).
    일수를 문자열로 받는 이유: 빈 칸으로도 넘어오기 때문이다. 숫자 검사는 다음 단계에서 한다.
-3. **권한** - `UptimeList::checkPermissions()`: `getUserType() >= USER_TYPE_ZABBIX_USER`.
+3. **권한** - `UptimeList::checkPermissions()`: `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()` (게스트 계정 제외).
 4. **필터 저장/초기화** - `UptimeList::doAction()` 1번 블록
    - [적용]: `HostFilter::save()` 로 그룹/호스트 ID 배열을 `CProfile::updateArray()` 로 저장, OS 와 일수는 `CProfile::update()`.
    - 일수는 `normalizeDays()` 를 거친다. `ctype_digit()` 로 0~9 로만 된 글자인지 본다. 예) `"30"` -> `"30"`, `"30일"` -> `""`, `"-5"` -> `""`.

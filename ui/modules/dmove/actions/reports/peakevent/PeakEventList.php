@@ -41,6 +41,7 @@ use CControllerResponseData;
 use CControllerResponseFatal;
 use CProfile;
 use CSeverityHelper;
+use CWebUser;
 use Modules\DMove\Includes\Export\ExportTrait;
 use Modules\DMove\Includes\HostHelper;
 use Modules\DMove\Includes\Lang;
@@ -88,7 +89,8 @@ class PeakEventList extends CController {
 	 * 표시되는 트리거와 호스트는 API 가 사용자 권한에 맞게 걸러 준다.
 	 */
 	protected function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
+		// isGuest(): 로그인하지 않고 들어온 게스트 계정. 게스트도 사용자 유형은 User 라서 따로 막는다.
+		return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
 	}
 
 	protected function doAction(): void {

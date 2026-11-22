@@ -47,6 +47,7 @@ use CPagerHelper;
 use CProfile;
 use CRoleHelper;
 use CUrl;
+use CWebUser;
 use Modules\DMove\Includes\Export\ExportTrait;
 use Modules\DMove\Includes\Lang;
 use Modules\DMove\Includes\SwInventoryService;
@@ -126,7 +127,8 @@ class SwInventoryList extends CController {
 	 *   예) 관리자 이상만: return $this->getUserType() >= USER_TYPE_ZABBIX_ADMIN;
 	 */
 	protected function checkPermissions(): bool {
-		return $this->checkAccess(CRoleHelper::UI_INVENTORY_HOSTS);
+		// isGuest(): 로그인하지 않고 들어온 게스트 계정은 막는다.
+		return $this->checkAccess(CRoleHelper::UI_INVENTORY_HOSTS) && !CWebUser::isGuest();
 	}
 
 	protected function doAction(): void {

@@ -9,7 +9,7 @@
 | 상태 | **껍데기**. 필터만 있고 추출 기능이 없다. 화면에 "데이터 조회가 아직 구현되지 않았습니다." 안내가 뜬다 |
 | 5버전 액션 | `perf.analysis.view` (화면 제목 "CPU/Mem 사용률 추출") |
 | 내보내기 | 이 화면의 목적이 내보내기지만 **아직 없음**. `manifest.json` 에 `usageexport.export` 액션이 없고, 뷰의 버튼 코드는 주석 처리되어 있다 |
-| 권한 | 로그인한 사용자 중 게스트가 아닌 사람(`getUserType() >= USER_TYPE_ZABBIX_USER`). 5버전과 같게 둠 |
+| 권한 | 로그인한 사용자 중 게스트가 아닌 사람(`getUserType() >= USER_TYPE_ZABBIX_USER` 이고 `!CWebUser::isGuest()`). 5버전과 같게 둠 |
 
 ## 2. 이 화면은 무엇을 하나
 
@@ -69,7 +69,7 @@ CPU/Memory 전체 사용률 추출                         (내보내기 버튼 
    'filter_time' => 'in '.implode(',', [self::TIME_BUSINESS, self::TIME_ALL])
    ```
    항목은 0, 1, 2, 시간은 0, 1 만 받는다. 여기에 `HostFilter::INPUT_FIELDS` 를 더한다. `page` 는 없다(표가 없으므로).
-3. **권한** - `UsageExportList::checkPermissions()`: `getUserType() >= USER_TYPE_ZABBIX_USER`.
+3. **권한** - `UsageExportList::checkPermissions()`: `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()` (게스트 계정 제외).
 4. **필터 저장/초기화** - `doAction()` 1번 블록. `HostFilter::save()`, 항목/시간은 `CProfile::update(..., PROFILE_TYPE_INT)`. [리셋]은 `HostFilter::reset()` 과 `CProfile::deleteIdx()`.
 5. **뷰로 넘기기** - `HostFilter::load()` / `toViewData()`, 라디오 선택지(`items_options`, `time_options`), `'data_ready' => false`. **데이터를 만드는 함수 자체가 아직 없다.**
 6. **화면** - `views/reports/usageexport.list.php`. `HostFilter::addRows()` 로 두 줄, `CRadioButtonList(...)->setModern(true)` 로 라디오, 라벨 없는 줄(`addRow('', [...])`)에 `ZBX_STYLE_RED` 안내문 2줄. `data_ready` 가 `false` 면 노란 안내 상자.

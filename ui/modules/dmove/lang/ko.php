@@ -103,5 +103,8 @@ return [
 
 	// ── 장기 미접속 계정 현황 ──
 	'User type' => '유저 종류',
-	'Last access' => '최근접속일시'
+	'Last access' => '최근접속일시',
+
+	// ── 공통 오류 ──
+	'Invalid date. Enter the date as YYYY-MM-DD.' => '날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력하세요.',
 ];

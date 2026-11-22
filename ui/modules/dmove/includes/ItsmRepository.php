@@ -88,8 +88,11 @@ class ItsmRepository {
 		foreach ($this->fetch() ?? [] as $row) {
 			$name = mb_strtolower(trim((string) ($row['ci_name'] ?? '')));
 
-			if ($name !== '') {
-				$descriptions[$name] = (string) ($row['description'] ?? '');
+			$description = trim((string) ($row['description'] ?? ''));
+
+			// 설명이 빈 행은 넣지 않는다. 그래야 화면이 Zabbix 호스트 설명으로 넘어간다. (?? 는 빈 문자열을 "값 있음"으로 본다)
+			if ($name !== '' && $description !== '') {
+				$descriptions[$name] = $description;
 			}
 		}
 

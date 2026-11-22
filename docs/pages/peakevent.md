@@ -10,7 +10,7 @@
 | 상태 | 완성. 단, 집계 기준(무엇을 세는지)은 가정이다 |
 | 5버전 액션 | `peak_event.php` (`zabbix.php?action=` 형식이 아닌 독립 PHP 파일) |
 | 내보내기 | 있음 (CSV, Excel). 5버전에는 내보내기 버튼이 확인되지 않았다 |
-| 권한 | 로그인한 사용자 모두 (`USER_TYPE_ZABBIX_USER` 이상, 게스트 제외). 보이는 트리거/호스트는 API 가 사용자 권한으로 걸러 준다 |
+| 권한 | 로그인한 사용자 모두 (`getUserType() >= USER_TYPE_ZABBIX_USER` 이고 `!CWebUser::isGuest()`). 보이는 트리거/호스트는 API 가 사용자 권한으로 걸러 준다 |
 
 ## 2. 이 화면은 무엇을 하나
 
@@ -79,7 +79,7 @@ host-B   | 10.0.0.2 | 웹 서버     | CPU 사용량 95% ..    | 높음   | 6
    - `exportInputFields()` : `format` 이 `csv` 또는 `xlsx` 인지 본다 (`ExportTrait`).
    - 틀리면 `CControllerResponseFatal` (오류 화면).
 
-4. **권한 검사.** `PeakEventList::checkPermissions()` : `getUserType() >= USER_TYPE_ZABBIX_USER`.
+4. **권한 검사.** `PeakEventList::checkPermissions()` : `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()` (게스트 계정 제외).
 
 5. **기간 정하기.** `PeakEventList::doAction()` 의 1) 부분
 

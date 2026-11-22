@@ -42,7 +42,7 @@
 
 문구 속 "09시", "18시" 는 설정 `business_hours` 값을 그대로 넣어 만든다. 설정을 바꾸면 문구도 바뀐다.
 
-필터 값은 [적용]을 누를 때 사용자 프로파일(`profiles` 테이블)에 저장되고, 다음에 화면을 열면 다시 읽힌다. [리셋]은 저장된 값을 지운다. 날짜를 잘못된 형식(예: `2026-13-01`)으로 넣으면 빈 값으로 저장되어 기본값(지난달)으로 돌아간다. 오류 표시는 없다.
+필터 값은 [적용]을 누를 때 사용자 프로파일(`profiles` 테이블)에 저장되고, 다음에 화면을 열면 다시 읽힌다. [리셋]은 저장된 값을 지운다. 날짜를 잘못된 형식(예: `2026-13-01`)으로 넣으면 조회하지 않고 "날짜 형식이 올바르지 않습니다" 안내를 띄운다. 저장값은 비워지므로 다음에 열면 기본값(지난달)이다.
 
 ### 표
 
@@ -112,7 +112,7 @@ return $avg <= $thresholds['low_avg'] && $peak <= $thresholds['low_peak'];
 1. **액션 연결.** 주소 `zabbix.php?action=lowserver.list` → `manifest.json` → `Modules\DMove\Actions\Reports\LowServer\LowServerList`.
 2. **`ServerUsageController::init()`** — 조회 전용이라 `disableCsrfValidation()` 으로 CSRF 토큰 검사를 끈다.
 3. **`ServerUsageController::checkInput()`** — 받을 수 있는 파라미터와 규칙을 정한다. 날짜는 빈칸으로도 오므로 `string` 으로 받고 나중에 `normalizeDate()` 로 형식을 본다. 시간은 `in work,night,all` 만 받는다. 호스트 필터 규칙(`HostFilter::INPUT_FIELDS`)과 내보내기 규칙(`format`)을 더한다. 규칙에 맞지 않으면 `CControllerResponseFatal`(오류 화면).
-4. **`ServerUsageController::checkPermissions()`** — `getUserType() >= USER_TYPE_ZABBIX_USER`.
+4. **`ServerUsageController::checkPermissions()`** — `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()` (게스트 계정 제외).
 5. **`ServerUsageController::doAction()`** — 아래 순서로 처리한다.
    1. 프로파일 접두어를 만든다: `'web.dmove.'.getPageKey().'.'` → `web.dmove.lowserver.`
    2. [적용](`filter_set`)이면 `HostFilter::save()` 로 그룹/호스트를, `CProfile::update()` 로 시작/종료/시간을 저장한다. 날짜는 `normalizeDate()` 를 거친다(`YYYY-MM-DD` 이고 `checkdate()` 로 실제 있는 날짜일 때만 그대로, 아니면 `''`).
@@ -361,7 +361,7 @@ ITSM 설명은 `conf/itsm.conf.php` 를 따른다(비어 있으면 Zabbix 호스
 | 호스트 이름에 최신 데이터 / 그래프 링크 | 의심 서버의 추이를 바로 확인 | 같다 |
 | 중지된 호스트를 빼는 옵션 (`host.get` 에 `filter => ['status' => HOST_STATUS_MONITORED]`) | 이미 정리한 서버가 후보로 나오는 것 방지 | 목록이 줄어든다 → 합의 필요 |
 | 공휴일 제외 | 업무시간 평균이 더 정확해진다 | 숫자가 바뀐다 → 합의 필요 |
-| ITSM 설명이 빈 문자열이면 Zabbix 설명으로 넘어가게 (`??` 는 null 일 때만 넘어간다) | 빈 Description 줄이 줄어든다 | 같다 (표시만) |
+| ITSM 설명이 빈 문자열이면 Zabbix 설명으로 넘어가게 (**반영함**: `ItsmRepository::fetchDescriptions()` 가 설명이 빈 행을 넣지 않는다) | 빈 Description 줄이 줄어든다 | 같다 (표시만) |
 | 긴 기간 조회 속도: TimescaleDB 압축 여부 확인, 필요하면 결과 캐시 | 1년 조회 대기 시간 감소 | 같다 |
 
 ## 9. 확인 방법

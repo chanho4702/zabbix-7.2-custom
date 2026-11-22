@@ -68,7 +68,7 @@
 1. `zabbix.php?action=perftrend.list` → `manifest.json` → `Modules\DMove\Actions\Reports\PerfTrend\PerfTrendList`, 뷰 `reports/perftrend.list`.
 2. `PerfTrendList::init()` — `disableCsrfValidation()`.
 3. `PerfTrendList::checkInput()` — `'page' => 'ge 1'` 하나만 받는다(템플릿에서 온 자리).
-4. `PerfTrendList::checkPermissions()` — `getUserType() >= USER_TYPE_ZABBIX_USER`.
+4. `PerfTrendList::checkPermissions()` — `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()` (게스트 계정 제외).
 5. `PerfTrendList::doAction()` — `$rows = []` 로 두고 `title`(번역된 "성능 데이터 추세 분석")과 함께 뷰로 넘긴다. 데이터 조회는 없다.
 6. 뷰 `views/reports/perftrend.list.php` — `CHtmlPage` 에 제목, 노란 안내 상자(`makeMessageBox(ZBX_STYLE_MSG_WARNING, ...)`), 열 없는 `CTableInfo` 를 붙인다.
 

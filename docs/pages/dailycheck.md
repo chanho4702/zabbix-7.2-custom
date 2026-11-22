@@ -87,7 +87,7 @@
 1. **액션 연결.** `zabbix.php?action=dailycheck.list` → `manifest.json` → `Modules\DMove\Actions\Reports\DailyCheck\DailyCheckList`, 뷰 `reports/dailycheck.list`.
 2. **`DailyCheckList::init()`** — 조회 전용이라 `disableCsrfValidation()`.
 3. **`DailyCheckList::checkInput()`** — `'period' => 'in 0,1,2'` 하나만 받는다. 다른 값이면 오류 화면.
-4. **`DailyCheckList::checkPermissions()`** — `getUserType() >= USER_TYPE_ZABBIX_USER`.
+4. **`DailyCheckList::checkPermissions()`** — `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()` (게스트 계정 제외).
 5. **`DailyCheckList::doAction()`**
    1. 점검 구간 계산:
       ```php

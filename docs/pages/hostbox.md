@@ -9,7 +9,7 @@
 | 상태 | 완성. `conf/hostbox.conf.php` 의 아이템 키만 채우면 된다 |
 | 5버전 액션 | `zabbix.php?action=hostbox` (규칙 파일 `hostbox.json`, Box 사용현황 트레잇 `...HostBox.php`) |
 | 내보내기 | 있음 (CSV, Excel). "최근 데이터" 링크 열은 내보내지 않는다 |
-| 권한 | 로그인한 사용자 모두 (`USER_TYPE_ZABBIX_USER` 이상). 보이는 호스트는 API 가 사용자 권한으로 걸러 준다 |
+| 권한 | 로그인한 사용자 모두 (`USER_TYPE_ZABBIX_USER` 이상, 게스트 계정 제외). 보이는 호스트는 API 가 사용자 권한으로 걸러 준다 |
 
 ## 2. 이 화면은 무엇을 하나
 

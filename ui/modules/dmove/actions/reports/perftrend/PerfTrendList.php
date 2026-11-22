@@ -42,6 +42,7 @@ namespace Modules\DMove\Actions\Reports\PerfTrend;
 use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
+use CWebUser;
 use Modules\DMove\Includes\Lang;
 
 class PerfTrendList extends CController {
@@ -77,7 +78,8 @@ class PerfTrendList extends CController {
 	 *   예) 코어 보고서 권한을 따라가기: return $this->checkAccess(\CRoleHelper::UI_REPORTS_SYSTEM_INFO);
 	 */
 	protected function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
+		// isGuest(): 로그인하지 않고 들어온 게스트 계정. 게스트도 사용자 유형은 User 라서 따로 막는다.
+		return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
 	}
 
 	protected function doAction(): void {

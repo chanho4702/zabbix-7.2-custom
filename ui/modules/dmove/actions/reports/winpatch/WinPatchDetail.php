@@ -22,6 +22,7 @@ namespace Modules\DMove\Actions\Reports\WinPatch;
 use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
+use CWebUser;
 use Modules\DMove\Includes\Lang;
 use Modules\DMove\Includes\WinPatchService;
 
@@ -54,7 +55,8 @@ class WinPatchDetail extends CController {
 	 * 어느 호스트를 볼 수 있는지는 WinPatchService 안의 API 호출이 걸러 준다.
 	 */
 	protected function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
+		// isGuest(): 로그인하지 않고 들어온 게스트 계정. 게스트도 사용자 유형은 User 라서 따로 막는다.
+		return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
 	}
 
 	protected function doAction(): void {

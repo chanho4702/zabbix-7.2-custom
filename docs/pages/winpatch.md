@@ -9,7 +9,7 @@
 | 상태 | 완성. `conf/winpatch.conf.php` 의 아이템 키만 채우면 된다. HotFix ID 필터의 의미와 수집월 기본값은 가정 |
 | 5버전 액션 | 목록 `zabbix.php?action=windows` (제목 "Windows Patch현황"), 팝업 `popup.windows` |
 | 내보내기 | 있음 (CSV, Excel). 5버전은 CSV 만 있었다. "Patch File명"(상세보기 링크) 열은 내보내지 않는다 |
-| 권한 | 로그인한 사용자 모두 (`USER_TYPE_ZABBIX_USER` 이상). 보이는 호스트는 API 가 사용자 권한으로 걸러 준다. 팝업도 같다 |
+| 권한 | 로그인한 사용자 모두 (`USER_TYPE_ZABBIX_USER` 이상, 게스트 계정 제외). 보이는 호스트는 API 가 사용자 권한으로 걸러 준다. 팝업도 같다 |
 
 ## 2. 이 화면은 무엇을 하나
 

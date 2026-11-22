@@ -44,6 +44,7 @@ use CControllerResponseFatal;
 use CPagerHelper;
 use CProfile;
 use CUrl;
+use CWebUser;
 use Modules\DMove\Includes\Export\ExportTrait;
 use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\HostHelper;
@@ -107,7 +108,8 @@ abstract class ServerUsageController extends CController {
 	 * 표시되는 호스트는 API 가 사용자 권한에 맞게 걸러 준다.
 	 */
 	protected function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
+		// isGuest(): 로그인하지 않고 들어온 게스트 계정. 게스트도 사용자 유형은 User 라서 따로 막는다.
+		return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
 	}
 
 	protected function doAction(): void {
@@ -119,8 +121,19 @@ abstract class ServerUsageController extends CController {
 		$service = new ServerUsageService();
 		$thresholds = $service->getThresholds();
 
+		// 날짜를 입력했는데 형식이 틀리면 true. 조회하지 않고 화면에 이유를 보여 준다. (저장값은 비워서 다음부터는 기본 기간)
+		$invalid_date = false;
+
 		// ── 1) 필터 저장/초기화 ──
 		if ($this->hasInput('filter_set')) {
+			foreach (['filter_from', 'filter_to'] as $field) {
+				$value = trim($this->getInput($field, ''));
+
+				if ($value !== '' && self::normalizeDate($value) === '') {
+					$invalid_date = true;
+				}
+			}
+
 			HostFilter::save($profile_prefix, $this->getInput('filter_groupids', []),
 				$this->getInput('filter_hostids', [])
 			);
@@ -161,7 +174,10 @@ abstract class ServerUsageController extends CController {
 		// 기간이 잘못됐으면 조회하지 않고 화면에 이유를 보여 준다.
 		$period_error = '';
 
-		if ($time_from > $time_till) {
+		if ($invalid_date) {
+			$period_error = Lang::t('Invalid date. Enter the date as YYYY-MM-DD.');
+		}
+		elseif ($time_from > $time_till) {
 			$period_error = Lang::t('The start date must not be later than the end date.');
 		}
 		elseif ($time_till - $time_from > $service->getMaxPeriodDays() * 86400) {
