@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -104,7 +104,7 @@ class CValueMap extends CApiService {
 			$db_valuemaps = $this->unsetExtraFields($db_valuemaps, ['valuemapid'], $options['output']);
 
 			if (!$options['preservekeys']) {
-				$db_valuemaps = array_values($db_valuemaps);
+				$db_valuemaps = zbx_cleanHashes($db_valuemaps);
 			}
 		}
 

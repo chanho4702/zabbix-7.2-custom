@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -300,13 +300,13 @@ function getPosition(obj) {
  * Opens popup content in overlay dialogue.
  *
  * @param {string}           action              Popup controller related action.
- * @param {Array|Object}     parameters          Array with key/value pairs that will be used as query for popup
+ * @param {array|object}     parameters          Array with key/value pairs that will be used as query for popup
  *                                               request.
  *
  * @param {string}           dialogue_class      CSS class, usually based on .modal-popup and .modal-popup-{size}.
  * @param {string|null}      dialogueid          ID of overlay dialogue.
  * @param {HTMLElement|null} trigger_element     UI element which was clicked to open overlay dialogue.
- * @param {boolean}          prevent_navigation  Show warning when navigating away from an active dialogue.
+ * @param {bool}             prevent_navigation  Show warning when navigating away from an active dialogue.
  *
  * @returns {Overlay}
  */
@@ -325,7 +325,7 @@ function PopUp(action, parameters, {
 			dialogueid,
 			title: '',
 			doc_url: '',
-			content: jQuery('<div>', {'height': '68px', 'width': '105px', class: 'is-loading'}),
+			content: jQuery('<div>', {'height': '68px', class: 'is-loading'}),
 			class: 'modal-popup ' + dialogue_class,
 			buttons: [],
 			element: trigger_element,
@@ -381,7 +381,6 @@ function PopUp(action, parameters, {
 					doc_url: resp.doc_url,
 					content: resp.body,
 					controls: resp.controls,
-					class: 'modal-popup ' + resp.dialogue_class ?? dialogue_class,
 					buttons,
 					debug: resp.debug,
 					script_inline: resp.script_inline,
@@ -444,6 +443,39 @@ function PopUp(action, parameters, {
 }
 
 /**
+ * Open "Update problem" dialog and manage URL change.
+ *
+ * @param {Object} parameters
+ * @param {array}  parameters['eventids']  Eventids to update.
+ * @param {object} trigger_element        (optional) UI element which was clicked to open overlay dialogue.
+ *
+ * @returns {Overlay}
+ */
+function acknowledgePopUp(parameters, trigger_element) {
+	const overlay = PopUp('popup.acknowledge.edit', parameters,
+		{dialogue_class: 'modal-popup-generic', trigger_element}
+	);
+	const backurl = location.href;
+
+	overlay.trigger_parents = $(trigger_element).parents();
+
+	overlay.xhr.then(function() {
+		const url = new Curl('zabbix.php');
+		url.setArgument('action', 'popup');
+		url.setArgument('popup_action', 'acknowledge.edit');
+		url.setArgument('eventids', parameters.eventids);
+
+		history.replaceState({}, '', url.getUrl());
+	});
+
+	overlay.$dialogue[0].addEventListener('dialogue.close', () => {
+		history.replaceState({}, '', backurl);
+	}, {once: true});
+
+	return overlay;
+}
+
+/**
  * Function to add details about overlay UI elements in global overlays_stack variable.
  *
  * @param {string|Overlay} id       Unique overlay element identifier or Overlay object.
@@ -472,29 +504,28 @@ function addToOverlaysStack(id, element, type, xhr) {
 
 // Keydown handler. Closes last opened overlay UI element.
 function closeDialogHandler(event) {
-	if (event.which === KEY_ESCAPE) {
-		const overlay = overlays_stack.end();
-
-		if (typeof overlay !== 'undefined') {
-			switch (overlay.type) {
+	if (event.which == 27) { // ESC
+		var dialog = overlays_stack.end();
+		if (typeof dialog !== 'undefined') {
+			switch (dialog.type) {
 				// Close overlay popup.
 				case 'popup':
-					overlayDialogueDestroy(overlay.dialogueid, Overlay.prototype.CLOSE_BY_USER);
+					overlayDialogueDestroy(dialog.dialogueid);
 					break;
 
 				// Close overlay hintbox.
 				case 'hintbox':
-					hintBox.hideHint(overlay.element, true);
+					hintBox.hideHint(dialog.element, true);
 					break;
 
 				// Close popup menu overlays.
 				case 'menu-popup':
-					jQuery('.menu-popup.menu-popup-top:visible').menuPopup('close', overlay.element);
+					jQuery('.menu-popup.menu-popup-top:visible').menuPopup('close', dialog.element);
 					break;
 
 				// Close context menu preloader.
 				case 'preloader':
-					overlayPreloaderDestroy(overlay.dialogueid);
+					overlayPreloaderDestroy(dialog.dialogueid);
 					break;
 
 				// Close overlay time picker.
@@ -524,14 +555,18 @@ function closeDialogHandler(event) {
 }
 
 /**
- * Remove overlay from stack and set focus to source element.
+ * Removed overlay from overlays stack and sets focus to source element.
  *
- * @param {string}  dialogueid
- * @param {boolean} return_focus  If true, overlay.element will be focused.
+ * @param {string} dialogueid		Id of dialogue, that is being closed.
+ * @param {boolean} return_focus	If not FALSE, the element stored in overlay.element will be focused.
  *
- * @return {Object|undefined}  Overlay object, if found.
+ * @return {object|undefined|null}  Overlay object, if found.
  */
-function removeFromOverlaysStack(dialogueid, return_focus = true) {
+function removeFromOverlaysStack(dialogueid, return_focus) {
+	if (return_focus !== false) {
+		return_focus = true;
+	}
+
 	const overlay = overlays_stack.removeById(dialogueid);
 
 	if (overlay && return_focus) {
@@ -565,6 +600,120 @@ function reloadPopup(form, action) {
 
 	PopUp(action, parameters, {dialogueid, dialogue_class});
 }
+
+/**
+ * A singleton class instance for maintaining a focus within a specified container.
+ */
+const Focuser = new class {
+
+	#FOCUSABLE_SELECTORS = ['button:not([disabled])', 'input:not([type="hidden"]):not([disabled])',
+		'select:not([disabled])', 'textarea:not([disabled])', '[tabindex]:not([tabindex="-1"]):not([disabled])',
+		'[href]:not([tabindex="-1"])'
+	];
+
+	/**
+	 * @type {Map<HTMLElement, AbortController>}
+	 */
+	#contain_abort_controllers = new Map();
+
+	/**
+	 * Get the first focusable, enabled, and visible element within the container.
+	 *
+	 * @param {HTMLElement|null} container
+	 *
+	 * @returns {HTMLElement|null}
+	 */
+	getFocusableElement(container) {
+		if (!(container instanceof HTMLElement)) {
+			return null;
+		}
+
+		for (const element of container.querySelectorAll(this.#FOCUSABLE_SELECTORS.join(', '))) {
+			if (isVisible(element)) {
+				return element;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Focus and preselect the element, mimicking the autofocus behavior.
+	 *
+	 * @param {HTMLElement|null} element
+	 */
+	focus(element) {
+		if (!(element instanceof HTMLElement)) {
+			return null;
+		}
+
+		element.focus({preventScroll: true});
+
+		if (element instanceof HTMLInputElement && ['text', 'password'].includes(element.type)) {
+			element.select();
+		}
+	}
+
+	/**
+	 * Focus and preselect the first focusable element of the container, mimicking the autofocus behavior.
+	 *
+	 * @param {HTMLElement|null} container
+	 */
+	recoverFocus(container) {
+		this.focus(this.getFocusableElement(container));
+	}
+
+	/**
+	 * Prevent the focus from running away from the specified container.
+	 *
+	 * @param {HTMLElement} container
+	 */
+	containFocus(container) {
+		if (!(container instanceof HTMLElement)) {
+			return null;
+		}
+
+		if (this.#contain_abort_controllers.has(container)) {
+			this.#contain_abort_controllers.get(container).abort();
+			this.#contain_abort_controllers.delete(container);
+		}
+
+		const focusable_elements = [
+			...container.querySelectorAll(this.#FOCUSABLE_SELECTORS.join(', '))
+		].filter(element => isVisible(element));
+
+		if (focusable_elements.length === 0) {
+			return;
+		}
+
+		const abort_controller = new AbortController();
+
+		this.#contain_abort_controllers.set(container, abort_controller);
+
+		if (focusable_elements.length > 1) {
+			focusable_elements[0].addEventListener('keydown', e => {
+				if (e.key === 'Tab' && e.shiftKey) {
+					e.preventDefault();
+					focusable_elements.at(-1).focus();
+				}
+			}, {signal: abort_controller.signal});
+
+			focusable_elements.at(-1).addEventListener('keydown', e => {
+				if (e.key === 'Tab' && !e.shiftKey) {
+					e.preventDefault();
+					focusable_elements[0].focus();
+				}
+			}, {signal: abort_controller.signal});
+		}
+		else {
+			focusable_elements[0].addEventListener('keydown', e => {
+				if (e.key === 'Tab') {
+					e.preventDefault();
+				}
+			}, {signal: abort_controller.signal});
+		}
+	}
+};
 
 /**
  * Pass value to add.popup trigger.
@@ -880,9 +1029,9 @@ function showHideVisible(obj) {
 }
 
 /**
- * Check if element is visible.
+ * Check if an element is visible.
  *
- * @param {object} element
+ * @param {Element} element
  *
  * @return {boolean}
  */
@@ -1098,6 +1247,16 @@ function uncheckTableRows(page, keepids = [], mvc = true) {
 	else {
 		sessionStorage.removeItem(key);
 	}
+}
+
+/**
+ * Determines whether the user has opened a hintbox or a popup.
+ *
+ * @param {HTMLElement|Document} target
+ * @returns {boolean}
+ */
+function isUserInteracting(target = document) {
+	return target.querySelectorAll('[data-expanded="true"], [aria-expanded="true"][aria-haspopup="true"]').length > 0;
 }
 
 // Fix jQuery ui.sortable vertical positioning bug.

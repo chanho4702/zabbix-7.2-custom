@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -30,18 +30,25 @@ use CButtonIcon,
 	CSeverityHelper,
 	CSpan,
 	CTableInfo,
+	CDiv,
 	CUrl;
 
 class WidgetProblems extends CTableInfo {
 	private array $data;
 
+	private bool $highlight_rows;
+
 	public function __construct(array $data) {
 		$this->data = $data;
+
+		$this->highlight_rows = $this->data['fields']['highlight_row'] == ZBX_HIGHLIGHT_ON;
 
 		parent::__construct();
 	}
 
 	private function build(): void {
+		$this->addClass($this->highlight_rows ? 'has-highlighted-rows' : null);
+
 		$sort_div = (new CSpan())->addClass(
 			($this->data['sortorder'] === ZBX_SORT_DOWN) ? ZBX_STYLE_ARROW_DOWN : ZBX_STYLE_ARROW_UP
 		);
@@ -457,17 +464,14 @@ class WidgetProblems extends CTableInfo {
 				);
 			}
 
-			$problem_update_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'acknowledge.edit')
-				->setArgument('eventids[]', $problem['eventid'])
-				->getUrl();
-
 			// Create acknowledge link.
 			$problem_update_link = ($data['allowed']['add_comments'] || $data['allowed']['change_severity']
 					|| $data['allowed']['acknowledge'] || $can_be_closed || $data['allowed']['suppress_problems']
 					|| $data['allowed']['rank_change'])
-				? (new CLink(_('Update'), $problem_update_url))->addClass(ZBX_STYLE_LINK_ALT)
+				? (new CLink(_('Update')))
+					->addClass(ZBX_STYLE_LINK_ALT)
+					->setAttribute('data-eventid', $problem['eventid'])
+					->onClick('acknowledgePopUp({eventids: [this.dataset.eventid]}, this);')
 				: new CSpan(_('Update'));
 
 			$row
@@ -492,11 +496,16 @@ class WidgetProblems extends CTableInfo {
 					))->addClass(ZBX_STYLE_NOWRAP),
 					$problem_update_link,
 					makeEventActionsIcons($problem['eventid'], $data['actions'], $data['users'], $is_acknowledged),
-					$data['fields']['show_tags'] ? $data['tags'][$problem['eventid']] : null
+					$data['fields']['show_tags']
+						? (new CDiv($data['tags'][$problem['eventid']] ))->addClass(ZBX_STYLE_TAGS_WRAPPER)
+						: null
 				])
 				->setAttribute('data-eventid', $problem['eventid']);
 
-			$this->addRow($row);
+			$this->addRow($row, $this->highlight_rows && $value == TRIGGER_VALUE_TRUE
+				? CSeverityHelper::getSeverityFlhStyle($problem['severity'])
+				: null
+			);
 
 			if ($problem['cause_eventid'] == 0 && $problem['symptoms']) {
 				$this->addProblemsToTable($problem['symptoms'], $data, true);

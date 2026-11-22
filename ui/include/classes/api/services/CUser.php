@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -133,7 +133,7 @@ class CUser extends CApiService {
 
 		// permission check
 		if (self::$userData['type'] != USER_TYPE_SUPER_ADMIN) {
-			if (!$options['editable']) {
+			if (self::$userData['ugsetid'] != 0 && !$options['editable']) {
 				$sqlParts['from']['users_groups'] = 'users_groups ug';
 				$sqlParts['where']['uug'] = 'u.userid=ug.userid';
 				$sqlParts['where'][] = 'ug.usrgrpid IN ('.
@@ -379,10 +379,11 @@ class CUser extends CApiService {
 		if ($result) {
 			$result = $this->addRelatedObjects($options, $result);
 			$result = $this->unsetExtraFields($result, ['roleid'], $options['output']);
+		}
 
-			if (!$options['preservekeys']) {
-				$result = array_values($result);
-			}
+		// removing keys
+		if (!$options['preservekeys']) {
+			$result = zbx_cleanHashes($result);
 		}
 
 		return $result;
@@ -1033,7 +1034,8 @@ class CUser extends CApiService {
 		}
 	}
 
-	private static function checkUserGroups(array $users, ?array &$db_user_groups = null, ?array $db_users = null): void {
+	private static function checkUserGroups(array $users, ?array &$db_user_groups = null,
+			?array $db_users = null): void {
 		$user_group_indexes = [];
 
 		foreach ($users as $i1 => $user) {
@@ -1409,6 +1411,7 @@ class CUser extends CApiService {
 	private static function updateGroups(array &$users, ?array $db_users = null): void {
 		$ins_groups = [];
 		$del_groupids = [];
+		$changed_user_groups = [];
 
 		foreach ($users as &$user) {
 			if (!array_key_exists('usrgrps', $user)) {
@@ -1429,11 +1432,18 @@ class CUser extends CApiService {
 						'userid' => $user['userid'],
 						'usrgrpid' => $group['usrgrpid']
 					];
+
+					if ($db_users !== null) {
+						$changed_user_groups[$user['userid']] = $user['usrgrps'];
+					}
 				}
 			}
 			unset($group);
 
-			$del_groupids = array_merge($del_groupids, array_column($db_groups, 'id'));
+			if ($db_groups) {
+				$del_groupids = array_merge($del_groupids, array_column($db_groups, 'id'));
+				$changed_user_groups[$user['userid']] = $user['usrgrps'];
+			}
 		}
 		unset($user);
 
@@ -1443,6 +1453,10 @@ class CUser extends CApiService {
 
 		if ($ins_groups) {
 			$groupids = DB::insert('users_groups', $ins_groups);
+		}
+
+		if ($changed_user_groups) {
+			self::deleteInactiveMfaTotpSecrets($changed_user_groups);
 		}
 
 		foreach ($users as &$user) {
@@ -1458,6 +1472,111 @@ class CUser extends CApiService {
 			unset($group);
 		}
 		unset($user);
+	}
+
+	private static function deleteInactiveMfaTotpSecrets(array $user_groups): void {
+		$db_mfa_totp_secretids = [];
+
+		$options = [
+			'output' => ['userid', 'mfaid', 'mfa_totp_secretid'],
+			'filter' => ['userid' => array_keys($user_groups)]
+		];
+		$resource = DBselect(DB::makeSql('mfa_totp_secret', $options));
+
+		while ($row = DBfetch($resource)) {
+			$db_mfa_totp_secretids[$row['userid']][$row['mfaid']] = $row['mfa_totp_secretid'];
+		}
+
+		if (!$db_mfa_totp_secretids) {
+			return;
+		}
+
+		$user_groups = array_intersect_key($user_groups, $db_mfa_totp_secretids);
+		$groupids = [];
+
+		foreach ($user_groups as $groups) {
+			foreach ($groups as $group) {
+				$groupids[$group['usrgrpid']] = true;
+			}
+		}
+
+		if ($groupids) {
+			$db_mfa_user_groups = DB::select('usrgrp', [
+				'output' => ['mfaid'],
+				'filter' => [
+					'mfa_status' => GROUP_MFA_ENABLED,
+					'usrgrpid' => array_keys($groupids)
+				],
+				'preservekeys' => true
+			]);
+
+			if ($db_mfa_user_groups) {
+				$default_mfaid = CAuthenticationHelper::getPublic(CAuthenticationHelper::MFAID);
+				$direct_mfaids = [];
+
+				foreach ($db_mfa_user_groups as $group) {
+					if ($group['mfaid'] != 0) {
+						$direct_mfaids[$group['mfaid']] = true;
+					}
+				}
+
+				$db_direct_mfas = $direct_mfaids
+					? DB::select('mfa', [
+						'output' => [],
+						'mfaids' => array_keys($direct_mfaids),
+						'sortfield' => ['name'],
+						'preservekeys' => true
+					])
+					: [];
+
+				foreach ($user_groups as $userid => $groups) {
+					$user_direct_mfaids = [];
+
+					foreach ($groups as $group) {
+						if (!array_key_exists($group['usrgrpid'], $db_mfa_user_groups)) {
+							continue;
+						}
+
+						$db_mfa_user_group = $db_mfa_user_groups[$group['usrgrpid']];
+
+						if ($db_mfa_user_group['mfaid'] != 0) {
+							$user_direct_mfaids[$db_mfa_user_group['mfaid']] = true;
+						}
+						else {
+							unset($db_mfa_totp_secretids[$userid][$default_mfaid]);
+
+							if (!$db_mfa_totp_secretids[$userid]) {
+								unset($db_mfa_totp_secretids[$userid]);
+							}
+
+							continue 2;
+						}
+					}
+
+					if ($user_direct_mfaids) {
+						$primary_mfaid = key(array_intersect_key($db_direct_mfas, $user_direct_mfaids));
+
+						unset($db_mfa_totp_secretids[$userid][$primary_mfaid]);
+
+						if (!$db_mfa_totp_secretids[$userid]) {
+							unset($db_mfa_totp_secretids[$userid]);
+						}
+					}
+				}
+			}
+		}
+
+		if ($db_mfa_totp_secretids) {
+			$del_mfa_totp_secretids = [];
+
+			foreach ($db_mfa_totp_secretids as $mfa_totp_secretids) {
+				foreach ($mfa_totp_secretids as $mfa_totp_secretid) {
+					$del_mfa_totp_secretids[] = $mfa_totp_secretid;
+				}
+			}
+
+			DB::delete('mfa_totp_secret', ['mfa_totp_secretid' => $del_mfa_totp_secretids]);
+		}
 	}
 
 	private static function updateUgSets(array $users, ?array $db_users = null): void {
@@ -1817,8 +1936,6 @@ class CUser extends CApiService {
 		), 'ugsetid');
 
 		if ($del_ugsetids) {
-			DB::delete('permission', ['ugsetid' => $del_ugsetids]);
-			DB::delete('ugset_group', ['ugsetid' => $del_ugsetids]);
 			DB::delete('ugset', ['ugsetid' => $del_ugsetids]);
 		}
 	}
@@ -1902,12 +2019,7 @@ class CUser extends CApiService {
 	public function delete(array $userids) {
 		$this->validateDelete($userids, $db_users);
 
-		DB::delete('media', ['userid' => $userids]);
-		DB::delete('profiles', ['userid' => $userids]);
-
 		self::deleteUgSets($db_users);
-		DB::delete('users_groups', ['userid' => $userids]);
-		DB::delete('mfa_totp_secret', ['userid' => $userids]);
 		DB::update('token', [
 			'values' => ['creator_userid' => null],
 			'where' => ['creator_userid' => $userids]
@@ -1922,7 +2034,7 @@ class CUser extends CApiService {
 			'filter' => ['userid' => $userids],
 			'preservekeys' => true
 		]);
-		CToken::deleteForce(array_keys($tokenids), false);
+		CToken::deleteForce(array_keys($tokenids));
 
 		DB::delete('users', ['userid' => $userids]);
 
@@ -2205,9 +2317,6 @@ class CUser extends CApiService {
 	 *
 	 * @return string|array
 	 */
-	// [DM 해설] 아이디/비밀번호 검증의 본체. 화면 로그인과 API 로그인(user.login)이 모두 여기를 거친다.
-	// [DM 해설] 순서: 사용자 조회 -> 로그인 차단 여부 -> LDAP 또는 내부 비밀번호 검증 -> 그룹 상태/역할 확인 -> 세션 생성.
-	// [DM 해설] 여기를 고치면 API 로 접속하는 연동 프로그램에도 영향이 가므로, 화면 전용 추가 인증은 여기가 아니라 index.php 쪽에서 다룬다.
 	public function login(array $data) {
 		self::$user_verification_start_time = hrtime();
 
@@ -2268,7 +2377,6 @@ class CUser extends CApiService {
 
 		self::addAdditionalFields($db_user);
 		self::setTimezone($db_user['timezone']);
-		// [DM 해설] 세션 생성(DB sessions 테이블). MFA 대상이면 '확인 필요' 상태로 만들어 2단계 통과 전에는 쓸 수 없게 한다.
 		self::createSession($db_user, $db_user['mfaid'] == 0 ? ZBX_SESSION_ACTIVE : ZBX_SESSION_CONFIRMATION_REQUIRED);
 		unset($db_user['ugsetid']);
 
@@ -2283,8 +2391,6 @@ class CUser extends CApiService {
 		return array_key_exists('userData', $data) && $data['userData'] ? $db_user : $db_user['sessionid'];
 	}
 
-	// [DM 해설] 비밀번호 없이 아이디만으로 로그인시키는 메소드. HTTP 인증(index_http.php)과 SAML(index_sso.php)이 쓴다.
-	// [DM 해설] 외부 시스템이 이미 본인 확인을 끝낸 SSO 방식 연동이라면 이 메소드를 쓰는 index_http.php 흐름이 본보기다.
 	public static function loginByUsername(string $username, bool $case_sensitive): array {
 		$db_users = self::findUsersByUsername($username, $case_sensitive);
 

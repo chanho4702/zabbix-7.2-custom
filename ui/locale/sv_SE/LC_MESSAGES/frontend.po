@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Zabbix 6.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-19 13:48+0300\n"
-"PO-Revision-Date: 2025-09-12 10:50+0000\n"
+"PO-Revision-Date: 2025-10-06 12:01+0000\n"
 "Last-Translator: Daniel Nylander <zabbix@danielnylander.se>\n"
 "Language-Team: Zabbix <info@zabbix.com>\n"
 "Language: sv_SE\n"
@@ -694,10 +694,6 @@ msgid_plural "Actions disabled"
 msgstr[0] "Åtgärd inaktiverad"
 msgstr[1] "Åtgärder inaktiverade"
 
-#: app/controllers/CControllerPopup.php:42
-msgid "Action edit"
-msgstr "Åtgärd redigera"
-
 #: app/controllers/CControllerActionEnable.php:84
 msgid "Action enabled"
 msgid_plural "Actions enabled"
@@ -1296,7 +1292,7 @@ msgstr "Alla tillgängliga"
 
 #: app/views/monitoring.dashboard.view.php:189
 msgid "All dashboards"
-msgstr "Alla kontrollpaneler"
+msgstr "Alla instrumentpaneler"
 
 #: app/views/monitoring.charts.view.php:82
 msgid "All graphs"
@@ -1665,10 +1661,6 @@ msgstr "Minst en veckodag eller en dag i månaden måste anges."
 msgid "At least one host group or host must be selected."
 msgstr "Minst en värdgrupp eller värd måste väljas."
 
-#: include/classes/setup/CFrontendSetup.php:252
-msgid "At least one of MySQL or PostgreSQL should be supported."
-msgstr "Åtminstone en av MySQL eller PostgreSQL bör stödjas."
-
 #: include/classes/setup/CFrontendSetup.php:241
 msgid "At least one of MySQL, PostgreSQL or Oracle should be supported."
 msgstr "Minst en av MySQL, PostgreSQL eller Oracle bör stödjas."
@@ -1887,11 +1879,6 @@ msgstr "Tillgänglighet"
 #: include/classes/helpers/CRoleHelper.php:423 report2.php:25 report2.php:156
 msgid "Availability report"
 msgstr "Tillgänglighetsrapport"
-
-#: app/controllers/CControllerAvailabilityReportTrigger.php:70
-#: app/views/reports.availabilityreport.trigger.php:23
-msgid "Availability report graph"
-msgstr "Graf för tillgänglighetsrapport"
 
 #: include/classes/html/CHostAvailability.php:80
 #: widgets/hostavail/views/widget.view.php:32
@@ -2286,7 +2273,7 @@ msgstr "Kan inte lägga till åtgärd"
 #: jsLoader.php:133
 #, c-format
 msgid "Cannot add dashboard page: maximum number of %1$d dashboard pages has been added."
-msgstr "Kan inte lägga till kontrollpanelssida: maximalt antal %1$d kontrollpanelssidor har lagts till."
+msgstr "Kan inte lägga till instrumentpanelssida: maximalt antal %1$d instrumentpanelssidor har lagts till."
 
 #: host_discovery.php:540
 msgid "Cannot add discovery rule"
@@ -2431,7 +2418,7 @@ msgstr "Det går inte att lägga till widget: inga widgetar tillgängliga."
 
 #: jsLoader.php:134
 msgid "Cannot add widget: not enough free space on the dashboard."
-msgstr "Det går inte att lägga till widget: inte tillräckligt med ledigt utrymme på kontrollpanelen."
+msgstr "Det går inte att lägga till widget: inte tillräckligt med ledigt utrymme på instrumentpanelen."
 
 #: include/classes/api/services/CItem.php:1542
 #, c-format
@@ -2684,8 +2671,8 @@ msgstr[1] "Det går inte att ta bort anslutare"
 #: app/controllers/CControllerTemplateDashboardDelete.php:61
 msgid "Cannot delete dashboard"
 msgid_plural "Cannot delete dashboards"
-msgstr[0] "Det går inte att ta bort kontrollpanelen"
-msgstr[1] "Det går inte att ta bort kontrollpaneler"
+msgstr[0] "Det går inte att ta bort instrumentpanelen"
+msgstr[1] "Det går inte att ta bort instrumentpaneler"
 
 #: include/classes/api/services/CMfa.php:446
 msgid "Cannot delete default MFA method."
@@ -2696,7 +2683,7 @@ msgstr "Det går inte att ta bort standard MFA-metod."
 msgid "Cannot delete default user directory."
 msgstr "Det går inte att ta bort standardanvändarkatalogen."
 
-#: include/classes/api/services/CDRule.php:772
+#: include/classes/api/services/CDRule.php:773
 #, c-format
 msgid "Cannot delete discovery check \"%1$s\" of discovery rule \"%2$s\": %3$s."
 msgstr "Det går inte att ta bort upptäcktskontroll \"%1$s\" av upptäcktsregel \"%2$s\": %3$s."
@@ -2708,7 +2695,7 @@ msgid_plural "Cannot delete discovery rules"
 msgstr[0] "Det går inte att ta bort upptäcktsregeln"
 msgstr[1] "Det går inte att ta bort regler för upptäckt"
 
-#: include/classes/api/services/CDRule.php:979
+#: include/classes/api/services/CDRule.php:980
 #, c-format
 msgid "Cannot delete discovery rule \"%1$s\": %2$s."
 msgstr "Det går inte att ta bort upptäcktsregeln \"%1$s\": %2$s."
@@ -2737,7 +2724,7 @@ msgid_plural "Cannot delete hosts"
 msgstr[0] "Kan inte ta bort värd"
 msgstr[1] "Kan inte ta bort värd"
 
-#: include/classes/api/services/CHost.php:1631
+#: include/classes/api/services/CHost.php:1636
 #, c-format
 msgid "Cannot delete host \"%1$s\": %2$s."
 msgstr "Det går inte att ta bort värden \"%1$s\": %2$s."
@@ -2755,7 +2742,7 @@ msgid_plural "Cannot delete host groups"
 msgstr[0] "Det går inte att ta bort värdgruppen"
 msgstr[1] "Det går inte att ta bort värdgrupper"
 
-#: include/classes/api/services/CHostGroup.php:767
+#: include/classes/api/services/CHostGroup.php:769
 #, c-format
 msgid "Cannot delete host group \"%1$s\": %2$s."
 msgstr "Det går inte att ta bort värdgruppen \"%1$s\": %2$s."
@@ -2902,7 +2889,7 @@ msgid_plural "Cannot delete templates"
 msgstr[0] "Det går inte att ta bort mallen"
 msgstr[1] "Det går inte att ta bort mallar"
 
-#: include/classes/api/services/CTemplate.php:805
+#: include/classes/api/services/CTemplate.php:809
 #, c-format
 msgid "Cannot delete template \"%1$s\": %2$s."
 msgstr "Det går inte att ta bort mallen \"%1$s\": %2$s."
@@ -2970,12 +2957,12 @@ msgid_plural "Cannot delete user groups"
 msgstr[0] "Det går inte att ta bort användargruppen"
 msgstr[1] "Det går inte att ta bort användargrupper"
 
-#: include/classes/api/services/CUserGroup.php:1306
+#: include/classes/api/services/CUserGroup.php:1340
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by LDAP userdirectory \"%2$s\"."
 msgstr "Det går inte att ta bort användargruppen \"%1$s\", eftersom den används av LDAP-användarkatalogen \"%2$s\"."
 
-#: include/classes/api/services/CUserGroup.php:1301
+#: include/classes/api/services/CUserGroup.php:1335
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by SAML userdirectory."
 msgstr "Det går inte att ta bort användargruppen \"%1$s\", eftersom den används av SAML userdirectory."
@@ -3191,12 +3178,12 @@ msgstr "Det går inte att expandera makron."
 #: include/classes/import/importers/CTemplateDashboardImporter.php:217
 #, c-format
 msgid "Cannot find SLA \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta SLA \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta SLA \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/importers/CTemplateDashboardImporter.php:241
 #, c-format
 msgid "Cannot find action \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta åtgärd \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta åtgärd \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/importers/CMapImporter.php:270
 #, c-format
@@ -3206,7 +3193,7 @@ msgstr "Kan inte hitta bakgrundsbilden \"%1$s\" som används i kartan \"%2$s\"."
 #: include/classes/import/importers/CTemplateDashboardImporter.php:181
 #, c-format
 msgid "Cannot find graph \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta grafen \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta grafen \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/importers/CMapImporter.php:152
 #, c-format
@@ -3216,7 +3203,7 @@ msgstr "Kan inte hitta gruppen \"%1$s\" som används i kartan \"%2$s\"."
 #: include/classes/import/importers/CTemplateDashboardImporter.php:151
 #, c-format
 msgid "Cannot find host \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta värd \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta värd \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/importers/CMapImporter.php:164
 #, c-format
@@ -3301,12 +3288,12 @@ msgstr "Kan inte hitta objektet \"%1$s\" på \"%2$s\" som används i grafprototy
 #: include/classes/import/importers/CTemplateDashboardImporter.php:166
 #, c-format
 msgid "Cannot find item \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta objektet \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta objektet \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/importers/CTemplateDashboardImporter.php:193
 #, c-format
 msgid "Cannot find map \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta kartan \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta kartan \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/importers/CMapImporter.php:140
 #, c-format
@@ -3316,12 +3303,12 @@ msgstr "Kan inte hitta karta \"%1$s\" som används i karta \"%2$s\"."
 #: include/classes/import/importers/CTemplateDashboardImporter.php:253
 #, c-format
 msgid "Cannot find media type \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta medietyp \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta medietyp \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/importers/CTemplateDashboardImporter.php:205
 #, c-format
 msgid "Cannot find service \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta tjänsten \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta tjänsten \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/import/CConfigurationImport.php:1458
 #, c-format
@@ -3342,7 +3329,7 @@ msgstr "Kan inte hitta utlösaren \"%1$s\" som används i karta \"%2$s\"."
 #: include/classes/import/importers/CTemplateDashboardImporter.php:229
 #, c-format
 msgid "Cannot find user \"%1$s\" used in dashboard \"%2$s\"."
-msgstr "Kan inte hitta användaren \"%1$s\" som används i kontrollpanelen \"%2$s\"."
+msgstr "Kan inte hitta användaren \"%1$s\" som används i instrumentpanelen \"%2$s\"."
 
 #: include/classes/api/services/CUser.php:1543
 msgid "Cannot find user directory for LDAP."
@@ -3771,6 +3758,11 @@ msgstr "Det går inte att läsa XML: %1$s."
 msgid "Cannot read YAML: %1$s."
 msgstr "Det går inte att läsa YAML: %1$s."
 
+#: include/classes/server/CZabbixServer.php:502
+#, c-format
+msgid "Cannot read response from Zabbix server \"%1$s\"."
+msgstr "Kan inte läsa svaret från Zabbix-servern \"%1$s\"."
+
 #: include/classes/server/CZabbixServer.php:567
 #, c-format
 msgid "Cannot read the response, check connection with the Zabbix server \"%1$s\"."
@@ -3832,6 +3824,10 @@ msgstr "Det går inte att ange \"%1$s\" för grafprototypen \"%2$s\"."
 #: widgets/piechart/includes/CWidgetFieldDataSet.php:175
 msgid "Cannot set \"Data set aggregation\" when item with type \"Total\" is added to the chart."
 msgstr "Det går inte att ställa in \"Aggregering av datauppsättning\" när objekt av typen \"Total\" läggs till i diagrammet."
+
+#: include/classes/db/MysqlDbBackend.php:197
+msgid "Cannot set charset."
+msgstr ""
 
 #: include/classes/api/services/CItemGeneral.php:2478
 #, c-format
@@ -4819,7 +4815,7 @@ msgstr "Konfiguration av autentisering"
 #: app/controllers/CControllerTemplateDashboardEdit.php:103
 #: app/controllers/CControllerTemplateDashboardList.php:93
 msgid "Configuration of dashboards"
-msgstr "Konfiguration av kontrollpaneler"
+msgstr "Konfiguration av instrumentpaneler"
 
 #: app/controllers/CControllerDiscoveryEdit.php:144
 #: app/controllers/CControllerDiscoveryList.php:143 host_discovery.php:27
@@ -5122,10 +5118,6 @@ msgid_plural "Connectors disabled"
 msgstr[0] "Anslutare inaktiverad"
 msgstr[1] "Anslutare inaktiverade"
 
-#: app/controllers/CControllerPopup.php:43
-msgid "Connector edit"
-msgstr "Redigera anslutare"
-
 #: app/controllers/CControllerConnectorEnable.php:69
 msgid "Connector enabled"
 msgid_plural "Connectors enabled"
@@ -5284,10 +5276,6 @@ msgstr[1] "Kopiera %1$s utlösare"
 msgid "Copy to clipboard"
 msgstr "Kopiera till urklipp"
 
-#: app/controllers/CControllerPopup.php:44
-msgid "Correlation edit"
-msgstr "Korrelation redigera"
-
 #: app/controllers/CControllerPopupTriggerExpr.php:52
 #: app/controllers/CControllerPopupTriggerExpr.php:693
 #: app/controllers/CControllerPopupTriggerExpr.php:734
@@ -5344,7 +5332,7 @@ msgstr "Skapa åtgärd"
 
 #: include/classes/helpers/CRoleHelper.php:534
 msgid "Create and edit dashboards"
-msgstr "Skapa och redigera kontrollpaneler"
+msgstr "Skapa och redigera instrumentpaneler"
 
 #: include/classes/helpers/CRoleHelper.php:539
 msgid "Create and edit maintenance"
@@ -5365,7 +5353,7 @@ msgstr "Skapa anslutare"
 #: app/views/configuration.dashboard.list.php:84
 #: app/views/monitoring.dashboard.list.php:42
 msgid "Create dashboard"
-msgstr "Skapa kontrollpanel"
+msgstr "Skapa instrumentpanel"
 
 #: jsLoader.php:353
 msgid "Create dependent discovery rule"
@@ -5796,12 +5784,12 @@ msgstr "Kontrollpanel"
 #: include/classes/api/services/CTemplateDashboard.php:508
 #, c-format
 msgid "Dashboard \"%1$s\" already exists."
-msgstr "Kontrollpanelen \"%1$s\" finns redan."
+msgstr "Instrumentpanelen \"%1$s\" finns redan."
 
 #: include/classes/api/services/CDashboardGeneral.php:94
 #, c-format
 msgid "Dashboard \"%1$s\" is used in report \"%2$s\"."
-msgstr "Kontrollpanelen \"%1$s\" används i rapporten \"%2$s\"."
+msgstr "Instrumentpanelen \"%1$s\" används i rapporten \"%2$s\"."
 
 #: app/controllers/CControllerDashboardUpdate.php:218
 #: app/controllers/CControllerTemplateDashboardUpdate.php:190
@@ -5812,8 +5800,8 @@ msgstr "Dashboard skapad"
 #: app/controllers/CControllerTemplateDashboardDelete.php:58
 msgid "Dashboard deleted"
 msgid_plural "Dashboards deleted"
-msgstr[0] "Kontrollpanelen raderad"
-msgstr[1] "Kontrollpaneler borttagna"
+msgstr[0] "Instrumentpanelen raderad"
+msgstr[1] "Instrumentpaneler borttagna"
 
 #: jsLoader.php:200
 msgid "Dashboard is used as data source."
@@ -5821,7 +5809,7 @@ msgstr "Dashboard används som datakälla."
 
 #: app/views/monitoring.host.dashboard.view.php:144
 msgid "Dashboard list"
-msgstr "Lista över kontrollpaneler"
+msgstr "Lista över instrumentpaneler"
 
 #: app/views/dashboard.page.properties.edit.php:59
 msgid "Dashboard page properties"
@@ -5829,11 +5817,11 @@ msgstr "Egenskaper för Dashboard-sidan"
 
 #: app/views/dashboard.properties.edit.php:87
 msgid "Dashboard properties"
-msgstr "Egenskaper för kontrollpanelen"
+msgstr "Egenskaper för instrumentpanelen"
 
 #: app/views/popup.dashboard.share.edit.php:148
 msgid "Dashboard sharing"
-msgstr "Delning av kontrollpanel"
+msgstr "Delning av instrumentpanel"
 
 #: app/controllers/CControllerDashboardShareUpdate.php:102
 #: app/controllers/CControllerDashboardUpdate.php:217
@@ -5844,7 +5832,7 @@ msgstr "Dashboard uppdaterad"
 #: include/classes/api/services/CReport.php:319
 #, c-format
 msgid "Dashboard with ID \"%1$s\" is not available."
-msgstr "Kontrollpanel med ID \"%1$s\" är inte tillgänglig."
+msgstr "Instrumentpanel med ID \"%1$s\" är inte tillgänglig."
 
 #: app/controllers/CControllerDashboardList.php:120
 #: app/controllers/CControllerHostDashboardView.php:133
@@ -5864,7 +5852,7 @@ msgstr "Kontrollpanel med ID \"%1$s\" är inte tillgänglig."
 #: include/views/inventory.host.view.php:168
 #: include/views/inventory.host.view.php:172 jsLoader.php:354
 msgid "Dashboards"
-msgstr "Kontrollpaneler"
+msgstr "Instrumentpaneler"
 
 #: include/graphs.inc.php:63 include/views/js/monitoring.sysmaps.js.php:804
 #: include/views/js/monitoring.sysmaps.js.php:890
@@ -5962,8 +5950,8 @@ msgstr "TLS-kryptering av databas"
 msgid "Database TLS key file"
 msgstr "TLS-nyckelfil för databas"
 
-#: include/classes/api/clients/CLocalApiClient.php:124
-#: include/classes/api/clients/CLocalApiClient.php:138
+#: include/classes/api/clients/CLocalApiClient.php:133
+#: include/classes/api/clients/CLocalApiClient.php:147
 msgid "Database error occurred."
 msgstr "Ett databasfel inträffade."
 
@@ -6295,7 +6283,7 @@ msgstr "Ta bort aktuell åtgärd?"
 
 #: jsLoader.php:356
 msgid "Delete dashboard?"
-msgstr "Ta bort kontrollpanelen?"
+msgstr "Ta bort instrumentpanelen?"
 
 #: app/views/configuration.discovery.edit.php:264
 #: include/views/configuration.host.discovery.edit.php:1032
@@ -6391,12 +6379,12 @@ msgstr "Ta bort valda anslutare?"
 #: app/views/configuration.dashboard.list.php:71
 #: app/views/monitoring.dashboard.list.php:125
 msgid "Delete selected dashboard?"
-msgstr "Ta bort vald kontrollpanel?"
+msgstr "Ta bort vald instrumentpanel?"
 
 #: app/views/configuration.dashboard.list.php:72
 #: app/views/monitoring.dashboard.list.php:126
 msgid "Delete selected dashboards?"
-msgstr "Ta bort valda kontrollpaneler?"
+msgstr "Ta bort valda instrumentpaneler?"
 
 #: app/views/js/configuration.discovery.list.js.php:113
 #: include/views/configuration.host.discovery.list.php:370
@@ -6805,6 +6793,10 @@ msgstr "Detaljer om webbscenario"
 msgid "Detected TimescaleDB license does not support compression. Compression is supported in TimescaleDB Community Edition."
 msgstr "Upptäckt TimescaleDB-licens stöder inte komprimering. Komprimering stöds i TimescaleDB Community Edition."
 
+#: app/views/administration.housekeeping.edit.php:204
+msgid "Detected license does not support compression. Compression is supported in TimescaleDB Community Edition."
+msgstr "Den upptäckta licensen stöder inte komprimering. Komprimering stöds i TimescaleDB Community Edition."
+
 #: app/controllers/CControllerPopupTriggerExpr.php:1130
 msgid "Detection period"
 msgstr "Detekteringsperiod"
@@ -7165,7 +7157,7 @@ msgstr "Upptäcktsobjekt"
 msgid "Discovery of VMware clusters, \"url\" - VMware service URL. Returns JSON"
 msgstr "Upptäckt av VMware-kluster, \"url\" - URL för VMware-tjänst. Returnerar JSON"
 
-#: include/classes/data/CItemData.php:1932
+#: include/classes/data/CItemData.php:1931
 msgid "Discovery of VMware datastores, \"url\" - VMware service URL, \"filter_uuid\" - one hv uuid or vm uuid (empty by default). Returns JSON"
 msgstr "Upptäckt av VMware-datalager, \"url\" - URL för VMware-tjänst, \"filter_uuid\" - en hv uuid eller vm uuid (tom som standard). Returnerar JSON"
 
@@ -7249,10 +7241,6 @@ msgid_plural "Discovery rules disabled"
 msgstr[0] "Regel för upptäckt inaktiverad"
 msgstr[1] "Regler för upptäckt inaktiverade"
 
-#: app/controllers/CControllerPopup.php:45
-msgid "Discovery rule edit"
-msgstr "Redigera regel för upptäckt"
-
 #: app/controllers/CControllerDiscoveryEnable.php:68 host_discovery.php:580
 msgid "Discovery rule enabled"
 msgid_plural "Discovery rules enabled"
@@ -7306,10 +7294,6 @@ msgstr "Visa åtgärder"
 msgid "Display graph"
 msgstr "Visa graf"
 
-#: widgets/tophosts/views/column.edit.php:136
-msgid "Display item value as"
-msgstr "Visa objektets värde som"
-
 #: widgets/itemhistory/views/column.edit.php:241
 msgid "Display local time"
 msgstr "Visa lokal tid"
@@ -7333,10 +7317,6 @@ msgstr "Problem med displayen"
 #: app/partials/monitoring.latest.view.html.php:308
 msgid "Display stacked graph"
 msgstr "Visa staplad graf"
-
-#: widgets/topitems/views/column.edit.php:90
-msgid "Display value as"
-msgstr "Visa värdet som"
 
 #: app/controllers/CControllerHintboxActionlist.php:99
 #: app/views/administration.queue.details.php:86
@@ -8417,7 +8397,7 @@ msgstr "Misslyckad inloggning"
 #: app/views/js/configuration.dashboard.edit.js.php:171
 #: app/views/js/monitoring.dashboard.view.js.php:272
 msgid "Failed to create dashboard"
-msgstr "Misslyckades med att skapa kontrollpanel"
+msgstr "Misslyckades med att skapa instrumentpanel"
 
 #: app/views/js/webscenario.step.edit.js.php:371
 #: include/views/js/common.item.edit.js.php:290
@@ -8426,7 +8406,7 @@ msgstr "Misslyckades med att tolka URL."
 
 #: jsLoader.php:139
 msgid "Failed to paste dashboard page."
-msgstr "Misslyckades med att klistra in kontrollpanelssidan."
+msgstr "Misslyckades med att klistra in instrumentpanelssidan."
 
 #: jsLoader.php:140
 msgid "Failed to paste widget."
@@ -8441,20 +8421,20 @@ msgstr "Misslyckades med att välja standard LDAP-server."
 #: app/views/js/configuration.dashboard.edit.js.php:172
 #: app/views/js/monitoring.dashboard.view.js.php:273
 msgid "Failed to update dashboard"
-msgstr "Misslyckades med att uppdatera kontrollpanelen"
+msgstr "Misslyckades med att uppdatera instrumentpanelen"
 
 #: jsLoader.php:141
 msgid "Failed to update dashboard page properties."
-msgstr "Det gick inte att uppdatera egenskaperna för kontrollpanelens sida."
+msgstr "Det gick inte att uppdatera egenskaperna för instrumentpanelens sida."
 
 #: jsLoader.php:142
 msgid "Failed to update dashboard properties."
-msgstr "Det gick inte att uppdatera kontrollpanelens egenskaper."
+msgstr "Det gick inte att uppdatera instrumentpanelens egenskaper."
 
 #: app/controllers/CControllerDashboardShareUpdate.php:110
 #: app/views/js/popup.dashboard.share.edit.js.php:83
 msgid "Failed to update dashboard sharing."
-msgstr "Misslyckades med att uppdatera kontrollpanelens delning."
+msgstr "Misslyckades med att uppdatera instrumentpanelens delning."
 
 #: jsLoader.php:128
 msgid "Failed to update time selector."
@@ -9608,10 +9588,6 @@ msgstr "Tillgänglighet för värd"
 msgid "Host cannot have more than one default interface of the same type."
 msgstr "Värden kan inte ha mer än ett standardgränssnitt av samma typ."
 
-#: widgets/hostcard/Widget.php:32
-msgid "Host card"
-msgstr "Värdkort"
-
 #: app/views/administration.proxy.list.php:91 hostinventoriesoverview.php:85
 #: widgets/tophosts/includes/WidgetForm.php:159
 msgid "Host count"
@@ -9619,7 +9595,7 @@ msgstr "Värdantal"
 
 #: app/views/monitoring.host.dashboard.view.php:73
 msgid "Host dashboards"
-msgstr "Värd för kontrollpaneler"
+msgstr "Värd för instrumentpaneler"
 
 #: app/controllers/CControllerHostMassDelete.php:66
 msgid "Host deleted"
@@ -9634,10 +9610,6 @@ msgid "Host disabled"
 msgid_plural "Hosts disabled"
 msgstr[0] "Värd inaktiverad"
 msgstr[1] "Värdar inaktiverade"
-
-#: app/controllers/CControllerPopup.php:46
-msgid "Host edit"
-msgstr "Värd redigera"
 
 #: app/controllers/CControllerHostGroupEnable.php:76
 #: app/controllers/CControllerPopupMassupdateHost.php:491
@@ -9697,10 +9669,6 @@ msgid "Host group deleted"
 msgid_plural "Host groups deleted"
 msgstr[0] "Värdgrupp raderad"
 msgstr[1] "Värdgrupper borttagna"
-
-#: app/controllers/CControllerPopup.php:47
-msgid "Host group edit"
-msgstr "Värdgrupp redigera"
 
 #: include/views/js/monitoring.sysmaps.js.php:112
 msgid "Host group elements"
@@ -9833,12 +9801,6 @@ msgstr "Värdnavigator"
 #: include/hosts.inc.php:284
 msgid "Host networks"
 msgstr "Värdnätverk"
-
-#: widgets/topitems/includes/WidgetForm.php:116
-#: widgets/topitems/includes/WidgetForm.php:128
-#: widgets/topitems/views/widget.edit.php:63
-msgid "Host ordering"
-msgstr "Beställning av värd"
 
 #: widgets/hostnavigator/includes/WidgetForm.php:65
 msgid "Host patterns"
@@ -10420,7 +10382,7 @@ msgstr "Otillgänglig åtgärd"
 #: app/controllers/CControllerPopupScheduledReportEdit.php:123
 #: app/controllers/CControllerScheduledReportEdit.php:303
 msgid "Inaccessible dashboard"
-msgstr "Otillgänglig kontrollpanel"
+msgstr "Otillgänglig instrumentpanel"
 
 #: app/partials/configuration.host.edit.html.php:64
 #: app/partials/configuration.hostgroup.edit.html.php:69
@@ -11925,12 +11887,6 @@ msgstr "Inventering inaktiverad för värd \"%1$s\"."
 msgid "Inventory field"
 msgstr "Inventeringsfält"
 
-#: include/classes/html/widgets/fields/CWidgetFieldMultiSelectHostInventoryView.php:30
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-#: widgets/hostcard/includes/WidgetForm.php:50
-msgid "Inventory fields"
-msgstr "Inventeringsfält"
-
 #: app/views/popup.massupdate.host.php:175
 #: app/views/popup.operation.edit.php:402
 msgid "Inventory mode"
@@ -12008,10 +11964,6 @@ msgid_plural "Items disabled"
 msgstr[0] "Objektet är inaktiverat"
 msgstr[1] "Objekt inaktiverade"
 
-#: app/controllers/CControllerPopup.php:48
-msgid "Item edit"
-msgstr "Objektredigering"
-
 #: items.php:707
 msgid "Item enabled"
 msgid_plural "Items enabled"
@@ -12047,12 +11999,6 @@ msgstr "Objektnavigering"
 msgid "Item not selected"
 msgstr "Objektet är inte valt"
 
-#: widgets/topitems/includes/WidgetForm.php:145
-#: widgets/topitems/includes/WidgetForm.php:157
-#: widgets/topitems/views/widget.edit.php:81
-msgid "Item ordering"
-msgstr "Objektordning"
-
 #: widgets/piechart/views/widget.edit.js.php:203
 #: widgets/svggraph/views/widget.edit.js.php:281
 msgid "Item pattern"
@@ -12084,10 +12030,6 @@ msgid "Item prototype deleted"
 msgid_plural "Item prototypes deleted"
 msgstr[0] "Objektprototyp raderad"
 msgstr[1] "Objektprototyper raderade"
-
-#: app/controllers/CControllerPopup.php:49
-msgid "Item prototype edit"
-msgstr "Redigera objektprototyp"
 
 #: app/controllers/CControllerPopupMassupdateItem.php:286
 #: disc_prototypes.php:457 disc_prototypes.php:483 disc_prototypes.php:522
@@ -12604,15 +12546,6 @@ msgstr "Längd"
 msgid "Licensed under"
 msgstr "Licensierad enligt"
 
-#: widgets/topitems/includes/WidgetForm.php:125
-#: widgets/topitems/includes/WidgetForm.php:154
-msgid "Limit"
-msgstr "Gräns"
-
-#: widgets/topitems/views/widget.edit.php:95
-msgid "Limit applies to each \"Item pattern\" separately"
-msgstr "Begränsningen gäller för varje \"objektmönster\" separat"
-
 #: app/views/administration.gui.edit.php:93
 msgid "Limit for search and filter results"
 msgstr "Begränsa för sökning och filtrera resultat"
@@ -12638,11 +12571,6 @@ msgstr "Typ av linje"
 #: include/views/js/monitoring.sysmaps.js.php:598
 msgid "Line width"
 msgstr "Linjebredd"
-
-#: widgets/svggraph/includes/WidgetForm.php:301
-#: widgets/svggraph/includes/WidgetForm.php:333
-msgid "Linear"
-msgstr "Linjär"
 
 #: app/views/popup.massupdate.host.php:42 app/views/template.massupdate.php:45
 #: include/views/monitoring.sysmap.constructor.php:43
@@ -12853,11 +12781,6 @@ msgstr "Tidsformat för logg"
 msgid "Log unmatched SNMP traps"
 msgstr "Logga oöverensstämmande SNMP-traps"
 
-#: widgets/svggraph/includes/WidgetForm.php:302
-#: widgets/svggraph/includes/WidgetForm.php:334
-msgid "Logarithmic"
-msgstr "Logaritmisk"
-
 #: app/controllers/CControllerAuditLogList.php:201
 #: app/views/administration.user.list.php:135
 #: app/views/popup.ldap.test.edit.php:33 app/views/system.warning.php:43
@@ -13017,10 +12940,6 @@ msgstr "Underhållsarbete"
 #, c-format
 msgid "Maintenance \"%1$s\" already exists."
 msgstr "Underhåll \"%1$s\" finns redan."
-
-#: app/controllers/CControllerPopup.php:50
-msgid "Maintenance edit"
-msgstr "Underhåll redigera"
 
 #: app/controllers/CControllerMaintenanceTimePeriodEdit.php:142
 #: app/views/maintenance.edit.php:238
@@ -13388,6 +13307,11 @@ msgstr "Maximalt antal rader"
 msgid "Maximum required %1$s database version is %2$s."
 msgstr "Högsta erforderliga %1$s databasversion är %2$s."
 
+#: app/partials/administration.system.info.php:221
+#, c-format
+msgid "Maximum required version is %1$s."
+msgstr "Högsta versionen som krävs är %1$s."
+
 #: app/controllers/CControllerTimeSelectorUpdate.php:136
 #: include/classes/mvc/CController.php:320
 #: include/classes/widgets/fields/CWidgetFieldTimePeriod.php:203
@@ -13448,7 +13372,7 @@ msgstr "Typ av media"
 msgid "Media type \"%1$s\" already exists."
 msgstr "Mediatypen \"%1$s\" finns redan."
 
-#: include/classes/api/services/CMediatype.php:878
+#: include/classes/api/services/CMediatype.php:927
 #, c-format
 msgid "Media type \"%1$s\" is used by action \"%2$s\"."
 msgstr "Mediatyp \"%1$s\" används av åtgärd \"%2$s\"."
@@ -13472,10 +13396,6 @@ msgstr[1] "Medietyper inaktiverade"
 #: app/views/administration.user.edit.php:359
 msgid "Media type disabled by Administration."
 msgstr "Mediatyp inaktiverad av administrationen."
-
-#: app/controllers/CControllerPopup.php:51
-msgid "Media type edit"
-msgstr "Medietyp redigering"
 
 #: app/controllers/CControllerMediatypeEnable.php:87
 #: app/controllers/CControllerMediatypeEnable.php:94
@@ -13727,6 +13647,12 @@ msgstr "Minsta tillåtna gräns för parsningstid för PHP-skript är %1$s (konf
 msgid "Minimum required size of PHP post is %1$s (configuration option \"post_max_size\")."
 msgstr "Minsta storlek som krävs för PHP-postning är %1$s (konfigurationsalternativ \"post_max_size\")."
 
+#: app/partials/administration.system.info.php:212
+#: app/views/administration.housekeeping.edit.php:183
+#, c-format
+msgid "Minimum required version is %1$s."
+msgstr "Minsta versionen som krävs är %1$s."
+
 #: app/views/monitoring.map.view.php:48
 #: include/views/monitoring.sysmap.edit.php:276
 msgid "Minimum severity"
@@ -13826,10 +13752,6 @@ msgid "Module disabled"
 msgid_plural "Modules disabled"
 msgstr[0] "Modul inaktiverad"
 msgstr[1] "Moduler inaktiverade"
-
-#: app/controllers/CControllerPopup.php:52
-msgid "Module edit"
-msgstr "Modul redigera"
 
 #: app/controllers/CControllerModuleEnable.php:91
 msgid "Module enabled"
@@ -13958,6 +13880,16 @@ msgstr "Flera"
 #: include/triggers.inc.php:611
 msgid "Multiple PROBLEM events"
 msgstr "Flera PROBLEM-händelser"
+
+#: app/partials/administration.system.info.php:235
+#, c-format
+msgid "Must be at least %1$s."
+msgstr "Måste vara minst %1$s."
+
+#: app/partials/administration.system.info.php:254
+#, c-format
+msgid "Must not be higher than %1$s."
+msgstr "Får inte vara högre än %1$s."
 
 #: jsLoader.php:284
 msgid "Mute"
@@ -14301,7 +14233,7 @@ msgstr "Ny anslutare"
 #: app/controllers/CControllerDashboardView.php:174
 #: app/controllers/CControllerTemplateDashboardEdit.php:79
 msgid "New dashboard"
-msgstr "Ny kontrollpanel"
+msgstr "Ny instrumentpanel"
 
 #: app/views/configuration.discovery.edit.php:244
 #: app/views/configuration.discovery.edit.php:285
@@ -14440,7 +14372,7 @@ msgstr "Nya värden"
 
 #: app/views/monitoring.host.dashboard.view.php:146
 msgid "Next dashboard"
-msgstr "Nästa kontrollpanel"
+msgstr "Nästa instrumentpanel"
 
 #: app/views/configuration.dashboard.edit.php:114
 #: app/views/monitoring.dashboard.view.php:184
@@ -15326,10 +15258,6 @@ msgstr "Antal eller procentandel av inoder. Returnerar heltal för antal; float 
 msgid "Numeral systems"
 msgstr "Talsystem"
 
-#: widgets/tophosts/views/column.edit.php:139
-msgid "Numeric"
-msgstr "﻿Numerisk"
-
 #: app/partials/configuration.filter.items.php:143
 #: app/views/popup.massupdate.item.php:148 include/items.inc.php:125
 #: include/triggers.inc.php:1214 include/views/configuration.item.edit.php:123
@@ -15555,7 +15483,7 @@ msgstr "Endast tjänster utan problemtaggar"
 
 #: include/classes/api/services/CDashboard.php:405
 msgid "Only super admins can set dashboard owner."
-msgstr "Endast superadministratörer kan ange ägare för kontrollpanelen."
+msgstr "Endast superadministratörer kan ange ägare för instrumentpanelen."
 
 #: include/classes/api/services/CReport.php:354
 msgid "Only super admins can set report owner."
@@ -15805,7 +15733,7 @@ msgstr "Utmatning"
 #: include/classes/api/services/CDashboardGeneral.php:339
 #, c-format
 msgid "Overlapping widgets at X:%3$d, Y:%4$d on page #%2$d of dashboard \"%1$s\"."
-msgstr "Överlappande widgetar på X:%3$d, Y:%4$d på sidan #%2$d i kontrollpanelen \"%1$s\"."
+msgstr "Överlappande widgets på X:%3$d, Y:%4$d på sidan #%2$d i instrumentpanelen \"%1$s\"."
 
 #: include/views/configuration.item.edit.php:893
 #: include/views/configuration.item.edit.php:925
@@ -16271,10 +16199,6 @@ msgstr "Klistra in utan externa länkar"
 msgid "Pattern"
 msgstr "Mönster"
 
-#: widgets/topitems/includes/CWidgetFieldColumnsListView.php:58
-msgid "Patterns"
-msgstr "Blockmönster"
-
 #: app/views/popup.action.edit.php:238
 msgid "Pause operations for suppressed problems"
 msgstr "Pausa operationer för undertryckta problem"
@@ -16576,7 +16500,7 @@ msgstr "Förhandsvisa"
 
 #: app/views/monitoring.host.dashboard.view.php:135
 msgid "Previous dashboard"
-msgstr "Föregående kontrollpanel"
+msgstr "Tidigare instrumentpanel"
 
 #: app/partials/scheduledreport.formgrid.html.php:86
 #: app/partials/scheduledreport.table.html.php:57
@@ -16934,10 +16858,6 @@ msgid_plural "Proxies deleted"
 msgstr[0] "Proxy raderad"
 msgstr[1] "Proxy raderade"
 
-#: app/controllers/CControllerPopup.php:53
-msgid "Proxy edit"
-msgstr "Proxy redigera"
-
 #: app/controllers/CControllerAuditLogList.php:239
 #: app/partials/configuration.host.edit.html.php:266
 #: app/views/configuration.host.list.php:153
@@ -16971,10 +16891,6 @@ msgid "Proxy group deleted"
 msgid_plural "Proxy groups deleted"
 msgstr[0] "Proxygrupp raderad"
 msgstr[1] "Proxygrupper raderade"
-
-#: app/controllers/CControllerPopup.php:54
-msgid "Proxy group edit"
-msgstr "Redigera proxygrupp"
 
 #: app/controllers/CControllerProxyGroupUpdate.php:74
 msgid "Proxy group updated"
@@ -17804,6 +17720,11 @@ msgstr "Svarskod"
 msgid "Response time"
 msgstr "Svarstid"
 
+#: include/classes/server/CZabbixServer.php:498
+#, c-format
+msgid "Response timeout of %1$s exceeded when connecting to Zabbix server \"%2$s\"."
+msgstr "Svarstidsgränsen överstegs för %1$s vid anslutning till Zabbix-servern \"%2$s\"."
+
 #: app/controllers/CControllerMediatypeTestSend.php:182
 msgid "Response type: JSON"
 msgstr "Typ av svar: JSON"
@@ -18088,10 +18009,6 @@ msgid "SLA disabled"
 msgid_plural "SLAs disabled"
 msgstr[0] "SLA inaktiverad"
 msgstr[1] "SLA inaktiverat"
-
-#: app/controllers/CControllerPopup.php:58
-msgid "SLA edit"
-msgstr "SLA redigera"
 
 #: app/controllers/CControllerSlaEnable.php:73
 msgid "SLA enabled"
@@ -18532,10 +18449,6 @@ msgstr[1] "Skript raderade"
 msgid "Script does not have parameters."
 msgstr "Skriptet har inga parametrar."
 
-#: app/controllers/CControllerPopup.php:56
-msgid "Script edit"
-msgstr "Skript redigera"
-
 #: app/views/administration.timeouts.edit.php:168
 msgid "Script execution"
 msgstr "Utförande av skript"
@@ -18869,10 +18782,6 @@ msgid_plural "Services deleted"
 msgstr[0] "Tjänst borttagen"
 msgstr[1] "Tjänster borttagna"
 
-#: app/controllers/CControllerPopup.php:57
-msgid "Service edit"
-msgstr "Service redigera"
-
 #: app/views/administration.userrole.edit.php:166
 #: app/views/administration.userrole.edit.php:207
 msgid "Service list"
@@ -19108,6 +19017,18 @@ msgstr "Kort"
 #: widgets/problems/includes/WidgetForm.php:106
 msgid "Shortened"
 msgstr "Förkortad"
+
+#: app/partials/administration.system.info.php:243
+#: app/views/administration.housekeeping.edit.php:187
+#, c-format
+msgid "Should be at least %1$s."
+msgstr "Bör vara minst %1$s."
+
+#: app/partials/administration.system.info.php:262
+#: app/views/administration.housekeeping.edit.php:197
+#, c-format
+msgid "Should not be higher than %1$s."
+msgstr "Bör inte vara högre än %1$s."
 
 #: app/partials/monitoring.problem.filter.php:27
 #: app/views/monitoring.charts.view.php:80
@@ -19510,13 +19431,6 @@ msgstr "Utrymme mellan sektorer"
 msgid "Spanish (es_ES)"
 msgstr "Spanska (es_ES)"
 
-#: widgets/item/includes/WidgetForm.php:191
-#: widgets/item/includes/WidgetForm.php:321
-#: widgets/tophosts/views/column.edit.php:155
-#: widgets/tophosts/views/column.edit.php:162
-msgid "Sparkline"
-msgstr "Sparkline"
-
 #: app/views/mediatype.list.php:83 app/views/mediatype.list.php:91
 msgid "Specific"
 msgstr "Specifik"
@@ -19644,7 +19558,7 @@ msgstr "Statistik och tillgänglighet för Zabbix skrivcache. Cache - ett av vä
 msgid "Statistics and availability of proxy memory buffer. Mode (modes: pfree, free, total, used, pused)."
 msgstr "Statistik och tillgänglighet för proxyns minnesbuffert. Mode (lägen: pfree, free, total, used, pused)."
 
-#: include/classes/data/CItemData.php:2862
+#: include/classes/data/CItemData.php:2854
 msgid "Statistics of values received by the preprocessing manager."
 msgstr "Statistik över värden som tas emot av förbehandlingshanteraren."
 
@@ -19979,6 +19893,10 @@ msgstr "Storlek på swaputrymme i byte eller i procent av totalt. Returnerar hel
 msgid "Swedish (sv_SE)"
 msgstr "Svenska (sv_SE)"
 
+#: index_sso.php:346
+msgid "Switch SSO user"
+msgstr ""
+
 #: app/views/js/administration.authentication.edit.js.php:241
 msgid "Switching authentication method will reset all except this session! Continue?"
 msgstr "Byte av autentiseringsmetod kommer att återställa alla utom denna session! Fortsätta?"
@@ -20260,21 +20178,17 @@ msgstr "En mall kan inte länkas till en annan mall mer än en gång, inte ens g
 
 #: app/controllers/CControllerAuditLogList.php:256
 msgid "Template dashboard"
-msgstr "Mall för kontrollpanel"
+msgstr "Mall för instrumentpanel"
 
 #: app/views/popup.import.php:37
 msgid "Template dashboards"
-msgstr "Mall för kontrollpaneler"
+msgstr "Mall för instrumentpaneler"
 
 #: app/controllers/CControllerTemplateDelete.php:133
 msgid "Template deleted"
 msgid_plural "Templates deleted"
 msgstr[0] "Mall raderad"
 msgstr[1] "Mallar raderade"
-
-#: app/controllers/CControllerPopup.php:59
-msgid "Template edit"
-msgstr "Mall redigera"
 
 #: app/controllers/CControllerAuditLogList.php:259
 #: app/partials/configuration.templategroup.edit.html.php:52
@@ -20298,10 +20212,6 @@ msgid "Template group deleted"
 msgid_plural "Template groups deleted"
 msgstr[0] "Mallgrupp borttagen"
 msgstr[1] "Mallgrupper borttagna"
-
-#: app/controllers/CControllerPopup.php:55
-msgid "Template group edit"
-msgstr "Redigera mallgrupp"
 
 #: app/controllers/CControllerTemplateGroupUpdate.php:86
 msgid "Template group updated"
@@ -20684,11 +20594,11 @@ msgstr "Tema"
 msgid "These parameters will be passed to the script as command-line arguments in the specified order."
 msgstr "Dessa parametrar skickas till skriptet som kommandoradsargument i den angivna ordningen."
 
-#: app/views/action.list.php:163
+#: app/views/action.list.php:156
 msgid "This action has conditions or operations referencing deleted object(s)."
 msgstr "Denna åtgärd har villkor eller operationer som hänvisar till borttagna objekt."
 
-#: app/views/action.list.php:158
+#: app/views/action.list.php:151
 msgid "This action has missing conditions or operations due to previously deleted object(s)."
 msgstr "Denna åtgärd har saknade villkor eller åtgärder på grund av tidigare borttagna objekt."
 
@@ -20986,10 +20896,6 @@ msgstr "Idag"
 msgid "Today so far"
 msgstr "Hittills idag"
 
-#: app/controllers/CControllerPopup.php:60
-msgid "Token edit"
-msgstr "Token redigera"
-
 #: include/views/js/monitoring.sysmaps.js.php:40
 #: include/views/js/monitoring.sysmaps.js.php:159
 #: include/views/js/monitoring.sysmaps.js.php:684
@@ -21018,10 +20924,6 @@ msgstr "Topp N"
 #: widgets/tophosts/Widget.php:34
 msgid "Top hosts"
 msgstr "Bästa värdar"
-
-#: widgets/topitems/Widget.php:32
-msgid "Top items"
-msgstr "Toppobjekt"
 
 #: widgets/toptriggers/Widget.php:29
 msgid "Top triggers"
@@ -21251,10 +21153,6 @@ msgstr[1] "Utlösare inaktiverade"
 msgid "Trigger displaying options"
 msgstr "Alternativ för visning av utlösare"
 
-#: app/controllers/CControllerPopup.php:61
-msgid "Trigger edit"
-msgstr "Utlösarredigering"
-
 #: app/controllers/CControllerTriggerEnable.php:67
 msgid "Trigger enabled"
 msgid_plural "Triggers enabled"
@@ -21393,10 +21291,6 @@ msgid "Trigger prototype deleted"
 msgid_plural "Trigger prototypes deleted"
 msgstr[0] "Prototyp för utlösare raderad"
 msgstr[1] "Prototyper för utlösare raderade"
-
-#: app/controllers/CControllerPopup.php:62
-msgid "Trigger prototype edit"
-msgstr "Prototyp för utlösare redigera"
 
 #: app/controllers/CControllerTriggerMassupdate.php:219
 #: app/controllers/CControllerTriggerPrototypeDisable.php:76
@@ -21707,6 +21601,14 @@ msgstr "Det gick inte att hämta status för kompressionsstöd för TimescaleDB.
 msgid "Unable to retrieve TimescaleDB version."
 msgstr "Det gick inte att hämta TimescaleDB-versionen."
 
+#: app/views/administration.housekeeping.edit.php:173
+msgid "Unable to retrieve compression support status of TimescaleDB time-series database extension for PostgreSQL."
+msgstr "Det går inte att hämta status för komprimeringsstödet för databasutökningen TimescaleDB för PostgreSQL."
+
+#: app/views/administration.housekeeping.edit.php:178
+msgid "Unable to retrieve version of TimescaleDB time-series database extension for PostgreSQL."
+msgstr "Det går inte att hämta versionen för databasutökningen TimescaleDB för PostgreSQL."
+
 #: include/views/mfa.login.php:65
 #, c-format
 msgid "Unable to scan? You can use %1$s secret key to manually configure your authenticator app:"
@@ -21984,6 +21886,11 @@ msgstr "Version av databasserver som inte stöds %1$s. Måste vara minst %2$s."
 #, c-format
 msgid "Unsupported %1$s database server version. Must not be higher than %2$s."
 msgstr "Version av databasserver som inte stöds %1$s. Får inte vara högre än %2$s."
+
+#: app/partials/administration.system.info.php:206
+#: app/views/administration.housekeeping.edit.php:169
+msgid "Unsupported TimescaleDB time-series database extension for PostgreSQL is used."
+msgstr "Databasutökningen TimescaleDB för PostgreSQL används fast den inte stöds."
 
 #: app/views/administration.housekeeping.edit.php:190
 #, c-format
@@ -22273,7 +22180,7 @@ msgstr "Användaren \"%1$s\" kan inte vara utan användargrupp."
 #: include/classes/api/services/CUser.php:1361
 #, c-format
 msgid "User \"%1$s\" is dashboard \"%2$s\" owner."
-msgstr "Användaren \"%1$s\" är ägare till kontrollpanelen \"%2$s\"."
+msgstr "Användaren \"%1$s\" är ägare till instrumentpanelen \"%2$s\"."
 
 #: include/classes/api/services/CUser.php:1346
 #, c-format
@@ -22665,10 +22572,6 @@ msgstr "Attribut för användarnamn"
 msgid "Users"
 msgstr "Användare"
 
-#: include/locales.inc.php:62
-msgid "Uzbek (uz_UZ)"
-msgstr "Uzbekiska (uz_UZ)"
-
 #: include/classes/data/CItemData.php:1876
 msgid "VMware Distributed Virtual Switch, \"url\" - VMware service URL. Returns JSON"
 msgstr "VMware Distributed Virtual Switch, \"url\" - URL för VMware-tjänst. Returnerar JSON"
@@ -22800,10 +22703,6 @@ msgstr "Lista över datalager för VMware Hypervisor, \"url\" - URL för VMware-
 #: include/classes/data/CItemData.php:2156
 msgid "VMware hypervisor health state rollup sensor, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - gray; 1 - green; 2 - yellow; 3 - red"
 msgstr "VMware hypervisor health state rollup sensor, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returnerar 0 - grå; 1 - grön; 2 - gul; 3 - röd"
-
-#: include/classes/data/CItemData.php:2237
-msgid "VMware hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
-msgstr "Underhållsstatus för VMware-hypervisor, \"url\" - URL för VMware-tjänst, \"uuid\" - global unik identifierare för VMware-hypervisor. Returnerar 0 - inte i underhåll; 1 - i underhåll"
 
 #: include/classes/data/CItemData.php:2051
 msgid "VMware hypervisor model, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier"
@@ -22941,10 +22840,6 @@ msgstr "Användning av gästminne för virtuell VMware-maskin, \"url\" - URL fö
 msgid "VMware virtual machine host memory usage, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Minnesanvändning för VMware-värdmaskin, \"url\" - URL för VMware-tjänst, \"uuid\" - global unik identifierare för VMware-värdmaskin"
 
-#: include/classes/data/CItemData.php:2482
-msgid "VMware virtual machine hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
-msgstr "Status för underhåll av hypervisor för virtuell VMware-maskin, \"url\" - URL för VMware-tjänst, \"uuid\" - global unik identifierare för virtuell VMware-maskin. Returnerar 0 - inte i underhåll; 1 - i underhåll"
-
 #: include/classes/data/CItemData.php:2331
 msgid "VMware virtual machine hypervisor name, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Namn på hypervisor för virtuell VMware-maskin, \"url\" - URL för VMware-tjänst, \"uuid\" - global unik identifierare för virtuell VMware-maskin"
@@ -22969,7 +22864,7 @@ msgstr "Prestandaräknare för virtuell VMware-maskin, \"url\" - URL för VMware
 msgid "VMware virtual machine power state, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Kraftstatus för virtuell VMware-maskin, \"url\" - URL för VMware-tjänst, \"uuid\" - global unik identifierare för virtuell VMware-maskin"
 
-#: include/classes/data/CItemData.php:2498
+#: include/classes/data/CItemData.php:2490
 msgid "VMware virtual machine private memory size, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Storlek på privat minne för virtuell VMware-maskin, \"url\" - URL för VMware-tjänst, \"uuid\" - global unik identifierare för virtuell VMware-maskin"
 
@@ -23411,6 +23306,11 @@ msgstr "Varning"
 msgid "Warning message"
 msgstr "Varningsmeddelande"
 
+#: app/partials/administration.system.info.php:243
+#: app/partials/administration.system.info.php:262
+msgid "Warning!"
+msgstr "Varning!"
+
 #: app/partials/administration.system.info.php:198
 msgid "Warning! Support for Oracle DB is deprecated since Zabbix 7.0 and will be removed in future versions."
 msgstr "Varning för Oracle DB! Stöd för Oracle DB är inte längre aktuellt sedan Zabbix 7.0 och kommer att tas bort i framtida versioner."
@@ -23563,7 +23463,7 @@ msgstr "Widget"
 #: include/classes/api/services/CDashboardGeneral.php:352
 #, c-format
 msgid "Widget at X:%3$d, Y:%4$d on page #%2$d of dashboard \"%1$s\" is out of bounds."
-msgstr "Widget på X:%3$d, Y:%4$d på sidan #%2$d i kontrollpanelen \"%1$s\" är utanför gränserna."
+msgstr "Widget på X:%3$d, Y:%4$d på sidan #%2$d i instrumentpanelen \"%1$s\" är utanför gränserna."
 
 #: include/classes/html/widgets/CWidgetFormView.php:234
 msgid "Widget is deprecated."
@@ -23941,6 +23841,10 @@ msgstr "Du kan inte byta mallar för aktuellt val."
 msgid "You do not have permission to perform this operation."
 msgstr "Du har inte behörighet att utföra den här åtgärden."
 
+#: index_sso.php:337
+msgid "You have been authorized via Single sign-on (SSO), but logging in to Zabbix failed."
+msgstr ""
+
 #: include/classes/core/ZBase.php:759 include/func.inc.php:1686
 msgid "You have no permissions to access this page."
 msgstr "Du har ingen behörighet att komma åt den här sidan."
@@ -24220,22 +24124,22 @@ msgstr "abs() - Absolut värde"
 msgid "acos() - The arccosine of a value as an angle, expressed in radians"
 msgstr "acos() - Arccosinus för ett värde som en vinkel, uttryckt i radianer"
 
-#: include/classes/api/services/CDRule.php:773
+#: include/classes/api/services/CDRule.php:774
 #, c-format
 msgid "action \"%1$s\" uses this discovery check"
 msgstr "åtgärd \"%1$s\" använder denna upptäcktskontroll"
 
-#: include/classes/api/services/CDRule.php:980
+#: include/classes/api/services/CDRule.php:981
 #, c-format
 msgid "action \"%1$s\" uses this discovery rule"
 msgstr "åtgärd \"%1$s\" använder denna upptäcktsregel"
 
-#: include/classes/api/services/CHost.php:1632
+#: include/classes/api/services/CHost.php:1637
 #, c-format
 msgid "action \"%1$s\" uses this host"
 msgstr "åtgärd \"%1$s\" använder denna värd"
 
-#: include/classes/api/services/CHostGroup.php:768
+#: include/classes/api/services/CHostGroup.php:770
 #, c-format
 msgid "action \"%1$s\" uses this host group"
 msgstr "åtgärd \"%1$s\" använder denna värdgrupp"
@@ -24245,7 +24149,7 @@ msgstr "åtgärd \"%1$s\" använder denna värdgrupp"
 msgid "action \"%1$s\" uses this service"
 msgstr "åtgärd \"%1$s\" använder denna tjänst"
 
-#: include/classes/api/services/CTemplate.php:806
+#: include/classes/api/services/CTemplate.php:810
 #, c-format
 msgid "action \"%1$s\" uses this template"
 msgstr "åtgärd \"%1$s\" använder denna mall"
@@ -25280,10 +25184,6 @@ msgstr "ogiltigt värdgruppsnamn"
 msgid "invalid host name"
 msgstr "ogiltigt värdnamn"
 
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-msgid "invalid inventory field"
-msgstr "ogiltigt inventeringsfält"
-
 #: include/classes/validators/CHistFunctionValidator.php:82
 #: include/classes/validators/CMathFunctionValidator.php:86
 #, c-format
@@ -25606,11 +25506,6 @@ msgstr "monodec() - Kontroll av kontinuerlig värdeminskning för objekt (1 - da
 #: app/controllers/CControllerPopupTriggerExpr.php:858
 msgid "monoinc() - Check for continuous item value increase (1 - data is monotonic, 0 - otherwise), Mode (strict - require strict monotonicity)"
 msgstr "monoinc() - Kontroll av kontinuerlig ökning av objektvärdet (1 - data är monotona, 0 - annars), Mode (strict - kräver strikt monotonicitet)"
-
-#: widgets/hostcard/views/widget.view.php:157
-#: widgets/hostcard/views/widget.view.php:338
-msgid "more"
-msgstr "mer"
 
 #: include/func.inc.php:571
 msgctxt "millisecond short"
@@ -26197,7 +26092,7 @@ msgstr "mall-ID \"%1$s\" skickas %2$s gånger"
 
 #: include/classes/api/services/CTemplateDashboard.php:395
 msgid "template dashboard with the same UUID already exists"
-msgstr "mall för kontrollpanel med samma UUID finns redan"
+msgstr "mallinstrumentpanel med samma UUID finns redan"
 
 #: include/classes/api/services/CTemplateGroup.php:594
 msgid "template group with the same UUID already exists"

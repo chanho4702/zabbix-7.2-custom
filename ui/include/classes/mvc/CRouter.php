@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -40,19 +40,14 @@ class CRouter {
 	 */
 	private array $routes = [
 		// action									controller															layout					view
-		'acknowledge.edit'							=> [CControllerAcknowledgeEdit::class,								'layout.json',			'acknowledge.edit'],
 		'action.create'								=> [CControllerActionCreate::class,									'layout.json',			null],
 		'action.delete'								=> [CControllerActionDelete::class,									'layout.json',			null],
 		'action.disable'							=> [CControllerActionDisable::class,								'layout.json',			null],
-		'action.edit'								=> [CControllerActionEdit::class,									'layout.json',			'action.edit'],
 		'action.enable'								=> [CControllerActionEnable::class,									'layout.json',			null],
 		'action.list'								=> [CControllerActionList::class,									'layout.htmlpage',		'action.list'],
 		'action.operation.check'					=> [CControllerActionOperationCheck::class,							'layout.json',			null],
 		'action.operation.condition.check'			=> [CControllerActionOperationConditionCheck::class,				'layout.json',			null],
 		'action.update'								=> [CControllerActionUpdate::class,									'layout.json',			null],
-		// [DM 해설] 코어 라우팅 표. 형식은 '액션명' => [컨트롤러 클래스, 레이아웃, 뷰] 로 5버전 커스텀 폴더의 routing.php 와 같은 모양이다.
-		// [DM 해설] 아래 두 줄처럼 같은 컨트롤러를 화면용(layout.htmlpage)과 CSV 용(layout.csv) 액션으로 따로 등록한다.
-		// [DM 해설] 모듈 액션은 이 표를 고치지 않고 manifest.json 에 적는다. (addActions() 로 합쳐진다)
 		'actionlog.csv'								=> [CControllerActionLogList::class,								'layout.csv',			'reports.actionlog.list.csv'],
 		'actionlog.list'							=> [CControllerActionLogList::class,								'layout.htmlpage',		'reports.actionlog.list'],
 		'audit.settings.edit'						=> [CControllerAuditSettingsEdit::class,							'layout.htmlpage',		'administration.audit.settings.edit'],
@@ -62,8 +57,6 @@ class CRouter {
 		'authentication.update'						=> [CControllerAuthenticationUpdate::class,							null,					null],
 		'autoreg.edit'								=> [CControllerAutoregEdit::class,									'layout.htmlpage',		'administration.autoreg.edit'],
 		'autoreg.update'							=> [CControllerAutoregUpdate::class,								null,					null],
-		'availabilityreport.list'					=> [CControllerAvailabilityReportList::class,						'layout.htmlpage',		'reports.availabilityreport.list'],
-		'availabilityreport.trigger'				=> [CControllerAvailabilityReportTrigger::class,					'layout.htmlpage',		'reports.availabilityreport.trigger'],
 		'charts.view'								=> [CControllerChartsView::class,									'layout.htmlpage',		'monitoring.charts.view'],
 		'charts.view.json'							=> [CControllerChartsViewJson::class,								'layout.json',			'monitoring.charts.view.json'],
 		'connector.create'							=> [CControllerConnectorCreate::class,								'layout.json',			null],
@@ -123,7 +116,7 @@ class CRouter {
 		'host.create'								=> [CControllerHostCreate::class,									'layout.json',			null],
 		'host.dashboard.view'						=> [CControllerHostDashboardView::class,							'layout.htmlpage',		'monitoring.host.dashboard.view'],
 		'host.disable'								=> [CControllerHostDisable::class,									'layout.json',			null],
-		'host.edit'									=> [CControllerHostEdit::class,										'layout.json',			'host.edit'],
+		'host.edit'									=> [CControllerHostEdit::class,										'layout.htmlpage',		'configuration.host.edit'],
 		'host.enable'								=> [CControllerHostEnable::class,									'layout.json',			null],
 		'host.list'									=> [CControllerHostList::class,										'layout.htmlpage',		'configuration.host.list'],
 		'host.massdelete'							=> [CControllerHostMassDelete::class,								'layout.json',			null],
@@ -133,7 +126,7 @@ class CRouter {
 		'hostgroup.create'							=> [CControllerHostGroupCreate::class,								'layout.json',			null],
 		'hostgroup.delete'							=> [CControllerHostGroupDelete::class,								'layout.json',			null],
 		'hostgroup.disable'							=> [CControllerHostGroupDisable::class,								'layout.json',			null],
-		'hostgroup.edit'							=> [CControllerHostGroupEdit::class,								'layout.json',			'hostgroup.edit'],
+		'hostgroup.edit'							=> [CControllerHostGroupEdit::class,								'layout.htmlpage',		'configuration.hostgroup.edit'],
 		'hostgroup.enable'							=> [CControllerHostGroupEnable::class,								'layout.json',			null],
 		'hostgroup.list'							=> [CControllerHostGroupList::class,								'layout.htmlpage',		'configuration.hostgroup.list'],
 		'hostgroup.update'							=> [CControllerHostGroupUpdate::class,								'layout.json',			null],
@@ -209,6 +202,8 @@ class CRouter {
 		'notifications.snooze'						=> [CControllerNotificationsSnooze::class,							'layout.json',			null],
 		'popup'										=> [CControllerPopup::class,										'layout.htmlpage',		'popup.view'],
 		'popup.acknowledge.create'					=> [CControllerPopupAcknowledgeCreate::class,						'layout.json',			null],
+		'popup.acknowledge.edit'					=> [CControllerPopupAcknowledgeEdit::class,							'layout.json',			'popup.acknowledge.edit'],
+		'popup.action.edit'							=> [CControllerPopupActionEdit::class,								'layout.json',			'popup.action.edit'],
 		'popup.action.operation.edit'				=> [CControllerPopupActionOperationEdit::class,						'layout.json',			'popup.operation.edit'],
 		'popup.action.operations.list'				=> [CControllerPopupActionOperationsList::class,					'layout.json',			'popup.action.operations.list'],
 		'popup.condition.check'						=> [CControllerActionConditionCheck::class,							'layout.json',			null],
@@ -216,6 +211,8 @@ class CRouter {
 		'popup.condition.operations'				=> [CControllerPopupConditionOperations::class,						'layout.json',			'popup.condition.edit'],
 		'popup.dashboard.share.edit'				=> [CControllerPopupDashboardShareEdit::class,						'layout.json',			'popup.dashboard.share.edit'],
 		'popup.generic'								=> [CControllerPopupGeneric::class,									'layout.json',			'popup.generic'],
+		'popup.host.edit'							=> [CControllerHostEdit::class,										'layout.json',			'popup.host.edit'],
+		'popup.hostgroup.edit'						=> [CControllerHostGroupEdit::class,								'layout.json',			'popup.hostgroup.edit'],
 		'popup.import'								=> [CControllerPopupImport::class,									'layout.json',			'popup.import'],
 		'popup.import.compare'						=> [CControllerPopupImportCompare::class,							'layout.json',			'popup.import.compare'],
 		'popup.itemtest.edit'						=> [CControllerPopupItemTestEdit::class,							'layout.json',			'popup.itemtestedit.view'],
@@ -232,6 +229,8 @@ class CRouter {
 		'popup.media'								=> [CControllerPopupMedia::class,									'layout.json',			'popup.media'],
 		'popup.mediatypemapping.check'				=> [CControllerPopupMediaTypeMappingCheck::class,					'layout.json',			null],
 		'popup.mediatypemapping.edit'				=> [CControllerPopupMediaTypeMappingEdit::class,					'layout.json',			'popup.mediatypemapping.edit'],
+		'popup.proxy.edit'							=> [CControllerPopupProxyEdit::class,								'layout.json',			'popup.proxy.edit'],
+		'popup.proxygroup.edit'						=> [CControllerPopupProxyGroupEdit::class,							'layout.json',			'popup.proxygroup.edit'],
 		'popup.usergroupmapping.check'				=> [CControllerPopupUserGroupMappingCheck::class,					'layout.json',			null],
 		'popup.usergroupmapping.edit'				=> [CControllerPopupUserGroupMappingEdit::class,					'layout.json',			'popup.usergroupmapping.edit'],
 		'popup.scheduledreport.create'				=> [CControllerPopupScheduledReportCreate::class,					'layout.json',			null],
@@ -240,13 +239,17 @@ class CRouter {
 		'popup.scheduledreport.subscription.edit'	=> [CControllerPopupScheduledReportSubscriptionEdit::class,			'layout.json',			'popup.scheduledreport.subscription'],
 		'popup.scheduledreport.test'				=> [CControllerPopupScheduledReportTest::class,						'layout.json',			'popup.scheduledreport.test'],
 		'popup.scriptexec'							=> [CControllerPopupScriptExec::class,								'layout.json',			'popup.scriptexec'],
+		'popup.service.edit'						=> [CControllerPopupServiceEdit::class,								'layout.json',			'popup.service.edit'],
 		'popup.service.statusrule.edit'				=> [CControllerPopupServiceStatusRuleEdit::class,					'layout.json',			'popup.service.statusrule.edit'],
 		'popup.services'							=> [CControllerPopupServices::class,								'layout.json',			'popup.services'],
+		'popup.sla.edit'							=> [CControllerPopupSlaEdit::class,									'layout.json',			'popup.sla.edit'],
 		'popup.sla.excludeddowntime.edit'			=> [CControllerPopupSlaExcludedDowntimeEdit::class,					'layout.json',			'popup.sla.excludeddowntime.edit'],
 		'popup.tabfilter.delete'					=> [CControllerPopupTabFilterDelete::class,							'layout.json',			null],
 		'popup.tabfilter.edit'						=> [CControllerPopupTabFilterEdit::class,							'layout.json',			'popup.tabfilter.edit'],
 		'popup.tabfilter.update'					=> [CControllerPopupTabFilterUpdate::class,							'layout.json',			null],
+		'popup.templategroup.edit'					=> [CControllerTemplateGroupEdit::class,							'layout.json',			'popup.templategroup.edit'],
 		'popup.testtriggerexpr'						=> [CControllerPopupTestTriggerExpr::class,							'layout.json',			'popup.testtriggerexpr'],
+		'popup.token.edit'							=> [CControllerPopupTokenEdit::class,								'layout.json',			'popup.token.edit'],
 		'popup.token.view'							=> [CControllerPopupTokenView::class,								'layout.json',			'popup.token.view'],
 		'popup.triggerexpr'							=> [CControllerPopupTriggerExpr::class,								'layout.json',			'popup.triggerexpr'],
 		'popup.valuemap.edit'						=> [CControllerPopupValueMapEdit::class,							'layout.json',			'popup.valuemap.edit'],
@@ -258,14 +261,12 @@ class CRouter {
 		'proxy.config.refresh'						=> [CControllerProxyConfigRefresh::class,							'layout.json',			null],
 		'proxy.create'								=> [CControllerProxyCreate::class,									'layout.json',			null],
 		'proxy.delete'								=> [CControllerProxyDelete::class,									'layout.json',			null],
-		'proxy.edit'								=> [CControllerProxyEdit::class,									'layout.json',			'proxy.edit'],
 		'proxy.host.disable'						=> [CControllerProxyHostDisable::class,								'layout.json',			null],
 		'proxy.host.enable'							=> [CControllerProxyHostEnable::class,								'layout.json',			null],
 		'proxy.list'								=> [CControllerProxyList::class,									'layout.htmlpage',		'administration.proxy.list'],
 		'proxy.update'								=> [CControllerProxyUpdate::class,									'layout.json',			null],
 		'proxygroup.create'							=> [CControllerProxyGroupCreate::class,								'layout.json',			null],
 		'proxygroup.delete'							=> [CControllerProxyGroupDelete::class,								'layout.json',			null],
-		'proxygroup.edit'							=> [CControllerProxyGroupEdit::class,								'layout.json',			'proxygroup.edit'],
 		'proxygroup.list'							=> [CControllerProxyGroupList::class,								'layout.htmlpage',		'administration.proxygroup.list'],
 		'proxygroup.update'							=> [CControllerProxyGroupUpdate::class,								'layout.json',			null],
 		'queue.details'								=> [CControllerQueueDetails::class,									'layout.htmlpage',		'administration.queue.details'],
@@ -295,7 +296,6 @@ class CRouter {
 		'search'									=> [CControllerSearch::class,										'layout.htmlpage',		'search'],
 		'service.create'							=> [CControllerServiceCreate::class,								'layout.json',			null],
 		'service.delete'							=> [CControllerServiceDelete::class,								'layout.json',			null],
-		'service.edit'								=> [CControllerServiceEdit::class,									'layout.json',			'service.edit'],
 		'service.list'								=> [CControllerServiceList::class,									'layout.htmlpage',		'service.list'],
 		'service.list.edit'							=> [CControllerServiceListEdit::class,								'layout.htmlpage',		'service.list.edit'],
 		'service.list.edit.refresh'					=> [CControllerServiceListEditRefresh::class,						'layout.json',			'service.list.edit.refresh'],
@@ -305,7 +305,6 @@ class CRouter {
 		'sla.create'								=> [CControllerSlaCreate::class,									'layout.json',			null],
 		'sla.delete'								=> [CControllerSlaDelete::class,									'layout.json',			null],
 		'sla.disable'								=> [CControllerSlaDisable::class,									'layout.json',			null],
-		'sla.edit'									=> [CControllerSlaEdit::class,										'layout.json',			'sla.edit'],
 		'sla.enable'								=> [CControllerSlaEnable::class,									'layout.json',			null],
 		'sla.excludeddowntime.validate'				=> [CControllerSlaExcludedDowntimeValidate::class,					'layout.json',			null],
 		'sla.list'									=> [CControllerSlaList::class,										'layout.htmlpage',		'sla.list'],
@@ -327,7 +326,7 @@ class CRouter {
 		'template.update'							=> [CControllerTemplateUpdate::class,								'layout.json',			null],
 		'templategroup.create'						=> [CControllerTemplateGroupCreate::class,							'layout.json',			null],
 		'templategroup.delete'						=> [CControllerTemplateGroupDelete::class,							'layout.json',			null],
-		'templategroup.edit'						=> [CControllerTemplateGroupEdit::class,							'layout.json',			'templategroup.edit'],
+		'templategroup.edit'						=> [CControllerTemplateGroupEdit::class,							'layout.htmlpage',		'configuration.templategroup.edit'],
 		'templategroup.list'						=> [CControllerTemplateGroupList::class,							'layout.htmlpage',		'configuration.templategroup.list'],
 		'templategroup.update'						=> [CControllerTemplateGroupUpdate::class,							'layout.json',			null],
 		'timeouts.edit'								=> [CControllerTimeoutsEdit::class,									'layout.htmlpage',		'administration.timeouts.edit'],
@@ -337,7 +336,6 @@ class CRouter {
 		'token.create'								=> [CControllerTokenCreate::class,									'layout.json',			null],
 		'token.delete'								=> [CControllerTokenDelete::class,									'layout.json',			null],
 		'token.disable'								=> [CControllerTokenDisable::class,									null,					null],
-		'token.edit'								=> [CControllerTokenEdit::class,									'layout.json',			'token.edit'],
 		'token.enable'								=> [CControllerTokenEnable::class,									null,					null],
 		'token.list'								=> [CControllerTokenList::class,									'layout.htmlpage',		'administration.token.list'],
 		'token.update'								=> [CControllerTokenUpdate::class,									'layout.json',			null],
@@ -416,6 +414,7 @@ class CRouter {
 		'index_sso.php'					=> [CLegacyAction::class, null, null],
 		'jsrpc.php'						=> [CLegacyAction::class, null, null],
 		'map.php'						=> [CLegacyAction::class, null, null],
+		'report2.php'					=> [CLegacyAction::class, null, null],
 		'report4.php'					=> [CLegacyAction::class, null, null],
 		'sysmap.php'					=> [CLegacyAction::class, null, null],
 		'sysmaps.php'					=> [CLegacyAction::class, null, null],
@@ -438,7 +437,6 @@ class CRouter {
 	 * @param string $actions['action_name']['layout']  Optional layout of the 'action_name' action.
 	 * @param string $actions['action_name']['view']    Optional view of the 'action_name' action.
 	 */
-	// [DM 해설] 모듈의 액션을 라우팅 표에 추가한다. ZBase::run() 에서 호출된다.
 	public function addActions(array $actions): void {
 		foreach ($actions as $action => $route) {
 			if (is_array($route) && array_key_exists('class', $route)) {
@@ -456,7 +454,6 @@ class CRouter {
 	 *
 	 * @param string $action  Action name.
 	 */
-	// [DM 해설] 액션명으로 컨트롤러 / 레이아웃 / 뷰를 찾아 둔다. 표에 없는 액션이면 컨트롤러가 null 이 되어 "Page not found" 가 된다.
 	public function setAction(string $action): void {
 		$this->action = $action;
 

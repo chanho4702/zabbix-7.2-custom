@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -96,13 +96,9 @@ if ($host_prototype['templateid']) {
 
 			if ($data['allowed_ui_conf_templates']
 					&& array_key_exists($template['templateid'], $host_prototype['writable_templates'])) {
-				$template_url = (new CUrl('zabbix.php'))
-					->setArgument('action', 'popup')
-					->setArgument('popup', 'template.edit')
-					->setArgument('templateid', $template['templateid'])
-					->getUrl();
-
-				$template_link = new CLink($template['name'], $template_url);
+				$template_link = (new CLink($template['name']))
+					->addClass('js-edit-linked-template')
+					->setAttribute('data-templateid', $template['templateid']);
 			}
 			else {
 				$template_link = new CSpan($template['name']);
@@ -127,13 +123,9 @@ else {
 
 			if ($data['allowed_ui_conf_templates']
 					&& array_key_exists($template['templateid'], $host_prototype['writable_templates'])) {
-				$template_url = (new CUrl('zabbix.php'))
-					->setArgument('action', 'popup')
-					->setArgument('popup', 'template.edit')
-					->setArgument('templateid', $template['templateid'])
-					->getUrl();
-
-				$template_link = new CLink($template['name'], $template_url);
+				$template_link = (new CLink($template['name']))
+					->addClass('js-edit-linked-template')
+					->setAttribute('data-templateid', $template['templateid']);
 			}
 			else {
 				$template_link = new CSpan($template['name']);

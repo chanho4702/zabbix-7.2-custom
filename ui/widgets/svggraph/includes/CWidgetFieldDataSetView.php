@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -45,11 +45,9 @@ use CButton,
 	CTemplateTag,
 	CTextBox,
 	CVar,
-	CWidgetFieldMultiSelectOverrideHostView,
 	CWidgetFieldView;
 
 use Zabbix\Widgets\CWidgetField;
-use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectOverrideHost;
 
 class CWidgetFieldDataSetView extends CWidgetFieldView {
 
@@ -283,29 +281,6 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 			(new CButtonIcon(ZBX_ICON_REMOVE_SMALLER, _('Delete')))->addClass('js-remove')
 		))->addClass('list-item-actions');
 
-		$override_host_html = [];
-
-		if (!$this->field->isTemplateDashboard()) {
-			$override_host_field =
-				(new CWidgetFieldMultiSelectOverrideHost($field_name.'['.$row_num.'][override_hostid]'))
-					->setValue($value['override_hostid']);
-
-			$override_host_field_view = (new CWidgetFieldMultiSelectOverrideHostView($override_host_field))
-				->setFormName($this->form_name)
-				->setWidth(null);
-
-			foreach ($override_host_field_view->getViewCollection() as
-					['label' => $label, 'view' => $view, 'class' => $class]) {
-				$override_host_html[] = $label;
-				$override_host_html[] = (new CFormField($view))
-					->addClass($class)
-					->addClass('override-host-field-view');
-			}
-
-			$override_host_html[] = implode('', $override_host_field_view->getTemplates());
-			$override_host_html[] = (new CScriptTag($override_host_field_view->getJavaScript()))->setOnDocumentReady();
-		}
-
 		return (new CListItem([
 			(new CDiv())
 				->addClass(ZBX_STYLE_DRAG_ICON)
@@ -406,8 +381,7 @@ class CWidgetFieldDataSetView extends CWidgetFieldView {
 									->setEnabled(!in_array($value['type'], [SVG_GRAPH_TYPE_POINTS, SVG_GRAPH_TYPE_BAR]))
 									->setModern()
 							)
-						])
-						->addItem($override_host_html),
+						]),
 					(new CFormGrid())
 						->addItem([
 							new CLabel(_('Y-axis'), $field_name.'['.$row_num.'][axisy]'),

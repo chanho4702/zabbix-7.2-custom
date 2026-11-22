@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -63,6 +63,7 @@ class CHost extends CHostGeneral {
 	 * @param bool          $options['tags']                               Select hosts by given tags.
 	 * @param bool          $options['severities']                         Select hosts that have only problems with given severities.
 	 * @param bool          $options['inheritedTags']                      Select hosts that have given tags also in their linked templates.
+	 * @param string|array  $options['selectGroups']                       Deprecated! Return a "groups" property with host groups data that the host belongs to.
 	 * @param string|array  $options['selectHostGroups']                   Return a "hostgroups" property with host groups data that the host belongs to.
 	 * @param string|array  $options['selectParentTemplates']              Return a "parentTemplates" property with templates that the host is linked to.
 	 * @param string|array  $options['selectItems']                        Return an "items" property with host items.
@@ -143,6 +144,7 @@ class CHost extends CHostGeneral {
 			'searchWildcardsEnabled'			=> false,
 			// output
 			'output'							=> API_OUTPUT_EXTEND,
+			'selectGroups'						=> null,
 			'selectHostGroups'					=> null,
 			'selectParentTemplates'				=> null,
 			'selectItems'						=> null,
@@ -170,6 +172,8 @@ class CHost extends CHostGeneral {
 		$options = zbx_array_merge($defOptions, $options);
 
 		$this->validateGet($options);
+
+		$this->checkDeprecatedParam($options, 'selectGroups');
 
 		// editable + PERMISSION CHECK
 		if (self::$userData['type'] != USER_TYPE_SUPER_ADMIN && !$options['nopermissions']) {
@@ -486,18 +490,9 @@ class CHost extends CHostGeneral {
 
 		// tags
 		if ($options['tags'] !== null && $options['tags']) {
-			if ($options['inheritedTags']) {
-				$sqlParts['left_join'][] = ['alias' => 'ht2', 'table' => 'hosts_templates', 'using' => 'hostid'];
-				$sqlParts['left_table'] = ['alias' => $this->tableAlias, 'table' => $this->tableName];
-				$sqlParts['where'][] = CApiTagHelper::addInheritedHostTagsWhereCondition($options['tags'],
-					$options['evaltype']
-				);
-			}
-			else {
-				$sqlParts['where'][] = CApiTagHelper::addWhereCondition($options['tags'], $options['evaltype'], 'h',
-					'host_tag', 'hostid'
-				);
-			}
+			$sqlParts['where'][] = $options['inheritedTags']
+				? CApiTagHelper::addInheritedHostTagsWhereCondition($options['tags'], $options['evaltype'], 'h')
+				: CApiTagHelper::addWhereCondition($options['tags'], $options['evaltype'], 'h', 'host_tag', 'hostid');
 		}
 
 		// limit
@@ -563,10 +558,11 @@ class CHost extends CHostGeneral {
 		if ($result) {
 			$result = $this->addRelatedObjects($options, $result);
 			$result = $this->unsetExtraFields($result, ['name_upper'], $options['output']);
+		}
 
-			if (!$options['preservekeys']) {
-				$result = array_values($result);
-			}
+		// removing keys (hash -> array)
+		if (!$options['preservekeys']) {
+			$result = zbx_cleanHashes($result);
 		}
 
 		return $result;
@@ -1744,26 +1740,16 @@ class CHost extends CHostGeneral {
 		}
 
 		// delete host from maps
-		if (!empty($hostids)) {
-			DB::delete('sysmaps_elements', [
-				'elementtype' => SYSMAP_ELEMENT_TYPE_HOST,
-				'elementid' => $hostids
-			]);
-		}
-
-		// delete host inventory
-		DB::delete('host_inventory', ['hostid' => $hostids]);
+		DB::delete('sysmaps_elements', [
+			'elementtype' => SYSMAP_ELEMENT_TYPE_HOST,
+			'elementid' => $hostids
+		]);
 
 		self::deleteHgSets($db_hosts);
-		DB::delete('hosts_groups', ['hostid' => $hostids]);
 
 		// delete host
 		DB::delete('host_proxy', ['hostid' => $hostids]);
 		DB::delete('host_tag', ['hostid' => $hostids]);
-		DB::update('hosts', [
-			'values' => ['templateid' => 0],
-			'where' => ['hostid' => $hostids, 'flags' => ZBX_FLAG_DISCOVERY_PROTOTYPE]
-		]);
 		DB::delete('hosts', ['hostid' => $hostids]);
 
 		self::addAuditLog(CAudit::ACTION_DELETE, CAudit::RESOURCE_HOST, $db_hosts);
@@ -1780,7 +1766,9 @@ class CHost extends CHostGeneral {
 	protected function addRelatedObjects(array $options, array $result) {
 		$result = parent::addRelatedObjects($options, $result);
 
-		$this->addRelatedHostGroups($options, $result);
+		// adding groups
+		$this->addRelatedGroups($options, $result, 'selectGroups');
+		$this->addRelatedGroups($options, $result, 'selectHostGroups');
 
 		$hostids = array_keys($result);
 
@@ -1967,19 +1955,29 @@ class CHost extends CHostGeneral {
 		return $result;
 	}
 
-	private function addRelatedHostGroups(array $options, array &$result): void {
-		if ($options['selectHostGroups'] === null || $options['selectHostGroups'] === API_OUTPUT_COUNT) {
+	/**
+	 * Adds related host groups requested by "select*" options to the resulting object set.
+	 *
+	 * @param array  $options  [IN] Original input options.
+	 * @param array  $result   [IN/OUT] Result output.
+	 * @param string $option   [IN] Possible values:
+	 *                                - "selectGroups" (deprecated);
+	 *                                - "selectHostGroups" (or any other value).
+	 */
+	private function addRelatedGroups(array $options, array &$result, string $option): void {
+		if ($options[$option] === null || $options[$option] === API_OUTPUT_COUNT) {
 			return;
 		}
 
-		$relation_map = $this->createRelationMap($result, 'hostid', 'groupid', 'hosts_groups');
+		$relationMap = $this->createRelationMap($result, 'hostid', 'groupid', 'hosts_groups');
 		$groups = API::HostGroup()->get([
-			'output' => $options['selectHostGroups'],
-			'groupids' => $relation_map->getRelatedIds(),
+			'output' => $options[$option],
+			'groupids' => $relationMap->getRelatedIds(),
 			'preservekeys' => true
 		]);
 
-		$result = $relation_map->mapMany($result, $groups, 'hostgroups');
+		$output_tag = $option === 'selectGroups' ? 'groups' : 'hostgroups';
+		$result = $relationMap->mapMany($result, $groups, $output_tag);
 	}
 
 	/**

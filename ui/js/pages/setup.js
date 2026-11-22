@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -15,6 +15,7 @@
 
 const ZBX_DB_MYSQL		= 'MYSQL';
 const ZBX_DB_POSTGRESQL	= 'POSTGRESQL';
+const ZBX_DB_ORACLE		= 'ORACLE';
 
 const DB_STORE_CREDS_VAULT_HASHICORP	= 1;
 const DB_STORE_CREDS_VAULT_CYBERARK		= 2;
@@ -153,5 +154,7 @@ const view = new class {
 		else if (encryption_customizable) {
 			verify_host.removeAttribute('disabled');
 		}
+
+		db_warning.style.display = db_type === ZBX_DB_ORACLE ? '' : 'none';
 	}
 };

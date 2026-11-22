@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,7 +22,7 @@
 $form = (new CForm())
 	->setId('service-list')
 	->setName('service_list')
-	->addVar('return_url', $data['return_url']);
+	->addVar('back_url', $data['back_url']);
 
 $header = [
 	(new CColHeader(
@@ -94,12 +94,6 @@ foreach ($data['services'] as $serviceid => $service) {
 			: $problem_event['name'];
 	}
 
-	$service_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'service.edit')
-		->setArgument('serviceid', $serviceid)
-		->getUrl();
-
 	$table->addRow(new CRow(array_merge($row, [
 		(new CCol([
 			(new CLink($service['name'],
@@ -114,15 +108,15 @@ foreach ($data['services'] as $serviceid => $service) {
 			->addClass(CSeverityHelper::getStyle((int) $service['status'])),
 		$root_cause,
 		zbx_date2str(DATE_FORMAT, $service['created_at']),
-		$data['tags'][$serviceid],
+		(new CDiv($data['tags'][$serviceid]))->addClass(ZBX_STYLE_TAGS_WRAPPER),
 		(new CCol([
 			(new CButtonIcon(ZBX_ICON_PLUS, _('Add child service')))
 				->addClass('js-add-child-service')
 				->setAttribute('data-serviceid', $serviceid)
 				->setEnabled(!$service['readonly'] && $service['problem_tags'] == 0),
 			(new CButtonIcon(ZBX_ICON_PENCIL, _('Edit')))
-				->addClass('js-edit-service-list')
-				->setAttribute('data-href', $service_url)
+				->addClass('js-edit-service')
+				->setAttribute('data-serviceid', $serviceid)
 				->setEnabled(!$service['readonly']),
 			(new CButtonIcon(ZBX_ICON_REMOVE_SMALL, _('Delete')))
 				->addClass('js-delete-service')

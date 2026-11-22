@@ -4,8 +4,8 @@ msgstr ""
 "Project-Id-Version: Zabbix 6.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-19 13:48+0300\n"
-"PO-Revision-Date: 2024-06-12 13:02+0000\n"
-"Last-Translator: Ehsan Abooli <ehsanabooli@gmail.com>\n"
+"PO-Revision-Date: 2023-09-22 06:23+0000\n"
+"Last-Translator: diana.dauksa <diana.dauksa@zabbix.com>\n"
 "Language-Team: none\n"
 "Language: fa\n"
 "MIME-Version: 1.0\n"
@@ -18,14 +18,14 @@ msgstr ""
 #: app/controllers/CControllerSlaReportList.php:182
 #, c-format
 msgid "\"%1$s\" date must be less than \"%2$s\" date."
-msgstr "تاریخ \"%1$s\" باید کمتر از تاریخ \"%2$s\" باشد."
+msgstr ""
 
 #: include/classes/db/MysqlDbBackend.php:70
 #: include/classes/db/OracleDbBackend.php:142
 #: include/classes/db/PostgresqlDbBackend.php:96
 #, c-format
 msgid "\"%1$s\" instead \"%2$s\""
-msgstr "\"%1$s\" به جای \"%2$s\""
+msgstr ""
 
 #: include/classes/import/validators/C10XmlValidator.php:322
 #: include/classes/import/validators/C10XmlValidator.php:340
@@ -49,7 +49,7 @@ msgstr ""
 #: include/classes/api/services/CReport.php:615
 #, c-format
 msgid "\"%1$s\" must be an empty string or greater than \"%2$s\"."
-msgstr "\"%1$s\" باید یک رشته خالی یا بزرگتر از \"%2$s\" باشد."
+msgstr ""
 
 #: include/classes/import/validators/C10XmlValidator.php:359
 #: include/classes/import/validators/C10XmlValidator.php:382
@@ -309,13 +309,13 @@ msgstr ""
 #: app/views/configuration.hostgroup.list.php:38
 #: app/views/configuration.templategroup.list.php:36
 msgid "(Only super admins can create groups)"
-msgstr "(فقط سوپر ادمین ها میتوانند گروه ایجاد کنند)"
+msgstr ""
 
 #: app/partials/configuration.tags.tab.php:86
 #: app/partials/hostmacros.inherited.list.html.php:204
 #: app/partials/hostmacros.list.html.php:105
 msgid "(created by host discovery)"
-msgstr "(ایجاد شده توسط اکتشاف هاست)"
+msgstr ""
 
 #: include/views/configuration.item.edit.php:648
 #: include/views/configuration.item.prototype.edit.php:619
@@ -358,16 +358,16 @@ msgstr "10 ثانیه"
 #: tests/selenium/modules/clock32/includes/WidgetForm.php:116
 #: widgets/clock/includes/WidgetForm.php:116
 msgid "12-hour"
-msgstr "12-ساعت"
+msgstr ""
 
 #: tests/selenium/modules/clock32/includes/WidgetForm.php:115
 #: widgets/clock/includes/WidgetForm.php:115
 msgid "24-hour"
-msgstr "24-ساعت"
+msgstr ""
 
 #: app/views/popup.sla.edit.php:101 include/classes/helpers/CSlaHelper.php:254
 msgid "24x7"
-msgstr "24 ساعت 7 روز هفته"
+msgstr ""
 
 #: app/views/administration.queue.overview.php:49
 #: app/views/administration.queue.overview.proxy.php:49
@@ -396,7 +396,7 @@ msgstr "500 مقدار اخیر"
 #: app/views/js/popup.itemtestedit.view.js.php:37
 #: app/views/js/popup.itemtestedit.view.js.php:44
 msgid "<empty string>"
-msgstr "<رشته خالی>"
+msgstr ""
 
 #: include/forms.inc.php:1402 include/views/js/item.preprocessing.js.php:364
 msgid "<label name>"
@@ -440,7 +440,7 @@ msgstr ""
 #: app/controllers/CControllerPopupGeneric.php:422
 #: app/views/administration.userrole.edit.php:310
 msgid "API methods"
-msgstr "متدهای API"
+msgstr ""
 
 #: app/controllers/CControllerAuditLogList.php:222
 msgid "API token"
@@ -503,7 +503,7 @@ msgstr ""
 
 #: include/classes/core/ZBase.php:757 include/func.inc.php:1683
 msgid "Access denied"
-msgstr "غیر قابل دسترسی"
+msgstr ""
 
 #: sysmap.php:78
 msgid "Access denied!"
@@ -522,17 +522,17 @@ msgstr ""
 #: app/views/administration.user.edit.php:702
 #: app/views/administration.userrole.edit.php:345
 msgid "Access to actions"
-msgstr "دسترسی به اقدامات"
+msgstr ""
 
 #: app/views/administration.user.edit.php:643
 #: app/views/administration.userrole.edit.php:244
 msgid "Access to modules"
-msgstr "دسترسی به ماژول ها"
+msgstr ""
 
 #: app/views/administration.user.edit.php:547
 #: app/views/administration.userrole.edit.php:156
 msgid "Access to services"
-msgstr "دسترسی به سرویس ها"
+msgstr ""
 
 #: include/actions.inc.php:165 include/classes/screens/CScreenProblem.php:1181
 msgid "Ack"
@@ -635,26 +635,26 @@ msgstr ""
 #: widgets/svggraph/includes/CWidgetFieldDataSetView.php:240
 #: widgets/tophosts/views/column.edit.php:249
 msgid "Action"
-msgstr "اقدام"
+msgstr "فعالیت ها"
 
 #: widgets/actionlog/views/widget.view.php:38
 msgctxt "compact table header"
 msgid "Action"
-msgstr "اقدام"
+msgstr ""
 
 #: include/classes/api/services/CAction.php:2824
 #, c-format
 msgid "Action \"%1$s\" already exists."
-msgstr "اقدام \"%1$s\" از قبل وجود دارد."
+msgstr ""
 
 #: include/classes/api/services/CRole.php:754
 #, c-format
 msgid "Action \"%2$s\" is not available for user role \"%1$s\"."
-msgstr "اقدام  \"%2$s\" برای نقش کاربر \"%1$s\" در دسترس نیست."
+msgstr ""
 
 #: app/controllers/CControllerActionCreate.php:264
 msgid "Action added"
-msgstr "اقدام اضافه شد"
+msgstr "فعالیت اضافه شد"
 
 #: include/classes/core/ZBase.php:603
 #, c-format
@@ -662,18 +662,15 @@ msgid "Action class %1$s must extend %2$s class."
 msgstr ""
 
 #: app/controllers/CControllerActionDelete.php:79
+#, fuzzy
 msgid "Action deleted"
 msgid_plural "Actions deleted"
-msgstr[0] ""
+msgstr[0] "فعالیت حذف شد"
 
 #: app/controllers/CControllerActionDisable.php:84
 msgid "Action disabled"
 msgid_plural "Actions disabled"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:42
-msgid "Action edit"
-msgstr ""
 
 #: app/controllers/CControllerActionEnable.php:84
 msgid "Action enabled"
@@ -695,7 +692,7 @@ msgstr ""
 
 #: app/controllers/CControllerActionUpdate.php:267
 msgid "Action updated"
-msgstr "اقدام به روز شد"
+msgstr "فعالیت بروز شد"
 
 #: include/classes/api/services/CDashboardGeneral.php:672
 #, c-format
@@ -721,12 +718,12 @@ msgstr ""
 #: widgets/geomap/Widget.php:35 widgets/graph/Widget.php:35
 #: widgets/piechart/Widget.php:40 widgets/svggraph/Widget.php:37
 msgid "Actions"
-msgstr "اقدامات"
+msgstr "فعالیت ها"
 
 #: widgets/problems/includes/WidgetProblems.php:107
 msgctxt "compact table header"
 msgid "Actions"
-msgstr "اقدامات"
+msgstr ""
 
 #: app/partials/administration.ha.nodes.php:50
 #: app/views/administration.proxy.list.php:54
@@ -738,7 +735,7 @@ msgstr "فعال"
 #: app/views/maintenance.list.php:71 app/views/maintenance.list.php:113
 msgctxt "maintenance status"
 msgid "Active"
-msgstr "فعال"
+msgstr ""
 
 #: include/hosts.inc.php:497
 msgid "Active checks"
@@ -929,11 +926,11 @@ msgstr ""
 
 #: widgets/tophosts/views/widget.edit.php:63
 msgid "Add a column"
-msgstr "افزودن ستون"
+msgstr ""
 
 #: jsLoader.php:156
 msgid "Add a new widget"
-msgstr "افزودن ویجت جدید"
+msgstr ""
 
 #: widgets/navtree/Widget.php:34
 msgid "Add child element"
@@ -953,11 +950,11 @@ msgstr ""
 
 #: app/partials/configuration.valuemap.php:57
 msgid "Add from host"
-msgstr "افزودن از هاست"
+msgstr ""
 
 #: app/partials/configuration.valuemap.php:54
 msgid "Add from template"
-msgstr "افزودن از الگو"
+msgstr ""
 
 #: include/actions.inc.php:629 include/actions.inc.php:860
 msgid "Add host"
@@ -965,7 +962,7 @@ msgstr "افزودن هاست"
 
 #: include/actions.inc.php:653 include/actions.inc.php:871
 msgid "Add host tags"
-msgstr "افزودن تگ های هاست"
+msgstr ""
 
 #: app/partials/trigger.edit.dependencies.tab.php:65
 #: app/partials/trigger.edit.dependencies.tab.php:91
@@ -985,7 +982,7 @@ msgstr ""
 
 #: widgets/navtree/Widget.php:40
 msgid "Add multiple maps"
-msgstr "افزودن نقشه های متعدد"
+msgstr ""
 
 #: widgets/piechart/includes/CWidgetFieldDataSetView.php:89
 #: widgets/svggraph/includes/CWidgetFieldDataSetView.php:93
@@ -995,7 +992,7 @@ msgstr ""
 #: app/partials/configuration.host.edit.html.php:242
 #: include/views/configuration.host.prototype.edit.php:286
 msgid "Add new interface"
-msgstr "افزودن اینترفیس جدید"
+msgstr ""
 
 #: widgets/svggraph/includes/CWidgetFieldOverrideView.php:53
 msgid "Add new override"
@@ -1004,7 +1001,7 @@ msgstr ""
 #: app/views/js/configuration.dashboard.edit.js.php:239
 #: app/views/js/monitoring.dashboard.view.js.php:366
 msgid "Add page"
-msgstr "افزودن صفحه"
+msgstr ""
 
 #: app/views/js/popup.service.edit.js.php:405
 msgid "Add parent services"
@@ -1012,7 +1009,7 @@ msgstr ""
 
 #: include/classes/helpers/CRoleHelper.php:543
 msgid "Add problem comments"
-msgstr "افزودن کامنت مشکل"
+msgstr ""
 
 #: app/partials/trigger.edit.dependencies.tab.php:77
 #: app/partials/trigger.edit.dependencies.tab.php:87
@@ -1023,11 +1020,11 @@ msgstr "افزودن نمونه اولیه\t"
 
 #: app/controllers/CControllerPopupScheduledReportEdit.php:129
 msgid "Add scheduled report"
-msgstr "افزودن گزارش برنامه ریزی شده"
+msgstr ""
 
 #: app/views/js/administration.userrole.edit.js.php:232
 msgid "Add services"
-msgstr "افزودن سرویس ها"
+msgstr ""
 
 #: widgets/navtree/views/navtreeitem.edit.php:80
 msgid "Add submaps"
@@ -1035,7 +1032,7 @@ msgstr ""
 
 #: app/controllers/CControllerFavoriteDelete.php:74 include/html.inc.php:177
 msgid "Add to favorites"
-msgstr "افزودن به علاقه مندی ها"
+msgstr ""
 
 #: include/actions.inc.php:864
 msgid "Add to host group"
@@ -1047,44 +1044,44 @@ msgstr "افزودن به گروه هاست ها"
 
 #: app/partials/scheduledreport.subscription.php:42
 msgid "Add user"
-msgstr "افزودن کاربر"
+msgstr ""
 
 #: app/partials/scheduledreport.subscription.php:45
 msgid "Add user group"
-msgstr "افزودن گروه کاربر"
+msgstr ""
 
 #: app/controllers/CControllerDashboardWidgetEdit.php:68
 #: app/views/js/configuration.dashboard.edit.js.php:235
 #: app/views/js/monitoring.dashboard.view.js.php:362
 #: include/classes/html/widgets/CWidgetFormView.php:169
 msgid "Add widget"
-msgstr "افزودن ویجت"
+msgstr ""
 
 #: app/controllers/CControllerAuditLogList.php:379
 #: app/controllers/CControllerPopupImportCompare.php:167
 msgid "Added"
-msgstr "افزوده شد"
+msgstr ""
 
 #: jsLoader.php:333
 #, c-format
 msgctxt "screen reader"
 msgid "Added, %1$s"
-msgstr "افزوده شد، %1$s"
+msgstr ""
 
 #: app/views/popup.service.statusrule.edit.php:94
 msgid "Additional rule"
-msgstr "قانون بیشتر"
+msgstr ""
 
 #: app/views/popup.service.edit.php:185
 msgid "Additional rules"
-msgstr "قوانین بیشتر"
+msgstr ""
 
 #: app/controllers/CControllerProxyCreate.php:82
 #: app/controllers/CControllerProxyUpdate.php:76
 #: app/partials/administration.ha.nodes.php:28
 #: app/views/popup.proxy.edit.php:40
 msgid "Address"
-msgstr "آدرس"
+msgstr ""
 
 #: app/controllers/CControllerProxyCreate.php:72
 #: app/controllers/CControllerProxyCreate.php:80
@@ -1092,7 +1089,7 @@ msgstr "آدرس"
 #: app/controllers/CControllerProxyUpdate.php:75
 #: app/views/popup.proxy.edit.php:90
 msgid "Address for active agents"
-msgstr "آدرس عامل های فعال"
+msgstr ""
 
 #: include/hosts.inc.php:63 include/users.inc.php:53
 msgid "Admin"
@@ -1109,7 +1106,7 @@ msgstr "مدیریت"
 #: widgets/clock/views/widget.edit.php:53
 #: widgets/gauge/views/widget.edit.php:54 widgets/item/views/widget.edit.php:48
 msgid "Advanced configuration"
-msgstr "پیکربندی پیشرفته"
+msgstr ""
 
 #: include/views/monitoring.sysmap.edit.php:162
 msgid "Advanced labels"
@@ -1117,14 +1114,14 @@ msgstr "برچسب های پیشرفته"
 
 #: app/views/popup.import.php:148
 msgid "Advanced options"
-msgstr "گزینه های پیشرفته"
+msgstr ""
 
 #: include/views/configuration.host.discovery.edit.php:721
 #: include/views/configuration.host.discovery.edit.php:737
 #: include/views/configuration.host.discovery.list.php:157
 #: include/views/configuration.host.discovery.list.php:172
 msgid "After"
-msgstr "بعد از"
+msgstr ""
 
 #: app/views/js/mfa.edit.js.php:168
 msgid "After this change, users who have already enrolled in this MFA method will have to complete the enrollment process again because TOTP secrets will be reset."
@@ -1151,11 +1148,11 @@ msgstr "عامل"
 
 #: widgets/hostavail/views/widget.view.php:82
 msgid "Agent (active)"
-msgstr "عامل (فعال)"
+msgstr ""
 
 #: widgets/hostavail/views/widget.view.php:83
 msgid "Agent (passive)"
-msgstr "عامل (منفعل)"
+msgstr ""
 
 #: include/classes/data/CItemData.php:911
 msgid "Agent availability check. Returns nothing - unavailable; 1 - available"
@@ -1163,7 +1160,7 @@ msgstr ""
 
 #: app/views/configuration.host.list.php:213
 msgid "Agent encryption"
-msgstr "رمزگذاری عامل"
+msgstr ""
 
 #: include/classes/data/CItemData.php:895
 msgid "Agent host metadata. Returns string"
@@ -1215,11 +1212,11 @@ msgstr ""
 #: include/classes/helpers/CMenuHelper.php:292
 #: include/classes/helpers/CRoleHelper.php:348
 msgid "Alerts"
-msgstr "هشدارها"
+msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:1145
 msgid "Algorithm"
-msgstr "الگوریتم"
+msgstr ""
 
 #: include/hosts.inc.php:114
 msgid "Alias"
@@ -1272,22 +1269,22 @@ msgstr ""
 
 #: app/views/monitoring.dashboard.view.php:189
 msgid "All dashboards"
-msgstr "همه میزکار ها"
+msgstr ""
 
 #: app/views/monitoring.charts.view.php:82
 msgid "All graphs"
-msgstr "همه نمودارها"
+msgstr ""
 
 #: app/views/administration.user.edit.php:483
 #: app/views/administration.user.edit.php:484
 #: app/views/administration.user.edit.php:490
 #: app/views/administration.user.edit.php:503
 msgid "All groups"
-msgstr "همه گروه ها"
+msgstr ""
 
 #: app/views/monitoring.host.dashboard.view.php:122 include/html.inc.php:357
 msgid "All hosts"
-msgstr "همه هاست ها"
+msgstr ""
 
 #: jsLoader.php:274
 msgid "All links should have \"Name\" and \"URL\" specified"
@@ -1295,37 +1292,37 @@ msgstr "همه لینک ها باید \"نام\" و \"آدرس\" مشخص داش
 
 #: include/html.inc.php:568
 msgid "All maps"
-msgstr "همه نقشه ها"
+msgstr ""
 
 #: app/partials/trigger.edit.trigger.tab.php:247
 msgid "All problems"
-msgstr "همه مشکلات"
+msgstr ""
 
 #: app/partials/trigger.edit.trigger.tab.php:248
 msgid "All problems if tag values match"
-msgstr "همه مشکلات در صورت تطبیق مقادیر تگ"
+msgstr ""
 
 #: app/controllers/CControllerServiceListGeneral.php:150
 msgid "All services"
-msgstr "همه سرویس ها"
+msgstr ""
 
 #: app/partials/usergroup.tagfilters.php:43
 #: app/views/usergroup.tagfilter.edit.php:74
 msgid "All tags"
-msgstr "همه تگ ها"
+msgstr ""
 
 #: include/html.inc.php:318
 msgid "All templates"
-msgstr "همه الگوها"
+msgstr ""
 
 #: app/views/administration.userrole.edit.php:314
 msgid "Allow list"
-msgstr "فهرست مجاز"
+msgstr ""
 
 #: app/partials/trigger.edit.trigger.tab.php:259
 #: app/views/trigger.massupdate.php:58 include/triggers.inc.php:615
 msgid "Allow manual close"
-msgstr "مجوز بستن دستی"
+msgstr ""
 
 #: app/views/discovery.check.edit.php:160
 #: app/views/popup.discovery.check.php:128
@@ -1337,11 +1334,11 @@ msgstr ""
 #: include/views/configuration.item.edit.php:991
 #: include/views/configuration.item.prototype.edit.php:904
 msgid "Allowed hosts"
-msgstr "هاست های مجاز"
+msgstr "هاست ها مجاز"
 
 #: app/views/administration.user.edit.php:693
 msgid "Allowed methods"
-msgstr "متدهای مجاز"
+msgstr ""
 
 #: widgets/piechart/includes/CWidgetFieldDataSetView.php:326
 #: widgets/svggraph/includes/CWidgetFieldDataSetView.php:450
@@ -1393,7 +1390,7 @@ msgstr ""
 #: tests/selenium/modules/clock32/includes/WidgetForm.php:74
 #: widgets/clock/includes/WidgetForm.php:74
 msgid "Analog"
-msgstr "آنالوگ"
+msgstr ""
 
 #: app/partials/trigger.edit.trigger.tab.php:111
 #: app/partials/trigger.edit.trigger.tab.php:191
@@ -1402,7 +1399,7 @@ msgstr "آنالوگ"
 #: include/triggers.inc.php:684
 #: include/views/configuration.host.discovery.edit.php:793
 msgid "And"
-msgstr "و"
+msgstr ""
 
 #: app/partials/monitoring.host.filter.php:32
 #: app/partials/monitoring.latest.filter.php:94
@@ -1424,19 +1421,19 @@ msgstr "و"
 #: widgets/trigover/includes/WidgetForm.php:59
 #: widgets/web/includes/WidgetForm.php:56
 msgid "And/Or"
-msgstr "و/یا"
+msgstr ""
 
 #: widgets/gauge/includes/WidgetForm.php:170
 msgid "Angle"
-msgstr "زاویه"
+msgstr ""
 
 #: app/views/popup.sla.edit.php:79 include/classes/helpers/CSlaHelper.php:43
 msgid "Annually"
-msgstr "سالانه"
+msgstr ""
 
 #: jsLoader.php:201
 msgid "Another widget is used as data source."
-msgstr "ویجت دیگری به عنوان منبع داده استفاده شده است."
+msgstr ""
 
 #: app/partials/monitoring.host.filter.php:134 app/views/action.list.php:95
 #: app/views/administration.proxy.list.php:53
@@ -1455,18 +1452,18 @@ msgstr "ویجت دیگری به عنوان منبع داده استفاده ش�
 #: app/views/usergroup.list.php:55 include/triggers.inc.php:1217
 #: widgets/trigover/includes/WidgetForm.php:46
 msgid "Any"
-msgstr "هرگونه"
+msgstr "هیچ"
 
 #: app/views/js/popup.host.edit.js.php:64 app/views/js/template.edit.js.php:139
 #: app/views/js/trigger.edit.js.php:886
 #: app/views/js/trigger.massupdate.js.php:67
 msgid "Any changes made in the current form will be lost."
-msgstr "هرگونه تغییر اعمال شده در فرم فعلی از بین خواهد رفت."
+msgstr ""
 
 #: app/views/js/administration.regex.edit.js.php:164
 #: include/classes/helpers/CRegexHelper.php:27
 msgid "Any character string included"
-msgstr "هرگونه رشته کاراکتری گنجانده شده"
+msgstr "فاقد رشته کاراکتری"
 
 #: app/views/js/popup.import.js.php:109
 msgid "Any existing host entities not present in the import file will be deleted. Click OK to proceed."
@@ -1501,7 +1498,7 @@ msgstr ""
 
 #: app/partials/configuration.templategroup.edit.html.php:47
 msgid "Apply permissions to all subgroups"
-msgstr "اعمال دسترسی ها به تمام زیر گروه ها"
+msgstr ""
 
 #: app/views/maintenance.list.php:72 app/views/maintenance.list.php:109
 msgctxt "maintenance status"
@@ -1530,15 +1527,15 @@ msgstr ""
 
 #: app/views/popup.tabfilter.edit.php:76
 msgid "Are you sure you want to delete this filter?"
-msgstr "از حذف این فیلتر اطمینان دارید؟"
+msgstr ""
 
 #: app/views/js/administration.macros.edit.js.php:87
 msgid "Are you sure you want to delete?"
-msgstr "از حذف اطمینان دارید؟"
+msgstr ""
 
 #: include/classes/html/CButtonQMessage.php:52
 msgid "Are you sure you want to perform this action?"
-msgstr "از انجام این اقدام اطمینان دارید؟"
+msgstr ""
 
 #: include/views/js/monitoring.sysmaps.js.php:125
 msgid "Area size"
@@ -1555,7 +1552,7 @@ msgstr ""
 #: include/classes/helpers/CServiceHelper.php:148
 #: widgets/tophosts/views/column.edit.php:182
 msgid "As is"
-msgstr "همان طور که هست"
+msgstr ""
 
 #: include/views/monitoring.history.php:97
 msgid "As plain text"
@@ -1572,7 +1569,7 @@ msgstr "برچسب دارایی"
 
 #: app/partials/configuration.host.edit.html.php:331
 msgid "Assigned proxy"
-msgstr "پروکسی تخصیص یافته"
+msgstr ""
 
 #: include/classes/helpers/CMaintenanceHelper.php:86
 #, c-format
@@ -1639,10 +1636,6 @@ msgstr ""
 msgid "At least one host group or host must be selected."
 msgstr ""
 
-#: include/classes/setup/CFrontendSetup.php:252
-msgid "At least one of MySQL or PostgreSQL should be supported."
-msgstr ""
-
 #: include/classes/setup/CFrontendSetup.php:241
 msgid "At least one of MySQL, PostgreSQL or Oracle should be supported."
 msgstr ""
@@ -1683,20 +1676,20 @@ msgstr ""
 #: app/views/administration.mediatype.edit.php:354
 #: app/views/mediatype.edit.php:464
 msgid "Attempt interval"
-msgstr "بازه تلاش"
+msgstr ""
 
 #: app/views/administration.mediatype.edit.php:349
 #: app/views/connector.edit.php:186 app/views/mediatype.edit.php:456
 #: httpconf.php:43 include/views/configuration.httpconf.edit.php:85
 #: include/views/configuration.httpconf.list.php:145
 msgid "Attempts"
-msgstr "تلاش ها"
+msgstr ""
 
 #: app/views/administration.authentication.edit.php:524
 #: app/views/popup.ldap.edit.php:267
 #: app/views/popup.mediatypemapping.edit.php:59
 msgid "Attribute"
-msgstr "صفت"
+msgstr ""
 
 #: app/views/administration.geomaps.edit.php:86
 msgid "Attribution text"
@@ -1728,7 +1721,7 @@ msgstr "اوت"
 
 #: app/views/popup.token.view.php:45
 msgid "Auth token"
-msgstr "توکن احراز"
+msgstr ""
 
 #: app/views/administration.authentication.edit.php:372
 msgid "AuthN requests"
@@ -1743,13 +1736,13 @@ msgstr ""
 #: include/views/configuration.httpconf.edit.php:385
 #: include/views/configuration.httpconf.list.php:146
 msgid "Authentication"
-msgstr "احراز هویت"
+msgstr "تصدیق هویت"
 
 #: app/partials/configuration.host.edit.html.php:274
 #: app/views/popup.massupdate.host.php:145
 #: include/views/configuration.host.prototype.edit.php:325
 msgid "Authentication algorithm"
-msgstr "الگوریتم احراز هویت"
+msgstr "الگوریتم تصدیق هویت"
 
 #: include/classes/api/services/CUser.php:2347
 #, c-format
@@ -1762,7 +1755,7 @@ msgstr ""
 #: include/views/configuration.item.edit.php:670
 #: include/views/configuration.item.prototype.edit.php:644
 msgid "Authentication method"
-msgstr "متد احراز هویت"
+msgstr "متد تصدیق هویت"
 
 #: app/partials/configuration.host.interface.row.php:182
 #: app/views/discovery.check.edit.php:129
@@ -1776,7 +1769,7 @@ msgstr ""
 #: app/views/popup.discovery.check.php:99
 #: app/views/popup.itemtestedit.view.php:204
 msgid "Authentication protocol"
-msgstr "پروتکل احراز هویت"
+msgstr ""
 
 #: app/controllers/CControllerAuthenticationUpdate.php:302
 msgid "Authentication settings updated"
@@ -1793,7 +1786,7 @@ msgstr ""
 #: widgets/piechart/includes/WidgetForm.php:154
 #: widgets/tophosts/views/column.edit.php:204
 msgid "Auto"
-msgstr "خودکار"
+msgstr ""
 
 #: widgets/piechart/includes/WidgetForm.php:114
 #: widgets/svggraph/includes/WidgetForm.php:245
@@ -1801,7 +1794,7 @@ msgstr "خودکار"
 #: widgets/svggraph/includes/WidgetForm.php:329
 msgctxt "history source selection method"
 msgid "Auto"
-msgstr "خودکارخودکار"
+msgstr ""
 
 #: app/views/administration.user.edit.php:294
 msgid "Auto-login"
@@ -1809,11 +1802,11 @@ msgstr "ورود خودکار"
 
 #: include/classes/api/services/CUser.php:1026
 msgid "Auto-login and auto-logout options cannot be enabled together."
-msgstr "امکان فعال سازی گزینه های ورود خودکار و خروج خودکار به صورت همزمان وجود ندارد."
+msgstr ""
 
 #: app/views/administration.user.edit.php:299
 msgid "Auto-logout"
-msgstr "خروج خودکار"
+msgstr ""
 
 #: app/partials/configuration.host.edit.html.php:345
 #: app/views/administration.miscconfig.edit.php:62
@@ -1862,11 +1855,6 @@ msgstr "دسترسی"
 msgid "Availability report"
 msgstr "گزارش دسترسی"
 
-#: app/controllers/CControllerAvailabilityReportTrigger.php:70
-#: app/views/reports.availabilityreport.trigger.php:23
-msgid "Availability report graph"
-msgstr ""
-
 #: include/classes/html/CHostAvailability.php:80
 #: widgets/hostavail/views/widget.view.php:32
 msgid "Available"
@@ -1875,7 +1863,7 @@ msgstr "در دسترس"
 #: widgets/hostavail/views/widget.view.php:33
 msgctxt "compact table header"
 msgid "Available"
-msgstr "در دسترس"
+msgstr ""
 
 #: app/views/administration.trigdisplay.edit.php:128
 #: widgets/geomap/Widget.php:42
@@ -1905,7 +1893,7 @@ msgstr ""
 #: include/classes/setup/CSetupWizard.php:381
 #: include/classes/setup/CSetupWizard.php:878
 msgid "Back"
-msgstr "بازگشت"
+msgstr ""
 
 #: app/views/administration.image.edit.php:77
 #: app/views/administration.image.list.php:51
@@ -1919,7 +1907,7 @@ msgstr "پس زمینه"
 #: widgets/clock/includes/WidgetForm.php:88
 #: widgets/item/includes/WidgetForm.php:258
 msgid "Background color"
-msgstr "رنگ پس زمینه"
+msgstr ""
 
 #: include/views/monitoring.sysmap.edit.php:125
 msgid "Background image"
@@ -1939,11 +1927,11 @@ msgstr ""
 #: widgets/svggraph/includes/CWidgetFieldOverrideView.php:201
 #: widgets/tophosts/views/column.edit.php:213
 msgid "Base color"
-msgstr "رنگ پایه"
+msgstr ""
 
 #: app/views/connector.edit.php:128 include/httptest.inc.php:28
 msgid "Basic"
-msgstr "پایه"
+msgstr ""
 
 #: app/views/connector.edit.php:132
 msgid "Bearer"
@@ -1968,7 +1956,7 @@ msgstr ""
 #: include/views/configuration.item.edit.php:127
 #: include/views/configuration.item.prototype.edit.php:112
 msgid "Binary"
-msgstr "باینری"
+msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:1455
 #, c-format
@@ -1998,7 +1986,7 @@ msgstr "مسدود شده"
 
 #: include/classes/core/ZBase.php:380
 msgid "Blue"
-msgstr "آبی"
+msgstr ""
 
 #: app/views/webscenario.step.edit.php:250
 #: include/views/configuration.host.discovery.edit.php:383
@@ -2094,11 +2082,11 @@ msgstr ""
 #: app/views/administration.timeouts.edit.php:130
 #: app/views/popup.proxy.edit.php:342 include/items.inc.php:99
 msgid "Browser"
-msgstr "مرورگر"
+msgstr ""
 
 #: include/locales.inc.php:35
 msgid "Bulgarian (bg_BG)"
-msgstr "بلغاری (bg_BG)"
+msgstr ""
 
 #: report2.php:191
 msgid "By host"
@@ -2107,11 +2095,11 @@ msgstr "توسط هاست"
 #: app/partials/monitoring.problem.filter.php:154
 #: widgets/problems/includes/WidgetForm.php:137
 msgid "By me"
-msgstr "توسط من"
+msgstr ""
 
 #: report2.php:192
 msgid "By trigger template"
-msgstr "تو سط الگوی trigger"
+msgstr "تو سط قالب هشدار"
 
 #: app/views/administration.proxy.list.php:161
 #: app/views/administration.proxy.list.php:177
@@ -2175,7 +2163,7 @@ msgstr ""
 
 #: include/items.inc.php:1554
 msgid "CSV to JSON"
-msgstr "CSV به JSON"
+msgstr ""
 
 #: include/classes/validators/CApiInputValidator.php:3175
 #: include/classes/validators/CNewValidator.php:352
@@ -2185,11 +2173,11 @@ msgstr ""
 #: include/items.inc.php:100 include/views/configuration.graph.edit.php:180
 #: include/views/configuration.graph.edit.php:275
 msgid "Calculated"
-msgstr "محاسبه شده"
+msgstr "محاسبه کردن"
 
 #: jsLoader.php:222
 msgid "Calendar"
-msgstr "تقویم"
+msgstr ""
 
 #: include/hosts.inc.php:60
 msgid "Callback"
@@ -2255,7 +2243,7 @@ msgstr ""
 #: app/controllers/CControllerActionCreate.php:57
 #: app/controllers/CControllerActionCreate.php:272
 msgid "Cannot add action"
-msgstr "امکان افزودن اقدام وجود ندارد"
+msgstr "فعالیت نمی تواند اضافه شود"
 
 #: jsLoader.php:133
 #, c-format
@@ -2264,11 +2252,11 @@ msgstr ""
 
 #: host_discovery.php:540
 msgid "Cannot add discovery rule"
-msgstr "امکان افزودن قانون اکتشاف وجود ندارد"
+msgstr "قانون کشف نمی تواند اضافه شود"
 
 #: graphs.php:247
 msgid "Cannot add graph"
-msgstr "امکان افزودن نمودار وجود ندارد"
+msgstr "نمودار نمی تواند اضافه شود"
 
 #: graphs.php:229
 msgid "Cannot add graph prototype"
@@ -2277,12 +2265,12 @@ msgstr ""
 #: app/controllers/CControllerHostCreate.php:34
 #: app/controllers/CControllerHostCreate.php:137
 msgid "Cannot add host"
-msgstr "امک نافزودن هاست وجود ندارد"
+msgstr "هاست نمی تواند اضافه شود"
 
 #: app/controllers/CControllerHostGroupCreate.php:40
 #: app/controllers/CControllerHostGroupCreate.php:70
 msgid "Cannot add host group"
-msgstr "امکان افزودن گروه هاست وجود ندارد"
+msgstr ""
 
 #: host_prototypes.php:263
 msgid "Cannot add host prototype"
@@ -2292,11 +2280,11 @@ msgstr ""
 #: app/controllers/CControllerImageCreate.php:101
 #: app/controllers/CControllerImageCreate.php:133
 msgid "Cannot add image"
-msgstr "امکان افزودن تصویر وجود ندارد"
+msgstr "تصویر نمی تواند اضافه شود"
 
 #: items.php:667
 msgid "Cannot add item"
-msgstr "امکان افزودن آیتم وجود ندارد"
+msgstr "آیتم نمی تواند اضافه شود"
 
 #: disc_prototypes.php:454
 msgid "Cannot add item prototype"
@@ -2310,7 +2298,7 @@ msgstr ""
 #: app/controllers/CControllerMediatypeCreate.php:77
 #: app/controllers/CControllerMediatypeCreate.php:195
 msgid "Cannot add media type"
-msgstr "امکان افزودن نوع رسانه وجود ندارد"
+msgstr "نوع رسانه نمی تواند اضافه شود"
 
 #: app/controllers/CControllerModuleScan.php:105
 #, c-format
@@ -2334,31 +2322,31 @@ msgstr ""
 
 #: sysmaps.php:219
 msgid "Cannot add network map"
-msgstr "امکان افزودن نقشه شبکه وجود ندارد"
+msgstr "نقشه شبکه نمی تواند اضافه شود"
 
 #: app/controllers/CControllerProxyCreate.php:148
 #: app/controllers/CControllerProxyCreate.php:235
 msgid "Cannot add proxy"
-msgstr "امکان افزودن پروکسی وجود ندارد"
+msgstr "پروکسی نمی تواند اضافه شود"
 
 #: app/controllers/CControllerProxyGroupCreate.php:42
 #: app/controllers/CControllerProxyGroupCreate.php:74
 msgid "Cannot add proxy group"
-msgstr "امکان افزودن گروه پروکسی وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerRegExCreate.php:41
 #: app/controllers/CControllerRegExCreate.php:72
 msgid "Cannot add regular expression"
-msgstr "امکان افزودن عبارت منظم وجود ندارد"
+msgstr "عبارت منظم نمی تواند اضافه شود"
 
 #: app/controllers/CControllerScheduledReportCreate.php:152
 msgid "Cannot add scheduled report"
-msgstr "امکان افزودن گزارش برنامه ریزی شده وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerScriptCreate.php:64
 #: app/controllers/CControllerScriptCreate.php:162
 msgid "Cannot add script"
-msgstr "امکان افزودن اسکریپت وجود ندارد"
+msgstr "اسکریپت نمی تواند اضافه شود"
 
 #: widgets/navtree/views/navtreeitem.edit.php:72
 msgid "Cannot add submaps. Max depth reached."
@@ -2367,17 +2355,17 @@ msgstr ""
 #: app/controllers/CControllerTemplateCreate.php:49
 #: app/controllers/CControllerTemplateCreate.php:171
 msgid "Cannot add template"
-msgstr "امکان افزودن الگو وجود ندارد"
+msgstr "قالب نمی تواند اضافه شود"
 
 #: app/controllers/CControllerTemplateGroupCreate.php:40
 #: app/controllers/CControllerTemplateGroupCreate.php:70
 msgid "Cannot add template group"
-msgstr "امکان افزودن گروه الگو وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerTriggerCreate.php:57
 #: app/controllers/CControllerTriggerCreate.php:131
 msgid "Cannot add trigger"
-msgstr "امکان افزودن trigger وجود ندارد"
+msgstr "هشدار نمی تواند اضافه شود"
 
 #: app/controllers/CControllerTriggerPrototypeCreate.php:59
 #: app/controllers/CControllerTriggerPrototypeCreate.php:134
@@ -2387,24 +2375,24 @@ msgstr ""
 #: app/controllers/CControllerUserCreate.php:63
 #: app/controllers/CControllerUserCreate.php:119
 msgid "Cannot add user"
-msgstr "امکان افزودن کاربر وجود ندارد"
+msgstr "کاربر نمی تواند اضافه شود"
 
 #: app/controllers/CControllerUsergroupCreate.php:50
 #: app/controllers/CControllerUsergroupCreate.php:150
 msgid "Cannot add user group"
-msgstr "امکان افزودن گروه کاربر وجود ندارد"
+msgstr ""
 
 #: httpconf.php:199
 msgid "Cannot add web scenario"
-msgstr "امکان افزودن سناریو وب وجود ندارد"
+msgstr ""
 
 #: jsLoader.php:135
 msgid "Cannot add widget: no widgets available."
-msgstr "امکان افزودن ویجت وجوود ندارد: هیچ ویجتی موجود نیست."
+msgstr ""
 
 #: jsLoader.php:134
 msgid "Cannot add widget: not enough free space on the dashboard."
-msgstr "امکان افزودن ویجت وجود ندارد: فضای خالی کافی در میزکار وجود ندارد."
+msgstr ""
 
 #: include/classes/api/services/CItem.php:1542
 #, c-format
@@ -2419,7 +2407,7 @@ msgstr ""
 #: jsLoader.php:336
 msgctxt "screen reader"
 msgid "Cannot be removed"
-msgstr "نمیتواند حذف شود"
+msgstr ""
 
 #: include/classes/validators/CLdapAuthValidator.php:73
 msgid "Cannot bind anonymously to LDAP server."
@@ -2447,24 +2435,24 @@ msgstr ""
 
 #: include/classes/api/services/CDiscoveryRule.php:3834
 msgid "Cannot clone graph prototypes."
-msgstr "امکان کپی کردن نمونه های اولیه نمودار  وجود ندارد."
+msgstr "نمونه اولیه نمودارها نمی‌توانند کپی شوند"
 
 #: include/classes/api/services/CDiscoveryRule.php:3908
 msgid "Cannot clone trigger prototypes."
-msgstr "امکان کپی نمونه های اولیه trigger ها وجود ندارد."
+msgstr "نمونه اولیه هشدارها نمی‌توانند کپی شوند"
 
 #: include/classes/api/services/CEvent.php:1684
 #, c-format
 msgid "Cannot close problem: %1$s."
-msgstr "امکان بستن مشکل وجود ندارد: %1$s."
+msgstr ""
 
 #: include/classes/validators/CLdapAuthValidator.php:71
 msgid "Cannot connect to LDAP server."
-msgstr "امکان برقراری ارتباط با سرور LDAP وجود ندارد."
+msgstr ""
 
 #: include/classes/setup/CSetupWizard.php:688
 msgid "Cannot connect to the database."
-msgstr "امکان برقراری ارتباط با پایگاه داده وجود ندارد."
+msgstr ""
 
 #: app/views/js/webscenario.step.edit.js.php:200
 msgid "Cannot convert POST data:"
@@ -2543,7 +2531,7 @@ msgstr ""
 #: app/controllers/CControllerSlaCreate.php:69
 #: app/controllers/CControllerSlaCreate.php:127
 msgid "Cannot create SLA"
-msgstr "امکان ایجاد SLA وجود ندارد"
+msgstr ""
 
 #: include/classes/api/services/CHostPrototype.php:1291
 #, c-format
@@ -2552,17 +2540,17 @@ msgstr ""
 
 #: include/db.inc.php:34
 msgid "Cannot create another database connection."
-msgstr "امکان ایجاد ارتباط پایگاه داده دیگر وجود ندارد."
+msgstr "اتصال دیگری به پایگاه داده نمی‌توانند ایجاد شود."
 
 #: app/controllers/CControllerConnectorCreate.php:82
 #: app/controllers/CControllerConnectorCreate.php:155
 msgid "Cannot create connector"
-msgstr "امکان ایجاد متصل کننده وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerDiscoveryCreate.php:47
 #: app/controllers/CControllerDiscoveryCreate.php:95
 msgid "Cannot create discovery rule"
-msgstr "امکان ایجاد قانون اکتشاف وجود ندارد"
+msgstr "قانون کشف نمی‌توانند ایجاد شود."
 
 #: app/controllers/CControllerCorrelationCreate.php:48
 #: app/controllers/CControllerCorrelationCreate.php:115
@@ -2571,26 +2559,26 @@ msgstr ""
 
 #: app/controllers/CControllerIconMapCreate.php:56
 msgid "Cannot create icon map"
-msgstr "امکان ایجاد نگاشت آیکون وجود ندارد"
+msgstr "نگاشت آیکن نمی‌توانند ایجاد شود."
 
 #: app/controllers/CControllerMaintenanceCreate.php:72
 #: app/controllers/CControllerMaintenanceCreate.php:150
 msgid "Cannot create maintenance period"
-msgstr "امکان ایجاد بازه نگهداری وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerProxyConfigRefresh.php:79
 msgid "Cannot create request"
-msgstr "امکان ایجاد درخواست وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerPopupScheduledReportCreate.php:136
 #: app/controllers/CControllerScheduledReportCreate.php:59
 msgid "Cannot create scheduled report"
-msgstr "امکان ایجاد گزارش برنامه ریزی شده وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerServiceCreate.php:77
 #: app/controllers/CControllerServiceCreate.php:159
 msgid "Cannot create service"
-msgstr "امکان ایجاد سرویس وجود ندارد"
+msgstr ""
 
 #: include/classes/api/services/CService.php:2403
 #: include/classes/api/services/CService.php:2427
@@ -2600,12 +2588,12 @@ msgstr ""
 
 #: include/classes/setup/CSetupWizard.php:1030
 msgid "Cannot create the configuration file."
-msgstr "امکان ایجاد فایل پیکربندی وجود ندارد."
+msgstr ""
 
 #: app/controllers/CControllerUserroleCreate.php:114
 #: app/controllers/CControllerUserroleCreate.php:161
 msgid "Cannot create user role"
-msgstr "امکان ایجاد نقش کاربر وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerWebScenarioStepCheck.php:56
 msgid "Cannot create web scenario step"
@@ -2632,9 +2620,10 @@ msgid "Cannot delete Zabbix internal user \"%1$s\", try disabling that user."
 msgstr ""
 
 #: app/controllers/CControllerActionDelete.php:87
+#, fuzzy
 msgid "Cannot delete action"
 msgid_plural "Cannot delete actions"
-msgstr[0] ""
+msgstr[0] "فعالیت نمی‌تواند حذف شود"
 
 #: include/classes/api/services/CRole.php:368
 #, c-format
@@ -2661,18 +2650,19 @@ msgstr ""
 msgid "Cannot delete default user directory."
 msgstr ""
 
-#: include/classes/api/services/CDRule.php:772
+#: include/classes/api/services/CDRule.php:773
 #, c-format
 msgid "Cannot delete discovery check \"%1$s\" of discovery rule \"%2$s\": %3$s."
 msgstr ""
 
 #: app/controllers/CControllerDiscoveryDelete.php:68 host_discovery.php:390
 #: host_discovery.php:597
+#, fuzzy
 msgid "Cannot delete discovery rule"
 msgid_plural "Cannot delete discovery rules"
-msgstr[0] ""
+msgstr[0] "قانون کشف نمی‌تواند حذف شود"
 
-#: include/classes/api/services/CDRule.php:979
+#: include/classes/api/services/CDRule.php:980
 #, c-format
 msgid "Cannot delete discovery rule \"%1$s\": %2$s."
 msgstr ""
@@ -2683,9 +2673,10 @@ msgid_plural "Cannot delete event correlations"
 msgstr[0] ""
 
 #: graphs.php:281 graphs.php:338
+#, fuzzy
 msgid "Cannot delete graph"
 msgid_plural "Cannot delete graphs"
-msgstr[0] ""
+msgstr[0] "نمودار نمی‌تواند حذف شود"
 
 #: graphs.php:273 graphs.php:317
 msgid "Cannot delete graph prototype"
@@ -2693,11 +2684,12 @@ msgid_plural "Cannot delete graph prototypes"
 msgstr[0] ""
 
 #: app/controllers/CControllerHostMassDelete.php:76
+#, fuzzy
 msgid "Cannot delete host"
 msgid_plural "Cannot delete hosts"
-msgstr[0] ""
+msgstr[0] "هاست نمی‌تواند حذف شود"
 
-#: include/classes/api/services/CHost.php:1631
+#: include/classes/api/services/CHost.php:1636
 #, c-format
 msgid "Cannot delete host \"%1$s\": %2$s."
 msgstr ""
@@ -2713,7 +2705,7 @@ msgid "Cannot delete host group"
 msgid_plural "Cannot delete host groups"
 msgstr[0] ""
 
-#: include/classes/api/services/CHostGroup.php:767
+#: include/classes/api/services/CHostGroup.php:769
 #, c-format
 msgid "Cannot delete host group \"%1$s\": %2$s."
 msgstr ""
@@ -2727,7 +2719,7 @@ msgstr[0] ""
 #: app/controllers/CControllerHostGroupDelete.php:39
 #: app/controllers/CControllerTemplateGroupDelete.php:39
 msgid "Cannot delete host groups"
-msgstr "امکان حذف گروه های هاست وجود ندارد"
+msgstr ""
 
 #: host_prototypes.php:319
 msgid "Cannot delete host prototype"
@@ -2736,29 +2728,30 @@ msgstr[0] ""
 
 #: host_prototypes.php:139
 msgid "Cannot delete host prototypes"
-msgstr "امکان حذف نمونه های اولیه هاست وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerIconMapDelete.php:65
 msgid "Cannot delete icon map"
-msgstr "امکان حذف نگاشت آیکون وجود ندارد"
+msgstr "نگاشت آیکن نمی‌توانند حذف شود"
 
 #: app/controllers/CControllerImageDelete.php:71
 msgid "Cannot delete image"
-msgstr "امکان حذف تصویر وجود ندارد"
+msgstr "تصویر نمی‌تواند حذف شود"
 
 #: include/classes/api/services/CHostInterface.php:631
 #, c-format
 msgid "Cannot delete interface for discovered host \"%1$s\"."
-msgstr "امکان حذف اینترفیس هاست یافته شده \"%1$s\" وجود ندارد."
+msgstr ""
 
 #: include/classes/api/services/CHost.php:1190
 msgid "Cannot delete inventory."
-msgstr "امکان حذف موجودی وجود ندارد."
+msgstr "فهرست نمی‌تواند حذف شود."
 
 #: items.php:524 items.php:736
+#, fuzzy
 msgid "Cannot delete item"
 msgid_plural "Cannot delete items"
-msgstr[0] ""
+msgstr[0] "آیتم نمی‌تواند حذف شود"
 
 #: disc_prototypes.php:302 disc_prototypes.php:500
 msgid "Cannot delete item prototype"
@@ -2782,13 +2775,14 @@ msgid_plural "Cannot delete modules: %1$s."
 msgstr[0] ""
 
 #: sysmaps.php:266
+#, fuzzy
 msgid "Cannot delete network map"
 msgid_plural "Cannot delete network maps"
-msgstr[0] ""
+msgstr[0] "نقشه شبکه نمی تواند حذف شود"
 
 #: app/controllers/CControllerProxyDelete.php:39
 msgid "Cannot delete proxies"
-msgstr "امکان حذف پروکسی ها وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerProxyDelete.php:79
 msgid "Cannot delete proxy"
@@ -2802,12 +2796,12 @@ msgstr[0] ""
 
 #: app/controllers/CControllerProxyGroupDelete.php:39
 msgid "Cannot delete proxy groups"
-msgstr "امکان حذف گروه های پروکسی وجود ندارد"
+msgstr ""
 
 #: include/classes/api/services/CRole.php:362
 #, c-format
 msgid "Cannot delete readonly user role \"%1$s\"."
-msgstr "امکان حذف نقش کاربر فقط خواندن \"%1$s\" وجود ندارد."
+msgstr ""
 
 #: app/controllers/CControllerRegExDelete.php:55
 msgid "Cannot delete regular expression"
@@ -2827,25 +2821,27 @@ msgstr[0] "اسکریپت نمی تواند حذف شود"
 #: include/classes/api/services/CScript.php:964
 #, c-format
 msgid "Cannot delete scripts. Script \"%1$s\" is used in action operation \"%2$s\"."
-msgstr "امکان حذف اسکریپت ها وجود ندارد. اسکریپت \"%1$s\" در عملیات اقدام \"%2$s\" استفاده شده است."
+msgstr "اسکریپت ها نمی توانند حذف شوند.اسکریپت \"%1$s\" در عملکرد فعالیت \"%2$s\" استفاده شده است.اسکریپت ها نمی توانند حذف شوند.اسکریپت \"%1$s\" در عملکرد فعالیت \"%2$s\" استفاده شده است.اسکریپت ها نمی توانند حذف شوند.اسکریپت \"%1$s\" در عملکرد فعالیت \"%2$s\" استفاده شده است.اسکریپت ها نمی توانند حذف شوند.اسکریپت \"%1$s\" در عملکرد فعالیت \"%2$s\" استفاده شده است.اسکریپت ها نمی توانند حذف شوند.اسکریپت \"%1$s\" در عملکرد فعالیت \"%2$s\" استفاده شده است."
 
 #: app/controllers/CControllerServiceDelete.php:72
+#, fuzzy
 msgid "Cannot delete service"
 msgid_plural "Cannot delete services"
-msgstr[0] ""
+msgstr[0] "سرویس نمی‌تواند حذف شود"
 
 #: include/classes/api/services/CService.php:455
 #: include/classes/api/services/CService.php:470
 #, c-format
 msgid "Cannot delete service \"%1$s\": %2$s."
-msgstr "امکان حذف سرویس \"%1$s\" وجود ندارد: %2$s."
+msgstr ""
 
 #: app/controllers/CControllerTemplateDelete.php:143
+#, fuzzy
 msgid "Cannot delete template"
 msgid_plural "Cannot delete templates"
-msgstr[0] ""
+msgstr[0] "قالب نمی تواند حذف شود"
 
-#: include/classes/api/services/CTemplate.php:805
+#: include/classes/api/services/CTemplate.php:809
 #, c-format
 msgid "Cannot delete template \"%1$s\": %2$s."
 msgstr ""
@@ -2857,31 +2853,32 @@ msgstr[0] ""
 
 #: include/classes/api/services/CGraphPrototype.php:350
 msgid "Cannot delete templated graph prototype."
-msgstr "امکان حذف نمونه اولیه نمودار  الگو شده وجود ندارد."
+msgstr ""
 
 #: include/classes/api/services/CGraph.php:350
 msgid "Cannot delete templated graph."
-msgstr "امکان حذف نمودار الگو شده وجود ندارد."
+msgstr ""
 
 #: include/classes/api/services/CTrigger.php:618
 #, c-format
 msgid "Cannot delete templated trigger \"%1$s:%2$s\"."
-msgstr "امکان حذف trigger الگو شده \"%1$s:%2$s\" وجود ندارد."
+msgstr "هشدارهای قالب شده \"%1$s:%2$s\" نمی توانند حذف شوند."
 
 #: include/classes/api/services/CTriggerPrototype.php:510
 #, c-format
 msgid "Cannot delete templated trigger prototype \"%1$s:%2$s\"."
-msgstr "امکان حذف نمونه اولیه trigger الگو شده \"%1$s:%2$s\" وجود ندارد."
+msgstr ""
 
 #: include/classes/api/services/CHttpTest.php:677
 #, c-format
 msgid "Cannot delete templated web scenario \"%1$s\"."
-msgstr "امکان حذف سناریو وب الگو شده \"%1$s\" وجود ندارد."
+msgstr ""
 
 #: app/controllers/CControllerTriggerDelete.php:70
+#, fuzzy
 msgid "Cannot delete trigger"
 msgid_plural "Cannot delete triggers"
-msgstr[0] ""
+msgstr[0] "هشدار نمی‌تواند حذف شود"
 
 #: include/classes/api/managers/CTriggerManager.php:126
 #, c-format
@@ -2908,12 +2905,12 @@ msgid "Cannot delete user group"
 msgid_plural "Cannot delete user groups"
 msgstr[0] ""
 
-#: include/classes/api/services/CUserGroup.php:1306
+#: include/classes/api/services/CUserGroup.php:1340
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by LDAP userdirectory \"%2$s\"."
 msgstr ""
 
-#: include/classes/api/services/CUserGroup.php:1301
+#: include/classes/api/services/CUserGroup.php:1335
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by SAML userdirectory."
 msgstr ""
@@ -2976,9 +2973,10 @@ msgid_plural "Cannot disable items"
 msgstr[0] ""
 
 #: app/controllers/CControllerMediatypeDisable.php:76
+#, fuzzy
 msgid "Cannot disable media type"
 msgid_plural "Cannot disable media types"
-msgstr[0] ""
+msgstr[0] "نوع رسانه نمی تواند غیرفعال شود"
 
 #: app/controllers/CControllerModuleDisable.php:75
 msgid "Cannot disable module"
@@ -3004,7 +3002,7 @@ msgstr[0] ""
 #: app/controllers/CControllerQueueOverview.php:53
 #: app/controllers/CControllerQueueOverviewProxy.php:53
 msgid "Cannot display item queue."
-msgstr "امکان نمایش صف آیتم وجود ندارد."
+msgstr ""
 
 #: chart7.php:93
 msgid "Cannot display more than one item with type \"Graph sum\"."
@@ -3053,9 +3051,10 @@ msgid_plural "Cannot enable items"
 msgstr[0] ""
 
 #: app/controllers/CControllerMediatypeEnable.php:99
+#, fuzzy
 msgid "Cannot enable media type"
 msgid_plural "Cannot enable media types"
-msgstr[0] ""
+msgstr[0] "نوع رسانه نمی تواند فعال شود"
 
 #: app/controllers/CControllerModuleEnable.php:99
 msgid "Cannot enable module"
@@ -3083,16 +3082,16 @@ msgstr ""
 
 #: include/classes/api/services/CScript.php:1042
 msgid "Cannot execute URL type script."
-msgstr "امکان اجرای اسکریپت نوع URL وجود ندارد."
+msgstr ""
 
 #: app/controllers/CControllerItemMassCheckNow.php:243
 #: app/controllers/CControllerItemMassCheckNow.php:251
 msgid "Cannot execute operation"
-msgstr "امکان اجرای عملیات وجود ندارد"
+msgstr ""
 
 #: app/controllers/CControllerPopupScriptExec.php:122
 msgid "Cannot execute script."
-msgstr "امکان اجرای اسکریپت وجود ندارد."
+msgstr ""
 
 #: jsLoader.php:277
 msgid "Cannot expand macros."
@@ -3141,7 +3140,7 @@ msgstr ""
 #: include/classes/api/services/CDiscoveryRule.php:3350
 #, c-format
 msgid "Cannot find host interface on \"%1$s\" for item key \"%2$s\"."
-msgstr "امکان پیدا کردن اینترفیس هاست در %1$s برای کلید آیتم %2$s وجود ندارد."
+msgstr "واسط هاست در \"%1$s\" برای کلید آیتم \"%2$s\" پیدا نشد."
 
 #: include/classes/api/services/CDiscoveryRule.php:3685
 #, c-format
@@ -3678,6 +3677,11 @@ msgstr ""
 msgid "Cannot read YAML: %1$s."
 msgstr ""
 
+#: include/classes/server/CZabbixServer.php:502
+#, c-format
+msgid "Cannot read response from Zabbix server \"%1$s\"."
+msgstr ""
+
 #: include/classes/server/CZabbixServer.php:567
 #, c-format
 msgid "Cannot read the response, check connection with the Zabbix server \"%1$s\"."
@@ -3737,6 +3741,10 @@ msgstr ""
 
 #: widgets/piechart/includes/CWidgetFieldDataSet.php:175
 msgid "Cannot set \"Data set aggregation\" when item with type \"Total\" is added to the chart."
+msgstr ""
+
+#: include/classes/db/MysqlDbBackend.php:197
+msgid "Cannot set charset."
 msgstr ""
 
 #: include/classes/api/services/CItemGeneral.php:2478
@@ -3914,7 +3922,7 @@ msgstr ""
 #: app/controllers/CControllerActionUpdate.php:58
 #: app/controllers/CControllerActionUpdate.php:275
 msgid "Cannot update action"
-msgstr "اقدام نمیتواند به روز شود"
+msgstr "فعالیت نمی‌تواند بروز شود"
 
 #: app/controllers/CControllerAuthenticationUpdate.php:91
 #: app/controllers/CControllerAuthenticationUpdate.php:306
@@ -4205,14 +4213,14 @@ msgstr ""
 #: include/actions.inc.php:1991 include/classes/screens/CScreenProblem.php:1178
 #: include/events.inc.php:182
 msgid "Cause"
-msgstr "علت"
+msgstr ""
 
 #: include/views/js/monitoring.sysmaps.js.php:35
 #: widgets/item/includes/WidgetForm.php:146
 #: widgets/item/includes/WidgetForm.php:179
 #: widgets/item/includes/WidgetForm.php:227
 msgid "Center"
-msgstr "مرکز"
+msgstr ""
 
 #: app/partials/configuration.host.edit.html.php:418
 #: app/partials/configuration.host.edit.html.php:437
@@ -4222,14 +4230,14 @@ msgstr "مرکز"
 #: include/views/configuration.host.prototype.edit.php:489
 #: include/views/configuration.host.prototype.edit.php:505
 msgid "Certificate"
-msgstr "گواهینامه"
+msgstr ""
 
 #: app/partials/monitoring.latest.view.html.php:78
 #: app/partials/monitoring.latest.view.html.php:91 include/items.inc.php:1577
 #: include/items.inc.php:1581
 msgctxt "noun"
 msgid "Change"
-msgstr "تغییر"
+msgstr ""
 
 #: app/partials/hostmacros.inherited.list.html.php:124
 #: app/partials/hostmacros.inherited.list.html.php:141
@@ -4238,7 +4246,7 @@ msgstr "تغییر"
 #: include/classes/screens/CScreenMap.php:45 jsLoader.php:315
 msgctxt "verb"
 msgid "Change"
-msgstr "تغییرتغییر"
+msgstr ""
 
 #: app/partials/configuration.host.edit.html.php:449
 #: app/views/administration.autoreg.edit.php:82
@@ -4267,11 +4275,11 @@ msgstr "تغییر رمز عبور"
 
 #: include/items.inc.php:1582
 msgid "Change per second"
-msgstr "تغییر در ثانیه"
+msgstr ""
 
 #: include/classes/helpers/CRoleHelper.php:561
 msgid "Change problem ranking"
-msgstr "تغییر جایگاه مشکل"
+msgstr ""
 
 #: app/views/popup.acknowledge.edit.php:72
 #: include/classes/helpers/CRoleHelper.php:544
@@ -4280,7 +4288,7 @@ msgstr ""
 
 #: include/classes/html/CMacroValue.php:168
 msgid "Change type"
-msgstr "تغییر نوع"
+msgstr ""
 
 #: app/partials/configuration.filter.items.php:144
 #: app/views/popup.massupdate.item.php:149 include/items.inc.php:127
@@ -4292,12 +4300,12 @@ msgstr "کاراکتر"
 #: app/views/js/administration.regex.edit.js.php:160
 #: include/classes/helpers/CRegexHelper.php:26
 msgid "Character string included"
-msgstr "حاوی رشته کاراکتری "
+msgstr "در بر داشتن رشته کاراکتری"
 
 #: app/views/js/administration.regex.edit.js.php:168
 #: include/classes/helpers/CRegexHelper.php:28
 msgid "Character string not included"
-msgstr "بدون رشته کاراکتری"
+msgstr "در بر نداشتن رشته کاراکتری"
 
 #: app/controllers/CControllerPopupTriggerExpr.php:789
 #: app/controllers/CControllerPopupTriggerExpr.php:982
@@ -4406,11 +4414,11 @@ msgstr ""
 
 #: include/locales.inc.php:37
 msgid "Chinese (zh_CN)"
-msgstr "چینی (zh_CN)"
+msgstr ""
 
 #: include/locales.inc.php:38
 msgid "Chinese (zh_TW)"
-msgstr "چینی (zh_TW)"
+msgstr ""
 
 #: include/classes/import/importers/CTemplateImporter.php:294
 #, c-format
@@ -4436,23 +4444,23 @@ msgstr "پاک کردن تاریخچه و روند ها"
 
 #: include/views/configuration.item.list.php:315
 msgid "Clear history and trends of selected item?"
-msgstr "تاریخچه و روندهای آیتم انتخابی را حذف میکنید؟"
+msgstr ""
 
 #: include/views/configuration.item.list.php:316
 msgid "Clear history and trends of selected items?"
-msgstr "تاریخچه و روندهای آیتم های انتخابی را حذف میکنید؟"
+msgstr ""
 
 #: include/views/configuration.httpconf.list.php:238
 msgid "Clear history and trends of selected web scenario?"
-msgstr "تاریخچه و روندهای سناریو وب انتخابی را حذف میکنید؟"
+msgstr ""
 
 #: include/views/configuration.httpconf.list.php:239
 msgid "Clear history and trends of selected web scenarios?"
-msgstr "تاریخچه و روندهای سناریوهای وب انتخابی را حذف میکنید؟"
+msgstr ""
 
 #: app/views/popup.massupdate.host.php:66 app/views/template.massupdate.php:70
 msgid "Clear when unlinking"
-msgstr "پاکسازی در صورت قطع ارتباط"
+msgstr "پاک کردن وقتی جدا شد"
 
 #: jsLoader.php:157
 msgid "Click and drag to desired size."
@@ -4460,11 +4468,11 @@ msgstr ""
 
 #: jsLoader.php:323
 msgid "Click to view or edit"
-msgstr "برای مشاهده یا ویرایش کلیک کنید"
+msgstr ""
 
 #: app/views/mfa.edit.php:111
 msgid "Client ID"
-msgstr "شناسه کلاینت"
+msgstr ""
 
 #: app/views/mfa.edit.php:120
 msgid "Client secret"
@@ -4477,7 +4485,7 @@ msgstr "ساعت"
 #: tests/selenium/modules/clock32/includes/WidgetForm.php:73
 #: widgets/clock/includes/WidgetForm.php:73
 msgid "Clock type"
-msgstr "نوع ساعت"
+msgstr ""
 
 #: app/partials/scheduledreport.formgrid.html.php:225
 #: app/views/administration.iconmap.edit.php:140
@@ -4539,24 +4547,24 @@ msgstr "بستن عبارت سازنده"
 #: app/views/correlation.edit.php:254
 #: include/classes/helpers/CCorrelationHelper.php:71
 msgid "Close new event"
-msgstr "بستن رویداد جدید"
+msgstr ""
 
 #: app/views/correlation.edit.php:247
 #: include/classes/helpers/CCorrelationHelper.php:70
 msgid "Close old events"
-msgstr "بستن رویداد های قدیمی"
+msgstr ""
 
 #: app/views/popup.acknowledge.edit.php:141
 msgid "Close problem"
-msgstr "بستن مشکل"
+msgstr ""
 
 #: include/classes/helpers/CRoleHelper.php:547
 msgid "Close problems"
-msgstr "بستن مشکلات"
+msgstr ""
 
 #: app/views/mfa.edit.php:90
 msgid "Code length"
-msgstr "طول کد"
+msgstr ""
 
 #: app/views/js/monitoring.problem.view.js.php:194
 #: app/views/js/monitoring.problem.view.js.php:221
@@ -4591,7 +4599,7 @@ msgstr ""
 #: widgets/item/includes/WidgetForm.php:246
 #: widgets/piechart/includes/WidgetForm.php:181
 msgid "Color"
-msgstr "رنگ"
+msgstr ""
 
 #: include/classes/validators/CColorValidator.php:32 jsLoader.php:279
 #, c-format
@@ -4600,7 +4608,7 @@ msgstr ""
 
 #: include/views/js/monitoring.sysmaps.js.php:807
 msgid "Color (OK)"
-msgstr "رنگ (OK)"
+msgstr ""
 
 #: widgets/honeycomb/includes/WidgetForm.php:213
 msgid "Color interpolation"
@@ -4608,7 +4616,7 @@ msgstr ""
 
 #: widgets/gauge/views/widget.edit.php:92
 msgid "Colors"
-msgstr "رنگ ها"
+msgstr ""
 
 #: widgets/graphprototype/includes/WidgetForm.php:82
 #: widgets/tophosts/includes/WidgetForm.php:140
@@ -4617,7 +4625,7 @@ msgstr "ستون ها"
 
 #: app/views/js/administration.regex.edit.js.php:66
 msgid "Combined result"
-msgstr "نتیجه ترکیب شده"
+msgstr "ترکیب کردن نتیجه ها"
 
 #: include/classes/html/widgets/fields/CWidgetFieldLatLngView.php:35
 msgid "Comma separated center coordinates and zoom level to display when the widget is initially loaded."
@@ -4641,11 +4649,11 @@ msgstr ""
 #: include/items.inc.php:946
 msgctxt "SNMP Community"
 msgid "Community"
-msgstr "انجمن"
+msgstr ""
 
 #: app/partials/monitoring.problem.filter.php:291
 msgid "Compact view"
-msgstr "نمای فشرده"
+msgstr ""
 
 #: include/classes/core/CComponentRegistry.php:53
 #, c-format
@@ -4702,11 +4710,11 @@ msgstr ""
 
 #: app/controllers/CControllerGuiEdit.php:96
 msgid "Configuration of GUI"
-msgstr "پیکربندی رابط کاربری گرافیکی"
+msgstr ""
 
 #: app/controllers/CControllerActionList.php:163
 msgid "Configuration of actions"
-msgstr "پیکربندی اقدامات"
+msgstr "پیکربندی فعالیت ها"
 
 #: app/controllers/CControllerAuditSettingsEdit.php:60
 msgid "Configuration of audit log"
@@ -4714,21 +4722,21 @@ msgstr ""
 
 #: app/controllers/CControllerAuthenticationEdit.php:268
 msgid "Configuration of authentication"
-msgstr "پیکربندی احراز هویت"
+msgstr ""
 
 #: app/controllers/CControllerTemplateDashboardEdit.php:103
 #: app/controllers/CControllerTemplateDashboardList.php:93
 msgid "Configuration of dashboards"
-msgstr "پیکربندی میزهای کار"
+msgstr ""
 
 #: app/controllers/CControllerDiscoveryEdit.php:144
 #: app/controllers/CControllerDiscoveryList.php:143 host_discovery.php:27
 msgid "Configuration of discovery rules"
-msgstr "پیکربندی قوانین اکتشاف"
+msgstr ""
 
 #: graphs.php:27
 msgid "Configuration of graph prototypes"
-msgstr "پیکربندی نمونه های اولیه نمودار "
+msgstr ""
 
 #: graphs.php:27
 msgid "Configuration of graphs"
@@ -4736,23 +4744,23 @@ msgstr "پیکربندی نمودار ها"
 
 #: app/controllers/CControllerHostEdit.php:322
 msgid "Configuration of host"
-msgstr "پیکربندی هاست"
+msgstr ""
 
 #: app/controllers/CControllerHostGroupEdit.php:129
 msgid "Configuration of host group"
-msgstr "پیکربندی گروه هاست"
+msgstr ""
 
 #: app/controllers/CControllerHostGroupList.php:166
 msgid "Configuration of host groups"
-msgstr "پیکربندی گروه های هاست"
+msgstr ""
 
 #: host_prototypes.php:27
 msgid "Configuration of host prototypes"
-msgstr "پیکربندی نمونه های اولیه هاست"
+msgstr ""
 
 #: app/controllers/CControllerHostList.php:397
 msgid "Configuration of hosts"
-msgstr "پیکربندی هاست ها"
+msgstr ""
 
 #: app/controllers/CControllerHousekeepingEdit.php:138
 msgid "Configuration of housekeeping"
@@ -4761,16 +4769,16 @@ msgstr ""
 #: app/controllers/CControllerIconMapEdit.php:103
 #: app/controllers/CControllerIconMapList.php:75
 msgid "Configuration of icon mapping"
-msgstr "پیکربندی نگاشت آیکون"
+msgstr ""
 
 #: app/controllers/CControllerImageEdit.php:80
 #: app/controllers/CControllerImageList.php:57
 msgid "Configuration of images"
-msgstr "پیکربندی تصاویر"
+msgstr ""
 
 #: disc_prototypes.php:27
 msgid "Configuration of item prototypes"
-msgstr "پیکربندی نمونه های اولیه آیتم"
+msgstr ""
 
 #: items.php:27
 msgid "Configuration of items"
@@ -4778,16 +4786,16 @@ msgstr "پیکربندی آیتم ها"
 
 #: app/controllers/CControllerMacrosEdit.php:64
 msgid "Configuration of macros"
-msgstr "پیکربندی ماکرو ها"
+msgstr ""
 
 #: app/controllers/CControllerMaintenanceList.php:145
 msgid "Configuration of maintenance periods"
-msgstr "پیکربندی بازه های نگهداری"
+msgstr ""
 
 #: app/controllers/CControllerMediatypeEdit.php:182
 #: app/controllers/CControllerMediatypeList.php:115
 msgid "Configuration of media types"
-msgstr "پیکربندی انواع رسانه"
+msgstr ""
 
 #: sysmap.php:26 sysmaps.php:26
 msgid "Configuration of network maps"
@@ -4795,11 +4803,11 @@ msgstr "پیکربندی نقشه های شبکه"
 
 #: app/controllers/CControllerProxyList.php:197
 msgid "Configuration of proxies"
-msgstr "پیکربندی پروکسی ها"
+msgstr ""
 
 #: app/controllers/CControllerProxyGroupList.php:131
 msgid "Configuration of proxy groups"
-msgstr "پیکربندی گروه های پروکسی"
+msgstr ""
 
 #: app/controllers/CControllerRegExEdit.php:111
 #: app/controllers/CControllerRegExList.php:53
@@ -4809,54 +4817,54 @@ msgstr ""
 #: app/controllers/CControllerScriptEdit.php:180
 #: app/controllers/CControllerScriptList.php:209
 msgid "Configuration of scripts"
-msgstr "پیکربندی اسکریپت ها"
+msgstr ""
 
 #: app/controllers/CControllerTemplateGroupEdit.php:87
 msgid "Configuration of template group"
-msgstr "پیکربندی گروه الگو"
+msgstr ""
 
 #: app/controllers/CControllerTemplateGroupList.php:123
 msgid "Configuration of template groups"
-msgstr "پیکربندی گروه های الگو"
+msgstr ""
 
 #: app/controllers/CControllerTemplateList.php:220
 msgid "Configuration of templates"
-msgstr "پیکربندی الگوها"
+msgstr ""
 
 #: app/controllers/CControllerTimeoutsEdit.php:110
 msgid "Configuration of timeouts"
-msgstr "پیکربندی timeout ها"
+msgstr ""
 
 #: app/controllers/CControllerTrigDisplayEdit.php:132
 msgid "Configuration of trigger displaying options"
-msgstr "پیکربندی گزینه های نمایش trigger"
+msgstr ""
 
 #: app/controllers/CControllerTriggerPrototypeList.php:173
 msgid "Configuration of trigger prototypes"
-msgstr "پیکربندی نمونه های اولیه trigger"
+msgstr ""
 
 #: app/controllers/CControllerTriggerList.php:440
 msgid "Configuration of triggers"
-msgstr "پیکربندی trigger ها"
+msgstr "پیکربندی هشدار ها"
 
 #: app/controllers/CControllerUsergroupEdit.php:157
 #: app/controllers/CControllerUsergroupList.php:120
 msgid "Configuration of user groups"
-msgstr "پیکربندی گروه های کاربر"
+msgstr ""
 
 #: app/controllers/CControllerUserroleEdit.php:248
 #: app/controllers/CControllerUserroleList.php:130
 msgid "Configuration of user roles"
-msgstr "پیکربندی نقش های کاربر"
+msgstr ""
 
 #: app/controllers/CControllerUserEdit.php:304
 #: app/controllers/CControllerUserList.php:183
 msgid "Configuration of users"
-msgstr "پیکربندی کاربران"
+msgstr ""
 
 #: httpconf.php:27
 msgid "Configuration of web monitoring"
-msgstr "پیکربندی پایش وب"
+msgstr ""
 
 #: app/controllers/CControllerAuditLogList.php:209
 msgid "Configuration refresh"
@@ -4871,12 +4879,12 @@ msgstr ""
 #: app/controllers/CControllerTimeoutsUpdate.php:97
 #: app/controllers/CControllerTrigDisplayUpdate.php:108
 msgid "Configuration updated"
-msgstr "پیکربندی به روز شد"
+msgstr "پیکربندی بروز شد"
 
 #: include/classes/setup/CSetupWizard.php:60
 #: include/classes/setup/CSetupWizard.php:696
 msgid "Configure DB connection"
-msgstr "پیکربندی ارتباطات پیاگاه داده"
+msgstr ""
 
 #: app/views/administration.authentication.edit.php:422
 #: app/views/popup.ldap.edit.php:119
@@ -4885,11 +4893,11 @@ msgstr ""
 
 #: app/views/js/administration.authentication.edit.js.php:143
 msgid "Confirm changes"
-msgstr "تأیید تغییرات"
+msgstr ""
 
 #: app/views/administration.script.edit.php:332
 msgid "Confirmation text"
-msgstr "متن تأیید"
+msgstr "متن تایید"
 
 #: app/views/popup.acknowledge.edit.php:115
 msgid "Confirms the problem is noticed (acknowledging user will be recorded). Status change triggers action update operation."
@@ -4909,16 +4917,16 @@ msgstr "متصل به"
 #: widgets/svggraph/includes/CWidgetFieldOverrideView.php:256
 msgctxt "missing data function"
 msgid "Connected"
-msgstr "متصل شده"
+msgstr ""
 
 #: app/views/administration.timeouts.edit.php:148
 msgid "Connection"
-msgstr "اتصال"
+msgstr ""
 
 #: app/views/administration.mediatype.edit.php:91
 #: app/views/mediatype.edit.php:105
 msgid "Connection security"
-msgstr "امنیت اتصال"
+msgstr ""
 
 #: include/classes/server/CZabbixServer.php:521
 #, c-format
@@ -4961,34 +4969,34 @@ msgstr ""
 
 #: app/views/popup.massupdate.host.php:272
 msgid "Connections"
-msgstr "اتصالات"
+msgstr ""
 
 #: app/partials/configuration.host.edit.html.php:424
 #: app/views/popup.massupdate.host.php:233
 #: include/views/configuration.host.prototype.edit.php:493
 msgid "Connections from host"
-msgstr "اتصالات از هاست"
+msgstr ""
 
 #: app/controllers/CControllerProxyCreate.php:70
 #: app/controllers/CControllerProxyUpdate.php:65
 #: app/views/popup.proxy.edit.php:106
 msgid "Connections from proxy"
-msgstr "اتصالات از پروکسی"
+msgstr ""
 
 #: app/partials/configuration.host.edit.html.php:413
 #: app/views/popup.massupdate.host.php:225
 #: include/views/configuration.host.prototype.edit.php:485
 msgid "Connections to host"
-msgstr "اتصالات به هاست"
+msgstr ""
 
 #: app/views/popup.proxy.edit.php:96
 msgid "Connections to proxy"
-msgstr "اتصالات به پروکسی"
+msgstr ""
 
 #: app/controllers/CControllerAuditLogList.php:225
 #: app/views/connector.edit.php:283
 msgid "Connector"
-msgstr "متصل کننده"
+msgstr ""
 
 #: include/classes/api/services/CConnector.php:446
 #, c-format
@@ -4997,7 +5005,7 @@ msgstr ""
 
 #: app/controllers/CControllerConnectorCreate.php:147
 msgid "Connector created"
-msgstr "متصل کننده ایجاد شد"
+msgstr ""
 
 #: app/controllers/CControllerConnectorDelete.php:60
 msgid "Connector deleted"
@@ -5009,10 +5017,6 @@ msgid "Connector disabled"
 msgid_plural "Connectors disabled"
 msgstr[0] ""
 
-#: app/controllers/CControllerPopup.php:43
-msgid "Connector edit"
-msgstr ""
-
 #: app/controllers/CControllerConnectorEnable.php:69
 msgid "Connector enabled"
 msgid_plural "Connectors enabled"
@@ -5020,13 +5024,13 @@ msgstr[0] ""
 
 #: app/controllers/CControllerConnectorUpdate.php:149
 msgid "Connector updated"
-msgstr "متصل کننده به روز شد"
+msgstr ""
 
 #: app/controllers/CControllerConnectorList.php:104
 #: app/views/connector.list.php:133 include/classes/helpers/CMenuHelper.php:362
 #: include/html.inc.php:916
 msgid "Connectors"
-msgstr "متصل کننده ها"
+msgstr ""
 
 #: include/hosts.inc.php:209
 msgid "Contact"
@@ -5044,7 +5048,7 @@ msgstr "تماس"
 #: include/classes/helpers/CTagFilterFieldHelper.php:124
 #: include/classes/html/widgets/fields/CWidgetFieldTagsView.php:95
 msgid "Contains"
-msgstr "حاوی"
+msgstr ""
 
 #: app/views/action.list.php:75 app/views/administration.iconmap.list.php:36
 #: app/views/administration.image.list.php:69
@@ -5110,7 +5114,7 @@ msgstr ""
 
 #: app/views/script.userinput.edit.php:82
 msgid "Continue"
-msgstr "ادامه"
+msgstr ""
 
 #: app/views/popup.lldoverride.php:54
 msgid "Continue overrides"
@@ -5123,11 +5127,11 @@ msgstr "شماره تماس"
 #: include/views/configuration.item.edit.php:450
 #: include/views/configuration.item.prototype.edit.php:426
 msgid "Convert to JSON"
-msgstr "تبدیل به JSON"
+msgstr ""
 
 #: app/views/popup.acknowledge.edit.php:135
 msgid "Convert to cause"
-msgstr "تبدیل به علت"
+msgstr ""
 
 #: app/views/popup.acknowledge.edit.php:136
 msgid "Converts a symptom event back to cause event"
@@ -5136,14 +5140,14 @@ msgstr ""
 #: include/views/js/monitoring.sysmaps.js.php:297
 #: include/views/js/monitoring.sysmaps.js.php:433
 msgid "Coordinates"
-msgstr "مختصات"
+msgstr ""
 
 #: app/views/copy.edit.php:91 app/views/trigger.list.php:370
 #: include/views/configuration.graph.list.php:260
 #: include/views/configuration.item.list.php:338 jsLoader.php:137
 #: jsLoader.php:171 jsLoader.php:271
 msgid "Copy"
-msgstr "کپی"
+msgstr "رونوشت"
 
 #: app/views/copy.edit.php:58
 #, c-format
@@ -5165,10 +5169,6 @@ msgstr[0] ""
 
 #: app/views/popup.token.view.php:51
 msgid "Copy to clipboard"
-msgstr ""
-
-#: app/controllers/CControllerPopup.php:44
-msgid "Correlation edit"
 msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:52
@@ -5219,44 +5219,44 @@ msgstr ""
 
 #: app/views/sla.list.php:191
 msgid "Create SLA"
-msgstr "ایجاد SLA"
+msgstr ""
 
 #: app/views/action.list.php:73
 msgid "Create action"
-msgstr "ایجاد اقدام"
+msgstr "ایجاد فعالیت"
 
 #: include/classes/helpers/CRoleHelper.php:534
 msgid "Create and edit dashboards"
-msgstr "ایجاد و ویرایش میزهای کار"
+msgstr ""
 
 #: include/classes/helpers/CRoleHelper.php:539
 msgid "Create and edit maintenance"
-msgstr "ایجاد و ویرایش نگهداری"
+msgstr ""
 
 #: include/classes/helpers/CRoleHelper.php:535
 msgid "Create and edit maps"
-msgstr "ایجاد و ویرایش نقشه ها"
+msgstr ""
 
 #: app/views/administration.image.list.php:60
 msgid "Create background"
-msgstr "ایجاد پس زمینه"
+msgstr ""
 
 #: app/views/connector.list.php:140
 msgid "Create connector"
-msgstr "ایجاد متصل کننده"
+msgstr ""
 
 #: app/views/configuration.dashboard.list.php:84
 #: app/views/monitoring.dashboard.list.php:42
 msgid "Create dashboard"
-msgstr "ایجاد میزکار"
+msgstr ""
 
 #: jsLoader.php:353
 msgid "Create dependent discovery rule"
-msgstr "ایجاد قانون اکتشاف وابسته"
+msgstr ""
 
 #: jsLoader.php:352
 msgid "Create dependent item"
-msgstr "ایجاد آیتم وابسته"
+msgstr ""
 
 #: app/views/trigger.prototype.list.php:181
 #: include/views/configuration.host.prototype.list.php:200
@@ -5267,7 +5267,7 @@ msgstr ""
 #: app/views/configuration.discovery.list.php:35
 #: include/views/configuration.host.discovery.list.php:39
 msgid "Create discovery rule"
-msgstr "ایجاد قانون اکتشاف"
+msgstr ""
 
 #: include/views/configuration.host.discovery.list.php:47
 msgid "Create discovery rule (select host first)"
@@ -5844,8 +5844,8 @@ msgstr ""
 msgid "Database TLS key file"
 msgstr ""
 
-#: include/classes/api/clients/CLocalApiClient.php:124
-#: include/classes/api/clients/CLocalApiClient.php:138
+#: include/classes/api/clients/CLocalApiClient.php:133
+#: include/classes/api/clients/CLocalApiClient.php:147
 msgid "Database error occurred."
 msgstr ""
 
@@ -6687,6 +6687,10 @@ msgstr ""
 msgid "Detected TimescaleDB license does not support compression. Compression is supported in TimescaleDB Community Edition."
 msgstr ""
 
+#: app/views/administration.housekeeping.edit.php:204
+msgid "Detected license does not support compression. Compression is supported in TimescaleDB Community Edition."
+msgstr ""
+
 #: app/controllers/CControllerPopupTriggerExpr.php:1130
 msgid "Detection period"
 msgstr ""
@@ -7047,7 +7051,7 @@ msgstr "تطبیق شیء"
 msgid "Discovery of VMware clusters, \"url\" - VMware service URL. Returns JSON"
 msgstr ""
 
-#: include/classes/data/CItemData.php:1932
+#: include/classes/data/CItemData.php:1931
 msgid "Discovery of VMware datastores, \"url\" - VMware service URL, \"filter_uuid\" - one hv uuid or vm uuid (empty by default). Returns JSON"
 msgstr ""
 
@@ -7129,10 +7133,6 @@ msgid "Discovery rule disabled"
 msgid_plural "Discovery rules disabled"
 msgstr[0] ""
 
-#: app/controllers/CControllerPopup.php:45
-msgid "Discovery rule edit"
-msgstr ""
-
 #: app/controllers/CControllerDiscoveryEnable.php:68 host_discovery.php:580
 msgid "Discovery rule enabled"
 msgid_plural "Discovery rules enabled"
@@ -7185,10 +7185,6 @@ msgstr ""
 msgid "Display graph"
 msgstr ""
 
-#: widgets/tophosts/views/column.edit.php:136
-msgid "Display item value as"
-msgstr ""
-
 #: widgets/itemhistory/views/column.edit.php:241
 msgid "Display local time"
 msgstr ""
@@ -7211,10 +7207,6 @@ msgstr ""
 
 #: app/partials/monitoring.latest.view.html.php:308
 msgid "Display stacked graph"
-msgstr ""
-
-#: widgets/topitems/views/column.edit.php:90
-msgid "Display value as"
 msgstr ""
 
 #: app/controllers/CControllerHintboxActionlist.php:99
@@ -8989,12 +8981,12 @@ msgstr ""
 #: include/views/configuration.graph.list.php:31
 #: include/views/configuration.host.discovery.list.php:315
 msgid "Graph prototypes"
-msgstr "نمونه اولیه نمودار"
+msgstr "نمونه اولیه گراف"
 
 #: include/views/js/configuration.graph.edit.js.php:215
 #: include/views/js/configuration.graph.edit.js.php:286
 msgid "Graph sum"
-msgstr "مجموع نمودار"
+msgstr "مجموع گراف"
 
 #: app/controllers/CControllerPopupGeneric.php:346
 #: app/controllers/CControllerPopupGeneric.php:359
@@ -9002,7 +8994,7 @@ msgstr "مجموع نمودار"
 #: include/views/configuration.graph.list.php:172
 #: include/views/monitoring.history.php:252
 msgid "Graph type"
-msgstr "نوع نمودار"
+msgstr "نوع گراف"
 
 #: graphs.php:240
 msgid "Graph updated"
@@ -9034,7 +9026,7 @@ msgstr ""
 #: include/views/inventory.host.view.php:194
 #: include/views/inventory.host.view.php:217 jsLoader.php:371
 msgid "Graphs"
-msgstr "نمودار ها"
+msgstr "نمودارها"
 
 #: include/locales.inc.php:45
 msgid "Greek (el_GR)"
@@ -9481,10 +9473,6 @@ msgstr ""
 msgid "Host cannot have more than one default interface of the same type."
 msgstr "هاست نمی‌تواند بیشتر از یک واسط پیش فرض داشته باشد."
 
-#: widgets/hostcard/Widget.php:32
-msgid "Host card"
-msgstr ""
-
 #: app/views/administration.proxy.list.php:91 hostinventoriesoverview.php:85
 #: widgets/tophosts/includes/WidgetForm.php:159
 msgid "Host count"
@@ -9505,10 +9493,6 @@ msgstr[0] ""
 msgid "Host disabled"
 msgid_plural "Hosts disabled"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:46
-msgid "Host edit"
-msgstr ""
 
 #: app/controllers/CControllerHostGroupEnable.php:76
 #: app/controllers/CControllerPopupMassupdateHost.php:491
@@ -9566,10 +9550,6 @@ msgstr ""
 msgid "Host group deleted"
 msgid_plural "Host groups deleted"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:47
-msgid "Host group edit"
-msgstr ""
 
 #: include/views/js/monitoring.sysmaps.js.php:112
 msgid "Host group elements"
@@ -9702,12 +9682,6 @@ msgstr ""
 #: include/hosts.inc.php:284
 msgid "Host networks"
 msgstr "شبکه‌های هاست"
-
-#: widgets/topitems/includes/WidgetForm.php:116
-#: widgets/topitems/includes/WidgetForm.php:128
-#: widgets/topitems/views/widget.edit.php:63
-msgid "Host ordering"
-msgstr ""
 
 #: widgets/hostnavigator/includes/WidgetForm.php:65
 msgid "Host patterns"
@@ -11789,12 +11763,6 @@ msgstr ""
 msgid "Inventory field"
 msgstr ""
 
-#: include/classes/html/widgets/fields/CWidgetFieldMultiSelectHostInventoryView.php:30
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-#: widgets/hostcard/includes/WidgetForm.php:50
-msgid "Inventory fields"
-msgstr ""
-
 #: app/views/popup.massupdate.host.php:175
 #: app/views/popup.operation.edit.php:402
 msgid "Inventory mode"
@@ -11869,10 +11837,6 @@ msgid "Item disabled"
 msgid_plural "Items disabled"
 msgstr[0] ""
 
-#: app/controllers/CControllerPopup.php:48
-msgid "Item edit"
-msgstr ""
-
 #: items.php:707
 msgid "Item enabled"
 msgid_plural "Items enabled"
@@ -11907,12 +11871,6 @@ msgstr ""
 msgid "Item not selected"
 msgstr ""
 
-#: widgets/topitems/includes/WidgetForm.php:145
-#: widgets/topitems/includes/WidgetForm.php:157
-#: widgets/topitems/views/widget.edit.php:81
-msgid "Item ordering"
-msgstr ""
-
 #: widgets/piechart/views/widget.edit.js.php:203
 #: widgets/svggraph/views/widget.edit.js.php:281
 msgid "Item pattern"
@@ -11943,10 +11901,6 @@ msgstr ""
 msgid "Item prototype deleted"
 msgid_plural "Item prototypes deleted"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:49
-msgid "Item prototype edit"
-msgstr ""
 
 #: app/controllers/CControllerPopupMassupdateItem.php:286
 #: disc_prototypes.php:457 disc_prototypes.php:483 disc_prototypes.php:522
@@ -12455,15 +12409,6 @@ msgstr ""
 msgid "Licensed under"
 msgstr ""
 
-#: widgets/topitems/includes/WidgetForm.php:125
-#: widgets/topitems/includes/WidgetForm.php:154
-msgid "Limit"
-msgstr ""
-
-#: widgets/topitems/views/widget.edit.php:95
-msgid "Limit applies to each \"Item pattern\" separately"
-msgstr ""
-
 #: app/views/administration.gui.edit.php:93
 msgid "Limit for search and filter results"
 msgstr "محدودسازی مشخصه های جستجو/فیلتر"
@@ -12488,11 +12433,6 @@ msgstr ""
 
 #: include/views/js/monitoring.sysmaps.js.php:598
 msgid "Line width"
-msgstr ""
-
-#: widgets/svggraph/includes/WidgetForm.php:301
-#: widgets/svggraph/includes/WidgetForm.php:333
-msgid "Linear"
 msgstr ""
 
 #: app/views/popup.massupdate.host.php:42 app/views/template.massupdate.php:45
@@ -12704,11 +12644,6 @@ msgstr "قالب ثبت زمان"
 msgid "Log unmatched SNMP traps"
 msgstr ""
 
-#: widgets/svggraph/includes/WidgetForm.php:302
-#: widgets/svggraph/includes/WidgetForm.php:334
-msgid "Logarithmic"
-msgstr ""
-
 #: app/controllers/CControllerAuditLogList.php:201
 #: app/views/administration.user.list.php:135
 #: app/views/popup.ldap.test.edit.php:33 app/views/system.warning.php:43
@@ -12867,10 +12802,6 @@ msgstr "نگهداری"
 #: include/classes/api/services/CMaintenance.php:737
 #, c-format
 msgid "Maintenance \"%1$s\" already exists."
-msgstr ""
-
-#: app/controllers/CControllerPopup.php:50
-msgid "Maintenance edit"
 msgstr ""
 
 #: app/controllers/CControllerMaintenanceTimePeriodEdit.php:142
@@ -13238,6 +13169,11 @@ msgstr ""
 msgid "Maximum required %1$s database version is %2$s."
 msgstr ""
 
+#: app/partials/administration.system.info.php:221
+#, c-format
+msgid "Maximum required version is %1$s."
+msgstr ""
+
 #: app/controllers/CControllerTimeSelectorUpdate.php:136
 #: include/classes/mvc/CController.php:320
 #: include/classes/widgets/fields/CWidgetFieldTimePeriod.php:203
@@ -13297,7 +13233,7 @@ msgstr ""
 msgid "Media type \"%1$s\" already exists."
 msgstr ""
 
-#: include/classes/api/services/CMediatype.php:878
+#: include/classes/api/services/CMediatype.php:927
 #, c-format
 msgid "Media type \"%1$s\" is used by action \"%2$s\"."
 msgstr ""
@@ -13318,10 +13254,6 @@ msgstr[0] ""
 
 #: app/views/administration.user.edit.php:359
 msgid "Media type disabled by Administration."
-msgstr ""
-
-#: app/controllers/CControllerPopup.php:51
-msgid "Media type edit"
 msgstr ""
 
 #: app/controllers/CControllerMediatypeEnable.php:87
@@ -13573,6 +13505,12 @@ msgstr ""
 msgid "Minimum required size of PHP post is %1$s (configuration option \"post_max_size\")."
 msgstr ""
 
+#: app/partials/administration.system.info.php:212
+#: app/views/administration.housekeeping.edit.php:183
+#, c-format
+msgid "Minimum required version is %1$s."
+msgstr ""
+
 #: app/views/monitoring.map.view.php:48
 #: include/views/monitoring.sysmap.edit.php:276
 msgid "Minimum severity"
@@ -13668,10 +13606,6 @@ msgstr[0] ""
 msgid "Module disabled"
 msgid_plural "Modules disabled"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:52
-msgid "Module edit"
-msgstr ""
 
 #: app/controllers/CControllerModuleEnable.php:91
 msgid "Module enabled"
@@ -13799,6 +13733,16 @@ msgstr ""
 #: include/triggers.inc.php:611
 msgid "Multiple PROBLEM events"
 msgstr "رویدادهای مشکلات چندگانه"
+
+#: app/partials/administration.system.info.php:235
+#, c-format
+msgid "Must be at least %1$s."
+msgstr ""
+
+#: app/partials/administration.system.info.php:254
+#, c-format
+msgid "Must not be higher than %1$s."
+msgstr ""
 
 #: jsLoader.php:284
 msgid "Mute"
@@ -15166,10 +15110,6 @@ msgstr ""
 msgid "Numeral systems"
 msgstr ""
 
-#: widgets/tophosts/views/column.edit.php:139
-msgid "Numeric"
-msgstr ""
-
 #: app/partials/configuration.filter.items.php:143
 #: app/views/popup.massupdate.item.php:148 include/items.inc.php:125
 #: include/triggers.inc.php:1214 include/views/configuration.item.edit.php:123
@@ -16110,10 +16050,6 @@ msgstr ""
 msgid "Pattern"
 msgstr ""
 
-#: widgets/topitems/includes/CWidgetFieldColumnsListView.php:58
-msgid "Patterns"
-msgstr ""
-
 #: app/views/popup.action.edit.php:238
 msgid "Pause operations for suppressed problems"
 msgstr ""
@@ -16772,10 +16708,6 @@ msgid "Proxy deleted"
 msgid_plural "Proxies deleted"
 msgstr[0] ""
 
-#: app/controllers/CControllerPopup.php:53
-msgid "Proxy edit"
-msgstr ""
-
 #: app/controllers/CControllerAuditLogList.php:239
 #: app/partials/configuration.host.edit.html.php:266
 #: app/views/configuration.host.list.php:153
@@ -16808,10 +16740,6 @@ msgstr ""
 msgid "Proxy group deleted"
 msgid_plural "Proxy groups deleted"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:54
-msgid "Proxy group edit"
-msgstr ""
 
 #: app/controllers/CControllerProxyGroupUpdate.php:74
 msgid "Proxy group updated"
@@ -17640,6 +17568,11 @@ msgstr "کد پاسخ"
 msgid "Response time"
 msgstr "زمان پاسخ"
 
+#: include/classes/server/CZabbixServer.php:498
+#, c-format
+msgid "Response timeout of %1$s exceeded when connecting to Zabbix server \"%2$s\"."
+msgstr ""
+
 #: app/controllers/CControllerMediatypeTestSend.php:182
 msgid "Response type: JSON"
 msgstr ""
@@ -17922,10 +17855,6 @@ msgstr[0] ""
 msgid "SLA disabled"
 msgid_plural "SLAs disabled"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:58
-msgid "SLA edit"
-msgstr ""
 
 #: app/controllers/CControllerSlaEnable.php:73
 msgid "SLA enabled"
@@ -18361,10 +18290,6 @@ msgstr[0] ""
 msgid "Script does not have parameters."
 msgstr ""
 
-#: app/controllers/CControllerPopup.php:56
-msgid "Script edit"
-msgstr ""
-
 #: app/views/administration.timeouts.edit.php:168
 msgid "Script execution"
 msgstr ""
@@ -18697,10 +18622,6 @@ msgid "Service deleted"
 msgid_plural "Services deleted"
 msgstr[0] ""
 
-#: app/controllers/CControllerPopup.php:57
-msgid "Service edit"
-msgstr ""
-
 #: app/views/administration.userrole.edit.php:166
 #: app/views/administration.userrole.edit.php:207
 msgid "Service list"
@@ -18935,6 +18856,18 @@ msgstr ""
 #: app/partials/monitoring.problem.filter.php:263
 #: widgets/problems/includes/WidgetForm.php:106
 msgid "Shortened"
+msgstr ""
+
+#: app/partials/administration.system.info.php:243
+#: app/views/administration.housekeeping.edit.php:187
+#, c-format
+msgid "Should be at least %1$s."
+msgstr ""
+
+#: app/partials/administration.system.info.php:262
+#: app/views/administration.housekeeping.edit.php:197
+#, c-format
+msgid "Should not be higher than %1$s."
 msgstr ""
 
 #: app/partials/monitoring.problem.filter.php:27
@@ -19338,13 +19271,6 @@ msgstr ""
 msgid "Spanish (es_ES)"
 msgstr ""
 
-#: widgets/item/includes/WidgetForm.php:191
-#: widgets/item/includes/WidgetForm.php:321
-#: widgets/tophosts/views/column.edit.php:155
-#: widgets/tophosts/views/column.edit.php:162
-msgid "Sparkline"
-msgstr ""
-
 #: app/views/mediatype.list.php:83 app/views/mediatype.list.php:91
 msgid "Specific"
 msgstr ""
@@ -19472,7 +19398,7 @@ msgstr ""
 msgid "Statistics and availability of proxy memory buffer. Mode (modes: pfree, free, total, used, pused)."
 msgstr ""
 
-#: include/classes/data/CItemData.php:2862
+#: include/classes/data/CItemData.php:2854
 msgid "Statistics of values received by the preprocessing manager."
 msgstr ""
 
@@ -19807,6 +19733,10 @@ msgstr ""
 msgid "Swedish (sv_SE)"
 msgstr ""
 
+#: index_sso.php:346
+msgid "Switch SSO user"
+msgstr ""
+
 #: app/views/js/administration.authentication.edit.js.php:241
 msgid "Switching authentication method will reset all except this session! Continue?"
 msgstr ""
@@ -20099,10 +20029,6 @@ msgid "Template deleted"
 msgid_plural "Templates deleted"
 msgstr[0] ""
 
-#: app/controllers/CControllerPopup.php:59
-msgid "Template edit"
-msgstr ""
-
 #: app/controllers/CControllerAuditLogList.php:259
 #: app/partials/configuration.templategroup.edit.html.php:52
 #: app/views/configuration.templategroup.edit.php:52
@@ -20124,10 +20050,6 @@ msgstr ""
 msgid "Template group deleted"
 msgid_plural "Template groups deleted"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:55
-msgid "Template group edit"
-msgstr ""
 
 #: app/controllers/CControllerTemplateGroupUpdate.php:86
 msgid "Template group updated"
@@ -20507,11 +20429,11 @@ msgstr "پوسته"
 msgid "These parameters will be passed to the script as command-line arguments in the specified order."
 msgstr ""
 
-#: app/views/action.list.php:163
+#: app/views/action.list.php:156
 msgid "This action has conditions or operations referencing deleted object(s)."
 msgstr ""
 
-#: app/views/action.list.php:158
+#: app/views/action.list.php:151
 msgid "This action has missing conditions or operations due to previously deleted object(s)."
 msgstr ""
 
@@ -20808,10 +20730,6 @@ msgstr "امروز"
 msgid "Today so far"
 msgstr ""
 
-#: app/controllers/CControllerPopup.php:60
-msgid "Token edit"
-msgstr ""
-
 #: include/views/js/monitoring.sysmaps.js.php:40
 #: include/views/js/monitoring.sysmaps.js.php:159
 #: include/views/js/monitoring.sysmaps.js.php:684
@@ -20839,10 +20757,6 @@ msgstr ""
 
 #: widgets/tophosts/Widget.php:34
 msgid "Top hosts"
-msgstr ""
-
-#: widgets/topitems/Widget.php:32
-msgid "Top items"
 msgstr ""
 
 #: widgets/toptriggers/Widget.php:29
@@ -21070,10 +20984,6 @@ msgstr[0] ""
 msgid "Trigger displaying options"
 msgstr "نمایش گزبنه های هشدار"
 
-#: app/controllers/CControllerPopup.php:61
-msgid "Trigger edit"
-msgstr ""
-
 #: app/controllers/CControllerTriggerEnable.php:67
 msgid "Trigger enabled"
 msgid_plural "Triggers enabled"
@@ -21210,10 +21120,6 @@ msgstr ""
 msgid "Trigger prototype deleted"
 msgid_plural "Trigger prototypes deleted"
 msgstr[0] ""
-
-#: app/controllers/CControllerPopup.php:62
-msgid "Trigger prototype edit"
-msgstr ""
 
 #: app/controllers/CControllerTriggerMassupdate.php:219
 #: app/controllers/CControllerTriggerPrototypeDisable.php:76
@@ -21522,6 +21428,14 @@ msgstr ""
 msgid "Unable to retrieve TimescaleDB version."
 msgstr ""
 
+#: app/views/administration.housekeeping.edit.php:173
+msgid "Unable to retrieve compression support status of TimescaleDB time-series database extension for PostgreSQL."
+msgstr ""
+
+#: app/views/administration.housekeeping.edit.php:178
+msgid "Unable to retrieve version of TimescaleDB time-series database extension for PostgreSQL."
+msgstr ""
+
 #: include/views/mfa.login.php:65
 #, c-format
 msgid "Unable to scan? You can use %1$s secret key to manually configure your authenticator app:"
@@ -21716,7 +21630,7 @@ msgstr ""
 
 #: app/views/reports.auditlog.list.php:132
 msgid "Unknown action"
-msgstr "اقدام ناشناخته"
+msgstr "فعالیت ناشناخته"
 
 #: include/classes/helpers/CElasticsearchHelper.php:193
 #: include/classes/screens/CScreenHttpTestDetails.php:110
@@ -21798,6 +21712,11 @@ msgstr ""
 #: app/partials/administration.system.info.php:174
 #, c-format
 msgid "Unsupported %1$s database server version. Must not be higher than %2$s."
+msgstr ""
+
+#: app/partials/administration.system.info.php:206
+#: app/views/administration.housekeeping.edit.php:169
+msgid "Unsupported TimescaleDB time-series database extension for PostgreSQL is used."
 msgstr ""
 
 #: app/views/administration.housekeeping.edit.php:190
@@ -22064,7 +21983,7 @@ msgstr ""
 
 #: app/views/administration.script.list.php:93 app/views/mediatype.list.php:98
 msgid "Used in actions"
-msgstr "استفاده شده در اقدامات"
+msgstr "استفاده شده در فعالیت"
 
 #: app/controllers/CControllerAuditLogList.php:260
 #: app/partials/js/scheduledreport.subscription.js.php:78
@@ -22474,10 +22393,6 @@ msgstr ""
 msgid "Users"
 msgstr "کاربران"
 
-#: include/locales.inc.php:62
-msgid "Uzbek (uz_UZ)"
-msgstr ""
-
 #: include/classes/data/CItemData.php:1876
 msgid "VMware Distributed Virtual Switch, \"url\" - VMware service URL. Returns JSON"
 msgstr ""
@@ -22608,10 +22523,6 @@ msgstr ""
 
 #: include/classes/data/CItemData.php:2156
 msgid "VMware hypervisor health state rollup sensor, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - gray; 1 - green; 2 - yellow; 3 - red"
-msgstr ""
-
-#: include/classes/data/CItemData.php:2237
-msgid "VMware hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
 msgstr ""
 
 #: include/classes/data/CItemData.php:2051
@@ -22750,10 +22661,6 @@ msgstr ""
 msgid "VMware virtual machine host memory usage, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr ""
 
-#: include/classes/data/CItemData.php:2482
-msgid "VMware virtual machine hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
-msgstr ""
-
 #: include/classes/data/CItemData.php:2331
 msgid "VMware virtual machine hypervisor name, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr ""
@@ -22778,7 +22685,7 @@ msgstr ""
 msgid "VMware virtual machine power state, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr ""
 
-#: include/classes/data/CItemData.php:2498
+#: include/classes/data/CItemData.php:2490
 msgid "VMware virtual machine private memory size, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr ""
 
@@ -23218,6 +23125,11 @@ msgstr ""
 
 #: include/func.inc.php:1775 jsLoader.php:216
 msgid "Warning message"
+msgstr ""
+
+#: app/partials/administration.system.info.php:243
+#: app/partials/administration.system.info.php:262
+msgid "Warning!"
 msgstr ""
 
 #: app/partials/administration.system.info.php:198
@@ -23747,6 +23659,10 @@ msgstr ""
 msgid "You do not have permission to perform this operation."
 msgstr ""
 
+#: index_sso.php:337
+msgid "You have been authorized via Single sign-on (SSO), but logging in to Zabbix failed."
+msgstr ""
+
 #: include/classes/core/ZBase.php:759 include/func.inc.php:1686
 msgid "You have no permissions to access this page."
 msgstr ""
@@ -24023,22 +23939,22 @@ msgstr ""
 msgid "acos() - The arccosine of a value as an angle, expressed in radians"
 msgstr ""
 
-#: include/classes/api/services/CDRule.php:773
+#: include/classes/api/services/CDRule.php:774
 #, c-format
 msgid "action \"%1$s\" uses this discovery check"
 msgstr ""
 
-#: include/classes/api/services/CDRule.php:980
+#: include/classes/api/services/CDRule.php:981
 #, c-format
 msgid "action \"%1$s\" uses this discovery rule"
 msgstr ""
 
-#: include/classes/api/services/CHost.php:1632
+#: include/classes/api/services/CHost.php:1637
 #, c-format
 msgid "action \"%1$s\" uses this host"
 msgstr ""
 
-#: include/classes/api/services/CHostGroup.php:768
+#: include/classes/api/services/CHostGroup.php:770
 #, c-format
 msgid "action \"%1$s\" uses this host group"
 msgstr ""
@@ -24048,7 +23964,7 @@ msgstr ""
 msgid "action \"%1$s\" uses this service"
 msgstr ""
 
-#: include/classes/api/services/CTemplate.php:806
+#: include/classes/api/services/CTemplate.php:810
 #, c-format
 msgid "action \"%1$s\" uses this template"
 msgstr ""
@@ -25083,10 +24999,6 @@ msgstr ""
 msgid "invalid host name"
 msgstr ""
 
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-msgid "invalid inventory field"
-msgstr ""
-
 #: include/classes/validators/CHistFunctionValidator.php:82
 #: include/classes/validators/CMathFunctionValidator.php:86
 #, c-format
@@ -25408,11 +25320,6 @@ msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:858
 msgid "monoinc() - Check for continuous item value increase (1 - data is monotonic, 0 - otherwise), Mode (strict - require strict monotonicity)"
-msgstr ""
-
-#: widgets/hostcard/views/widget.view.php:157
-#: widgets/hostcard/views/widget.view.php:338
-msgid "more"
 msgstr ""
 
 #: include/func.inc.php:571

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,7 +20,6 @@ use API,
 	CApiInputValidator;
 
 use Zabbix\Widgets\CWidgetField;
-use Zabbix\Widgets\Fields\CWidgetFieldMultiSelectOverrideHost;
 
 /**
  * Class for data set widget field used in Graph widget configuration Data set tab.
@@ -71,8 +70,7 @@ class CWidgetFieldDataSet extends CWidgetField {
 				]],
 				'aggregate_grouping'	=> ['type' => API_INT32, 'in' => implode(',', [GRAPH_AGGREGATE_BY_ITEM, GRAPH_AGGREGATE_BY_DATASET])],
 				'approximation'			=> ['type' => API_INT32, 'in' => implode(',', [APPROXIMATION_MIN, APPROXIMATION_AVG, APPROXIMATION_MAX, APPROXIMATION_ALL])],
-				'data_set_label'		=> ['type' => API_STRING_UTF8, 'length' => 255],
-				'override_hostid'		=> ['type' => API_ANY]
+				'data_set_label'		=> ['type' => API_STRING_UTF8, 'length' => 255]
 			]]);
 	}
 
@@ -80,6 +78,10 @@ class CWidgetFieldDataSet extends CWidgetField {
 		$data_sets = [];
 
 		foreach ((array) $value as $data_set) {
+			if (array_key_exists('itemids', $data_set)) {
+				$data_set['itemids'] = array_values($data_set['itemids']);
+			}
+
 			$data_sets[] = $data_set + self::getDefaults();
 		}
 
@@ -92,7 +94,6 @@ class CWidgetFieldDataSet extends CWidgetField {
 			'hosts' => [],
 			'items' => [],
 			'itemids' => [],
-			'references' => [],
 			'color' => self::DEFAULT_COLOR,
 			'type' => SVG_GRAPH_TYPE_LINE,
 			'stacked' => SVG_GRAPH_STACKED_OFF,
@@ -107,8 +108,7 @@ class CWidgetFieldDataSet extends CWidgetField {
 			'aggregate_interval' => GRAPH_AGGREGATE_DEFAULT_INTERVAL,
 			'aggregate_grouping'=> GRAPH_AGGREGATE_BY_ITEM,
 			'approximation' => APPROXIMATION_AVG,
-			'data_set_label' => '',
-			'override_hostid' => []
+			'data_set_label' => ''
 		];
 	}
 
@@ -142,15 +142,13 @@ class CWidgetFieldDataSet extends CWidgetField {
 			return [];
 		}
 
-		$errors = [];
-
 		$validation_rules = $this->getValidationRules($strict);
 		$value = $this->getValue();
 		$label = $this->getErrorLabel();
 
-		if (!count($value)) {
+		if (!$value) {
 			if (!CApiInputValidator::validate($validation_rules, $value, $label, $error)) {
-				$errors[] = $error;
+				return [$error];
 			}
 		}
 		else {
@@ -178,13 +176,18 @@ class CWidgetFieldDataSet extends CWidgetField {
 			}
 
 			if (!CApiInputValidator::validate($validation_rules_by_type, $data, $label.'/'.($index + 1), $error)) {
-				$errors[] = $error;
-				break;
+				return [$error];
 			}
 
 			if ($data['dataset_type'] == self::DATASET_TYPE_SINGLE_ITEM) {
 				foreach ($data['itemids'] as $i => &$item_spec) {
 					if ($item_spec == 0) {
+						if ($data['references'][$i] === '') {
+							return [_s('Invalid parameter "%1$s": %2$s.', $label.'/'.($index + 1),
+								_('referred widget is unavailable')
+							)];
+						}
+
 						$item_spec = [CWidgetField::FOREIGN_REFERENCE_KEY => $data['references'][$i]];
 					}
 				}
@@ -192,30 +195,12 @@ class CWidgetFieldDataSet extends CWidgetField {
 
 				unset($data['references']);
 			}
-
-			if (!$this->isTemplateDashboard()) {
-				$override_host_field = new CWidgetFieldMultiSelectOverrideHost('override_hostid',
-					$label.'/'.($index + 1).'/'._('Override host')
-				);
-
-				$override_host_field->setValue($data['override_hostid']);
-
-				$errors = $override_host_field->validate($strict);
-
-				if ($errors) {
-					break;
-				}
-
-				$data['override_hostid'] = $override_host_field->getValue();
-			}
 		}
 		unset($data);
 
-		if (!$errors) {
-			$this->setValue($value);
-		}
+		$this->setValue($value);
 
-		return $errors;
+		return [];
 	}
 
 	public function toApi(array &$widget_fields = []): void {
@@ -290,14 +275,6 @@ class CWidgetFieldDataSet extends CWidgetField {
 					'type' => ZBX_WIDGET_FIELD_TYPE_STR,
 					'name' => $this->name.'.'.$index.'.color',
 					'value' => $value['color']
-				];
-			}
-
-			if (array_key_exists(CWidgetField::FOREIGN_REFERENCE_KEY, $value['override_hostid'])) {
-				$widget_fields[] = [
-					'type' => ZBX_WIDGET_FIELD_TYPE_STR,
-					'name' => $this->name.'.'.$index.'.override_hostid.'.CWidgetField::FOREIGN_REFERENCE_KEY,
-					'value' => $value['override_hostid'][CWidgetField::FOREIGN_REFERENCE_KEY]
 				];
 			}
 

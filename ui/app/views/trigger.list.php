@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,9 @@
  * @var array $data
  */
 
+$this->addJsFile('items.js');
+$this->addJsFile('multilineinput.js');
+$this->addJsFile('class.tagfilteritem.js');
 $this->includeJsFile('trigger.list.js.php');
 
 if ($data['uncheck']) {
@@ -253,15 +256,11 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 		$description[] = NAME_DELIMITER;
 	}
 
-	$trigger_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'trigger.edit')
-		->setArgument('triggerid', $triggerid)
-		->setArgument('hostid', array_column($trigger['hosts'], 'hostid')[0])
-		->setArgument('context', $data['context'])
-		->getUrl();
-
-	$description[] = (new CLink($trigger['description'], $trigger_url))->addClass(ZBX_STYLE_WORDWRAP);
+	$description[] = (new CLink($trigger['description']))
+		->addClass('js-trigger-edit')
+		->setAttribute('data-triggerid', $triggerid)
+		->setAttribute('data-hostid', $data['single_selected_hostid'])
+		->addClass(ZBX_STYLE_WORDWRAP);
 
 	if ($trigger['dependencies']) {
 		$description[] = [BR(), bold(_('Depends on').':')];
@@ -273,15 +272,10 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 			$dep_trigger_desc =
 				implode(', ', array_column($dep_trigger['hosts'], 'name')).NAME_DELIMITER.$dep_trigger['description'];
 
-			$dep_trigger_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'trigger.edit')
-				->setArgument('triggerid', $dep_trigger['triggerid'])
-				->setArgument('hostid', $data['single_selected_hostid'])
-				->setArgument('context', $data['context'])
-				->getUrl();
-
-			$trigger_deps[] = (new CLink($dep_trigger_desc, $dep_trigger_url))
+			$trigger_deps[] = (new CLink($dep_trigger_desc))
+				->addClass('js-trigger-edit')
+				->setAttribute('data-triggerid', $dep_trigger['triggerid'])
+				->setAttribute('data-hostid', $data['single_selected_hostid'])
 				->addClass(ZBX_STYLE_LINK_ALT)
 				->addClass(triggerIndicatorStyle($dep_trigger['status']));
 
@@ -327,14 +321,10 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 				$hosts[] = ', ';
 			}
 
-			$host_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', $data['context'] === 'host' ? 'host.edit' : 'template.edit')
-				->setArgument($data['context'] === 'host' ? 'hostid' : 'templateid', $host['hostid'])
-				->getUrl();
-
 			$hosts[] = in_array($host['hostid'], $data['editable_hosts'])
-				? new CLink($host['name'], $host_url)
+				? (new CLink($host['name']))
+					->setAttribute('data-hostid', $host['hostid'])
+					->addClass('js-edit-'.$data['context'])
 				: $host['name'];
 		}
 
@@ -373,7 +363,7 @@ foreach ($data['triggers'] as $tnum => $trigger) {
 			$disabled_by_lld ? makeDescriptionIcon(_('Disabled automatically by an LLD rule.')) : null
 		]))->addClass(ZBX_STYLE_NOWRAP),
 		$data['show_info_column'] ? makeInformationList($info_icons) : null,
-		$data['tags'][$triggerid]
+		(new CDiv($data['tags'][$triggerid]))->addClass(ZBX_STYLE_TAGS_WRAPPER)
 	]);
 }
 

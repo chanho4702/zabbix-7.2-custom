@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,8 @@
  * @var array $data
  */
 
+$this->addJsFile('items.js');
+$this->addJsFile('multilineinput.js');
 $this->includeJsFile('configuration.hostgroup.list.js.php');
 
 $html_page = (new CHtmlPage())
@@ -91,13 +93,13 @@ foreach ($data['groups'] as $group) {
 		}
 
 		if ($data['allowed_ui_conf_hosts']) {
-			$host_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'host.edit')
+			$host_output = (new CLink($host['name'], (new CUrl('zabbix.php'))
+				->setArgument('action', 'host.edit')
 				->setArgument('hostid', $host['hostid'])
-				->getUrl();
-
-			$host_output = (new CLink($host['name'], $host_url))->addClass(ZBX_STYLE_LINK_ALT);
+			))
+			->setAttribute('data-hostid', $host['hostid'])
+			->onClick('view.editHost(event, this.dataset.hostid);')
+			->addClass(ZBX_STYLE_LINK_ALT);
 		}
 		else {
 			$host_output = new CSpan($host['name']);
@@ -156,13 +158,13 @@ foreach ($data['groups'] as $group) {
 		$name[] = NAME_DELIMITER;
 	}
 
-	$group_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'hostgroup.edit')
-		->setArgument('groupid', $group['groupid'])
-		->getUrl();
-
-	$name[] = new CLink($group['name'], $group_url);
+	$name[] = (new CLink($group['name'],
+		(new CUrl('zabbix.php'))
+			->setArgument('action', 'hostgroup.edit')
+			->setArgument('groupid', $group['groupid'])
+	))
+		->addClass('js-edit-hostgroup')
+		->setAttribute('data-groupid', $group['groupid']);
 
 	$info_icons = [];
 

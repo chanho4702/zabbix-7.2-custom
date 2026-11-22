@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -33,8 +33,7 @@ final class CImportConverterFactory extends CRegistryFactory {
 		'5.4' => 'C54ImportConverter',
 		'6.0' => 'C60ImportConverter',
 		'6.2' => 'C62ImportConverter',
-		'6.4' => 'C64ImportConverter',
-		'7.0' => 'C70ImportConverter'
+		'6.4' => 'C64ImportConverter'
 	];
 
 	public function __construct() {

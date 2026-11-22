@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -317,7 +317,6 @@ final class CItemData {
 			'vmware.vm.discovery[url]',
 			'vmware.vm.guest.memory.size.swapped[url,uuid]',
 			'vmware.vm.guest.osuptime[url,uuid]',
-			'vmware.vm.hv.maintenance[url,uuid]',
 			'vmware.vm.hv.name[url,uuid]',
 			'vmware.vm.memory.size.ballooned[url,uuid]',
 			'vmware.vm.memory.size.compressed[url,uuid]',
@@ -2216,7 +2215,7 @@ final class CItemData {
 				]
 			],
 			'vmware.hv.maintenance[url,uuid]' => [
-				'description' => _('VMware hypervisor maintenance status, "url" - VMware service URL, "uuid" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance'),
+				'description' => _('VVMware hypervisor maintenance status, "url" - VMware service URL, "uuid" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance'),
 				'value_type' => ITEM_VALUE_TYPE_UINT64,
 				'documentation_link' => [
 					ITEM_TYPE_SIMPLE => 'vm_monitoring/vmware_keys#vmware.hv.maintenance'
@@ -2458,13 +2457,6 @@ final class CItemData {
 				'value_type' => ITEM_VALUE_TYPE_UINT64,
 				'documentation_link' => [
 					ITEM_TYPE_SIMPLE => 'vm_monitoring/vmware_keys#vmware.vm.guest.osuptime'
-				]
-			],
-			'vmware.vm.hv.maintenance[url,uuid]' => [
-				'description' => _('VMware virtual machine hypervisor maintenance status, "url" - VMware service URL, "uuid" - VMware virtual machine global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance'),
-				'value_type' => ITEM_VALUE_TYPE_UINT64,
-				'documentation_link' => [
-					ITEM_TYPE_SIMPLE => 'vm_monitoring/vmware_keys#vmware.vm.hv.maintenance'
 				]
 			],
 			'vmware.vm.hv.name[url,uuid]' => [

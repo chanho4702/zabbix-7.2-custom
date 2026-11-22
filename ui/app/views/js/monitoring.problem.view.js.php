@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -34,6 +34,8 @@
 		timeout: null,
 		deferred: null,
 		opened_eventids: [],
+		_refresh_message_box: null,
+		_popup_message_box: null,
 
 		init({filter_options, refresh_url, refresh_interval, filter_defaults}) {
 			this.refresh_url = new Curl(refresh_url);
@@ -47,9 +49,8 @@
 			this.initFilter(filter_options);
 			$.subscribe('event.rank_change', () => view.refreshNow());
 
+			this.initAcknowledge();
 			this.initExpandables();
-			this.initEvents();
-			this.initPopupListeners();
 
 			if (this.refresh_interval != 0) {
 				this.running = true;
@@ -145,6 +146,26 @@
 			});
 		},
 
+		initAcknowledge() {
+			$.subscribe('acknowledge.create', function(event, response) {
+				// Clear all selected checkboxes in Monitoring->Problems.
+				if (chkbxRange.prefix === 'problem') {
+					chkbxRange.checkObjectAll(chkbxRange.pageGoName, false);
+					chkbxRange.clearSelectedOnFilterChange();
+				}
+
+				view.refreshNow();
+
+				view._addPopupMessage(makeMessageBox('good', [], response.success.title));
+			});
+
+			$(document).on('submit', '#problem_form', function(e) {
+				e.preventDefault();
+
+				acknowledgePopUp({eventids: Object.keys(chkbxRange.getSelectedIds())}, this);
+			});
+		},
+
 		initExpandables() {
 			const table = this.getCurrentResultsTable();
 			const expandable_buttons = table.querySelectorAll("button[data-action='show_symptoms']");
@@ -180,58 +201,6 @@
 
 				[...row.children].forEach((td) => td.style.borderBottomStyle = is_collapsed ? 'hidden' : 'solid');
 			}
-		},
-
-		initEvents() {
-			document.addEventListener('click', e => {
-				if (e.target.classList.contains('js-massupdate-problem')) {
-					this.massupdate({eventids: Object.keys(chkbxRange.getSelectedIds())});
-				}
-			});
-		},
-
-		massupdate({eventids}) {
-			ZABBIX.PopupManager.open('acknowledge.edit', {eventids}, {supports_standalone: true});
-		},
-
-		initPopupListeners() {
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_OPEN
-				},
-				callback: () => this.unscheduleRefresh()
-			});
-
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_CANCEL
-				},
-				callback: () => this.scheduleRefresh()
-			});
-
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_SUBMIT
-				},
-				callback: ({data, event}) => {
-					event.preventDefault();
-
-					clearMessages();
-
-					if ('success' in data.submit) {
-						addMessage(makeMessageBox('good', data.submit.success.messages, data.submit.success.title));
-					}
-
-					chkbxRange.checkObjectAll('eventids', false);
-					chkbxRange.update('eventids');
-
-					this.refreshResults();
-					this.refreshCounters();
-				}
-			});
 		},
 
 		showSymptoms(btn, idx, array) {
@@ -279,10 +248,6 @@
 			return document.getElementById('flickerfreescreen_problem');
 		},
 
-		getCurrentDebugBlock() {
-			return document.querySelector('.wrapper > .debug-output');
-		},
-
 		setLoading() {
 			this.getCurrentResultsTable().classList.add('is-loading', 'is-loading-fadein', 'delayed-15s');
 		},
@@ -299,13 +264,24 @@
 			this.initExpandables();
 		},
 
-		refreshDebug(debug) {
-			this.getCurrentDebugBlock().replaceWith(
-				new DOMParser().parseFromString(debug, 'text/html').body.firstElementChild
-			);
+		_refreshDebug(debug) {
+			const debug_output = document
+				.querySelector('.wrapper > main > .<?= ZBX_STYLE_DEBUG_OUTPUT_TABLE_REFRESH ?>');
+
+			if (debug_output) {
+				debug_output.classList.add('<?= ZBX_STYLE_DEBUG_OUTPUT ?>');
+				debug_output.innerHTML = new DOMParser().parseFromString(debug, 'text/html')
+					.querySelector('.<?= ZBX_STYLE_DEBUG_OUTPUT ?>').innerHTML;
+			}
 		},
 
 		refresh() {
+			if (isUserInteracting()) {
+				this.scheduleRefresh();
+
+				return;
+			}
+
 			this.setLoading();
 
 			const params = this.refresh_url.getArgumentsObject();
@@ -373,11 +349,40 @@
 			this.refreshBody(response.body);
 
 			if ('messages' in response) {
-				clearMessages();
-				addMessage(makeMessageBox('good', [], response.messages, true, false));
+				this._addRefreshMessage(response.messages);
 			}
 
-			('debug' in response) && this.refreshDebug(response.debug);
+			if ('debug' in response) {
+				this._refreshDebug(response.debug);
+			}
+		},
+
+		_addRefreshMessage(messages) {
+			this._removeRefreshMessage();
+
+			this._refresh_message_box = $($.parseHTML(messages));
+			addMessage(this._refresh_message_box);
+		},
+
+		_removeRefreshMessage() {
+			if (this._refresh_message_box !== null) {
+				this._refresh_message_box.remove();
+				this._refresh_message_box = null;
+			}
+		},
+
+		_addPopupMessage(message_box) {
+			this._removePopupMessage();
+
+			this._popup_message_box = message_box;
+			addMessage(this._popup_message_box);
+		},
+
+		_removePopupMessage() {
+			if (this._popup_message_box !== null) {
+				this._popup_message_box.remove();
+				this._popup_message_box = null;
+			}
 		},
 
 		/**
@@ -444,6 +449,84 @@
 						this.refresh_interval > 0 ? this.refresh_interval : 5000
 					);
 				});
+		},
+
+		editHost(hostid) {
+			this.openHostPopup({hostid});
+		},
+
+		editItem(target, data) {
+			this._removePopupMessage();
+
+			const overlay = PopUp('item.edit', data, {
+				dialogueid: 'item-edit',
+				dialogue_class: 'modal-popup-large',
+				trigger_element: target,
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
+		},
+
+		openHostPopup(host_data) {
+			this._removePopupMessage();
+
+			const original_url = location.href;
+			const overlay = PopUp('popup.host.edit', host_data, {
+				dialogueid: 'host_edit',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
+			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
+				history.replaceState({}, '', original_url);
+			}, {once: true});
+		},
+
+		editTemplate(parameters) {
+			this._removePopupMessage();
+
+			const overlay = PopUp('template.edit', parameters, {
+				dialogueid: 'templates-form',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
+		},
+
+		editTrigger(trigger_data) {
+			this._removePopupMessage();
+
+			const overlay = PopUp('trigger.edit', trigger_data, {
+				dialogueid: 'trigger-edit',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', this.events.elementSuccess, {once: true});
+		},
+
+		events: {
+			elementSuccess(e) {
+				const data = e.detail;
+
+				if ('success' in data) {
+					const title = data.success.title;
+					let messages = [];
+
+					if ('messages' in data.success) {
+						messages = data.success.messages;
+					}
+
+					view._addPopupMessage(makeMessageBox('good', messages, title));
+				}
+
+				uncheckTableRows('problem');
+				view.refreshResults();
+				view.refreshCounters();
+			}
 		}
 	};
 </script>

@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,7 +23,6 @@ use API,
 	CParser;
 
 use Widgets\ItemHistory\Includes\CWidgetFieldColumnsList;
-use Widgets\ItemHistory\Widget;
 
 class ColumnEdit extends CController {
 
@@ -76,11 +75,12 @@ class ColumnEdit extends CController {
 
 		$field = new CWidgetFieldColumnsList('columns', '');
 
-		if (!$this->hasInput('edit') && !$this->hasInput('update')) {
+		if (!$this->hasInput('edit')) {
 			$input += self::getColumnDefaults();
 		}
 
 		unset($input['edit'], $input['update'], $input['templateid']);
+
 		$field->setValue([$input]);
 
 		$errors = $field->validate(true);
@@ -90,11 +90,11 @@ class ColumnEdit extends CController {
 	}
 
 	protected function checkPermissions(): bool {
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER;
+		return true;
 	}
 
 	protected function doAction(): void {
-		$input = $this->getInputAll() + self::getColumnDefaults();
+		$input = $this->getInputAll();
 		unset($input['update']);
 
 		$item_ms = [];
@@ -134,7 +134,7 @@ class ColumnEdit extends CController {
 		if (!$this->hasInput('update')) {
 			$data = [
 				'action' => $this->getAction(),
-				'colors' => Widget::DEFAULT_COLOR_PALETTE,
+				'colors' => CWidgetFieldColumnsList::DEFAULT_COLOR_PALETTE,
 				'ms_item' => $item_ms,
 				'item_value_type' => $item_value_type,
 				'templateid' => $this->hasInput('templateid') ? $this->getInput('templateid') : null,
@@ -142,15 +142,18 @@ class ColumnEdit extends CController {
 				'user' => [
 					'debug_mode' => $this->getDebugMode()
 				]
-			] + $input;
+			] + $input + self::getColumnDefaults();
 
 			$this->setResponse(new CControllerResponseData($data));
+
+			return;
 		}
-		else {
-			$number_parser = new CNumberParser(['with_size_suffix' => true, 'with_time_suffix' => true]);
 
-			$thresholds = [];
+		$number_parser = new CNumberParser(['with_size_suffix' => true, 'with_time_suffix' => true]);
 
+		$thresholds = [];
+
+		if (array_key_exists('thresholds', $input)) {
 			foreach ($input['thresholds'] as $threshold) {
 				$order_threshold = trim($threshold['threshold']);
 
@@ -159,26 +162,28 @@ class ColumnEdit extends CController {
 				}
 			}
 
+			unset($input['thresholds']);
+		}
+
+		if ($thresholds) {
+			uasort($thresholds,
+				static function (array $threshold_1, array $threshold_2): int {
+					return $threshold_1['order_threshold'] <=> $threshold_2['order_threshold'];
+				}
+			);
+
 			$input['thresholds'] = [];
 
-			if ($thresholds) {
-				uasort($thresholds,
-					static function (array $threshold_1, array $threshold_2): int {
-						return $threshold_1['order_threshold'] <=> $threshold_2['order_threshold'];
-					}
-				);
+			foreach ($thresholds as $threshold) {
+				unset($threshold['order_threshold']);
 
-				foreach ($thresholds as $threshold) {
-					unset($threshold['order_threshold']);
-
-					$input['thresholds'][] = $threshold;
-				}
+				$input['thresholds'][] = $threshold;
 			}
-
-			$this->setResponse(
-				(new CControllerResponseData(['main_block' => json_encode($input, JSON_THROW_ON_ERROR)]))->disableView()
-			);
 		}
+
+		$this->setResponse(
+			(new CControllerResponseData(['main_block' => json_encode($input, JSON_THROW_ON_ERROR)]))->disableView()
+		);
 	}
 
 	/**

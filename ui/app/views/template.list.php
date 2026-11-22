@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,7 @@
  * @var array $data
  */
 
+$this->addJsFile('class.tagfilteritem.js');
 $this->includeJsFile('template.list.js.php');
 
 if ($data['uncheck']) {
@@ -146,13 +147,9 @@ $table = (new CTableInfo())
 	->setPageNavigation($data['paging']);
 
 foreach ($data['templates'] as $template) {
-	$template_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'template.edit')
-		->setArgument('templateid', $template['templateid'])
-		->getUrl();
-
-	$name = new CLink($template['name'], $template_url);
+	$name = (new CLink($template['name']))
+		->addClass('js-edit')
+		->setAttribute('data-templateid', $template['templateid']);
 
 	$linked_templates_output = [];
 	$linked_to_output = [];
@@ -172,15 +169,11 @@ foreach ($data['templates'] as $template) {
 		}
 
 		if (array_key_exists($parent_template['templateid'], $data['editable_templates'])) {
-			$linked_template_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'template.edit')
-				->setArgument('templateid', $parent_template['templateid'])
-				->getUrl();
-
-			$linked_templates_output[] = (new CLink($parent_template['name'], $linked_template_url))
+			$linked_templates_output[] = (new CLink($parent_template['name']))
+				->addClass('js-edit')
 				->addClass(ZBX_STYLE_LINK_ALT)
-				->addClass(ZBX_STYLE_GREY);
+				->addClass(ZBX_STYLE_GREY)
+				->setAttribute('data-templateid', $parent_template['templateid']);
 		}
 		else {
 			$linked_templates_output[] = (new CSpan($parent_template['name']))
@@ -203,15 +196,11 @@ foreach ($data['templates'] as $template) {
 		}
 
 		if (array_key_exists($child_template['templateid'], $data['editable_templates'])) {
-			$linked_to_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'template.edit')
-				->setArgument('templateid', $child_template['templateid'])
-				->getUrl();
-
-			$linked_to_output[] = (new CLink($child_template['name'], $linked_to_url))
+			$linked_to_output[] = (new CLink($child_template['name']))
+				->addClass('js-edit')
 				->addClass(ZBX_STYLE_LINK_ALT)
-				->addClass(ZBX_STYLE_GREY);
+				->addClass(ZBX_STYLE_GREY)
+				->setAttribute('data-templateid', $child_template['templateid']);
 		}
 		else {
 			$linked_to_output[] = (new CSpan($child_template['name']))
@@ -293,7 +282,7 @@ foreach ($data['templates'] as $template) {
 		$template['vendor_version'],
 		$linked_templates_output,
 		$linked_to_output,
-		$data['tags'][$template['templateid']]
+		(new CDiv($data['tags'][$template['templateid']]))->addClass(ZBX_STYLE_TAGS_WRAPPER)
 	]);
 }
 

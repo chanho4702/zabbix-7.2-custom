@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -32,7 +32,7 @@ class CControllerProfileUpdate extends CController {
 				case 'web.actionlog.filter.active':
 				case 'web.auditacts.filter.active':
 				case 'web.auditlog.filter.active':
-				case 'web.availabilityreport.filter.active':
+				case 'web.avail_report.filter.active':
 				case 'web.charts.filter.active':
 				case 'web.connector.filter.active':
 				case 'web.correlation.filter.active':

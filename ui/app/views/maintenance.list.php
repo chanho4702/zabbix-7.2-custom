@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,7 @@
  * @var array $data
  */
 
+$this->addJsFile('class.calendar.js');
 $this->includeJsFile('maintenance.list.js.php');
 
 $filter = (new CFilter())
@@ -109,15 +110,11 @@ foreach ($data['maintenances'] as $maintenanceid => $maintenance) {
 			break;
 	}
 
-	$maintenance_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'maintenance.edit')
-		->setArgument('maintenanceid', $maintenanceid)
-		->getUrl();
-
 	$maintenance_list->addRow([
 		$data['allowed_edit'] ? new CCheckBox('maintenanceids['.$maintenanceid.']', $maintenanceid) : null,
-		new CLink($maintenance['name'], $maintenance_url),
+		(new CLink($maintenance['name']))
+			->addClass('js-edit-maintenance')
+			->setAttribute('data-maintenanceid', $maintenanceid),
 		$maintenance['maintenance_type'] ? _('No data collection') : _('With data collection'),
 		zbx_date2str(DATE_TIME_FORMAT, $maintenance['active_since']),
 		zbx_date2str(DATE_TIME_FORMAT, $maintenance['active_till']),

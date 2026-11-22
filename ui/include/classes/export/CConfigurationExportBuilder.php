@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -81,7 +81,7 @@ class CConfigurationExportBuilder {
 
 		$value = $has_data ? $row[$tag] : $default_value;
 
-		if (!$is_required && $default_value == $value) {
+		if (!$is_required && $default_value == $value && !array_key_exists('export_always', $rule)) {
 			return null;
 		}
 
@@ -157,11 +157,14 @@ class CConfigurationExportBuilder {
 						$tag_rules = $matched_multiple_rule;
 					}
 
-					if ($tag_rules['type'] & XML_IGNORE_TAG) {
+					if ($tag_rules['type'] & XML_IGNORE_TAG && !array_key_exists('export_default', $tag_rules)
+							&& !array_key_exists('export_always', $tag_rules)) {
 						continue;
 					}
 
-					$value = self::buildArrayRow($tag_rules, $row, $tag, $main_tag);
+					$value = ($tag_rules['type'] & XML_IGNORE_TAG && array_key_exists('export_default', $tag_rules))
+						? $tag_rules['export_default']
+						: self::buildArrayRow($tag_rules, $row, $tag, $main_tag);
 
 					if ($value !== null) {
 						$store[$tag] = $value;

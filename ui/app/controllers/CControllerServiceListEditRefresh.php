@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -55,7 +55,7 @@ class CControllerServiceListEditRefresh extends CControllerServiceListGeneral {
 			return false;
 		}
 
-		return parent::checkPermissions();
+		return true;
 	}
 
 	/**
@@ -63,6 +63,18 @@ class CControllerServiceListEditRefresh extends CControllerServiceListGeneral {
 	 */
 	protected function doAction(): void {
 		parent::doAction();
+
+		if ($this->is_inaccessible) {
+			$this->setResponse(
+				(new CControllerResponseData(['main_block' => json_encode([
+					'error' => [
+						'messages' => [_('No permissions to referred object or it does not exist!')]
+					]
+				])]))->disableView()
+			);
+
+			return;
+		}
 
 		$path = $this->getPath();
 
@@ -121,7 +133,7 @@ class CControllerServiceListEditRefresh extends CControllerServiceListGeneral {
 				->setArgument('filter_set', 1);
 		}
 
-		$data['return_url'] = (clone $paging_curl)
+		$data['back_url'] = (clone $paging_curl)
 			->setArgument('action', 'service.list.edit')
 			->setArgument('page', $this->hasInput('page') ? $this->getInput('page') : null)
 			->getUrl();

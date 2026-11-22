@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -522,18 +522,6 @@ class CControllerPopupGeneric extends CController {
 				'table_columns' => [
 					_('Media type')
 				]
-			],
-			'host_inventory' => [
-				'title' => _('Inventory'),
-				'min_user_type' => USER_TYPE_ZABBIX_USER,
-				'allowed_src_fields' => 'id,name',
-				'form' => [
-					'name' => 'inventory_form',
-					'id' => 'inventory_form'
-				],
-				'table_columns' => [
-					_('Name')
-				]
 			]
 		];
 	}
@@ -572,6 +560,7 @@ class CControllerPopupGeneric extends CController {
 			'monitored_hosts' =>					'in 1',
 			'templated_hosts' =>					'in 1',
 			'real_hosts' =>							'in 1',
+			'with_hosts' =>							'in 1',
 			'normal_only' =>						'in 1',
 			'with_graphs' =>						'in 1',
 			'with_hosts' =>							'in 1',
@@ -797,12 +786,14 @@ class CControllerPopupGeneric extends CController {
 		}
 
 		if ($this->hasInput('monitored_hosts')) {
-			$group_options['with_monitored_hosts'] = 1;
+			$group_options['monitored_hosts'] = 1;
 			$host_options['monitored_hosts'] = 1;
 		}
 		elseif ($this->hasInput('real_hosts')) {
-			$group_options['with_hosts'] = 1;
 			$host_options['real_hosts'] = 1;
+		}
+		elseif ($this->hasInput('with_hosts')) {
+			$group_options['with_hosts'] = 1;
 		}
 		elseif ($this->hasInput('templated_hosts')) {
 			$host_options['templated_hosts'] = 1;
@@ -983,7 +974,7 @@ class CControllerPopupGeneric extends CController {
 	 * @return array
 	 */
 	protected function getPageOptions(): array {
-		$option_fields_binary = ['real_hosts', 'with_items', 'writeonly'];
+		$option_fields_binary = ['real_hosts', 'with_hosts', 'with_items', 'writeonly'];
 		$option_fields_value = ['host_templates'];
 
 		$page_options = [
@@ -1351,7 +1342,7 @@ class CControllerPopupGeneric extends CController {
 					'with_triggers' => $this->hasInput('with_triggers')
 				];
 
-				if (array_key_exists('real_hosts', $this->page_options)) {
+				if (array_key_exists('with_hosts', $this->page_options)) {
 					$options['with_hosts'] = true;
 				}
 
@@ -1456,7 +1447,6 @@ class CControllerPopupGeneric extends CController {
 				$options += [
 					'output' => ['triggerid', 'expression', 'description', 'status', 'priority', 'state'],
 					'selectHosts' => ['name'],
-					'selectItems' => ['status'],
 					'selectDependencies' => ['triggerid', 'expression', 'description'],
 					'expandDescription' => true
 				];
@@ -1470,23 +1460,6 @@ class CControllerPopupGeneric extends CController {
 
 				if (!$this->template_preselect_required || $this->templateids) {
 					$records = API::Trigger()->get($options);
-
-					if ($this->hasInput('with_monitored_triggers')) {
-						foreach ($records as $id => $record) {
-							foreach ($record['items'] as $item) {
-								if ($item['status'] != ITEM_STATUS_ACTIVE) {
-									unset($records[$id]);
-
-									break;
-								}
-							}
-
-							if ($record['status'] != TRIGGER_STATUS_ENABLED) {
-								unset($records[$id]);
-							}
-						}
-
-					}
 				}
 				else {
 					$records = [];
@@ -1837,21 +1810,10 @@ class CControllerPopupGeneric extends CController {
 				break;
 
 			case 'media_types':
-				$options += ['output' => ['mediatypeid', 'name']];
+				$options += ['output' => ['name']];
 
 				$records = API::MediaType()->get($options);
 				CArrayHelper::sort($records, ['name']);
-				break;
-
-			case 'host_inventory':
-				$records = [];
-
-				foreach (getHostInventories(true) as $inventory_field) {
-					$records[$inventory_field['nr']] = [
-						'id' => $inventory_field['nr'],
-						'name' => $inventory_field['title']
-					];
-				}
 				break;
 		}
 

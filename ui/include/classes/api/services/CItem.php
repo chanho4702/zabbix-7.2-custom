@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -439,7 +439,7 @@ class CItem extends CItemGeneral {
 				break;
 			}
 
-			$this->prepareChunkObjects($items_chunk, $options);
+			$this->prepareChunkObjects($items_chunk, $options, $sqlParts);
 
 			$items += $items_chunk;
 			$items_chunk = [];
@@ -472,7 +472,11 @@ class CItem extends CItemGeneral {
 		}
 	}
 
-	private function prepareChunkObjects(array &$items, array $options): void {
+	private function prepareChunkObjects(array &$items, array $options, array $sqlParts): void {
+		if (self::dbDistinct($sqlParts)) {
+			$items = $this->addNclobFieldValues($options, $items);
+		}
+
 		$items = $this->addRelatedObjects($options, $items);
 		$items = $this->unsetExtraFields($items, ['hostid', 'interfaceid', 'value_type', 'valuemapid'],
 			$options['output']
@@ -1919,13 +1923,7 @@ class CItem extends CItemGeneral {
 
 		self::clearHistoryAndTrends($del_itemids);
 
-		DB::delete('graphs_items', ['itemid' => $del_itemids]);
-		DB::delete('widget_field', ['value_itemid' => $del_itemids]);
-		DB::delete('item_discovery', ['itemid' => $del_itemids]);
-		DB::delete('item_parameter', ['itemid' => $del_itemids]);
 		DB::delete('item_preproc', ['itemid' => $del_itemids]);
-		DB::delete('item_rtdata', ['itemid' => $del_itemids]);
-		DB::delete('item_rtname', ['itemid' => $del_itemids]);
 		DB::delete('item_tag', ['itemid' => $del_itemids]);
 		DB::update('items', [
 			'values' => ['templateid' => 0, 'master_itemid' => 0],

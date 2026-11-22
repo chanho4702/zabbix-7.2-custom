@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -44,7 +44,7 @@ window.item_edit_form = new class {
 
 	init({
 		actions, field_switches, form_data, host, interface_types, inherited_timeouts, readonly, testable_item_types,
-		type_with_key_select, value_type_keys, source, return_url
+		type_with_key_select, value_type_keys, source
 	}) {
 		this.actions = actions;
 		this.form_data = form_data;
@@ -58,6 +58,7 @@ window.item_edit_form = new class {
 		this.type_interfaceids = {};
 		this.type_with_key_select = type_with_key_select;
 		this.value_type_keys = value_type_keys;
+		this.last_inferred_type = null;
 
 		for (const type in interface_types) {
 			if (interface_types[type] == INTERFACE_TYPE_OPT) {
@@ -79,11 +80,8 @@ window.item_edit_form = new class {
 		this.form = this.overlay.$dialogue.$body[0].querySelector('form');
 		this.footer = this.overlay.$dialogue.$footer[0];
 
-		ZABBIX.PopupManager.setReturnUrl(return_url);
-
 		this.initForm(field_switches);
 		this.initEvents();
-		this.#initPopupListeners();
 
 		if (this.source === 'itemprototype') {
 			this.initItemPrototypeForm();
@@ -187,6 +185,9 @@ window.item_edit_form = new class {
 				passphrase.value = password.value;
 			}
 		});
+
+		// Initialising last_inferred_type start value
+		this.last_inferred_type = this.#getInferredValueType(this.field.key.value);
 	}
 
 	initItemPrototypeForm() {
@@ -216,6 +217,10 @@ window.item_edit_form = new class {
 		this.field.request_method.addEventListener('change', this.updateFieldsVisibility.bind(this));
 		this.form.addEventListener('click', e => {
 			const target = e.target;
+
+			if (target.readOnly) {
+				return;
+			}
 
 			switch (target.getAttribute('name')) {
 				case 'custom_timeout':
@@ -247,6 +252,14 @@ window.item_edit_form = new class {
 
 					break;
 			}
+
+			if (target.matches('a') && target.closest('.js-parent-items')) {
+				e.preventDefault();
+
+				if (!this.#isFormModified() || this.#isConfirmed()) {
+					this.#openRelatedItem(target.dataset);
+				}
+			}
 		});
 		this.form.querySelector('#delay-flex-table').addEventListener('click', e => this.#intervalTypeChangeHandler(e));
 
@@ -263,6 +276,24 @@ window.item_edit_form = new class {
 		// Tags tab events.
 		this.form.querySelectorAll('[name="show_inherited_tags"]')
 			.forEach(o => o.addEventListener('change', this.#inheritedTagsChangeHandler.bind(this)));
+		this.form.addEventListener('click', e => {
+			const target = e.target;
+
+			if (target.matches('.js-edit-template')) {
+				e.preventDefault();
+
+				if (!this.#isFormModified() || this.#isConfirmed()) {
+					this.#openTemplatePopup(target.dataset);
+				}
+			}
+			else if (target.matches('.js-edit-proxy')) {
+				e.preventDefault();
+
+				if (!this.#isFormModified() || this.#isConfirmed()) {
+					this.#openProxyPopup(target.dataset);
+				}
+			}
+		});
 
 		// Preprocessing tab events.
 		this.field.value_type_steps.addEventListener('change', e => this.#valueTypeChangeHandler(e));
@@ -275,55 +306,6 @@ window.item_edit_form = new class {
 		});
 	}
 
-	#initPopupListeners() {
-		const subscriptions = [];
-
-		for (const action of ['template.edit', 'proxy.edit', 'item.edit', 'item.prototype.edit']) {
-			subscriptions.push(
-				ZABBIX.EventHub.subscribe({
-					require: {
-						context: CPopupManager.EVENT_CONTEXT,
-						event: CPopupManagerEvent.EVENT_OPEN,
-						action
-					},
-					callback: ({data, event}) => {
-						if (data.action_parameters.itemid === this.form_data.itemid || this.form_data.itemid === 0) {
-							return;
-						}
-
-						if (!this.#isConfirmed()) {
-							event.preventDefault();
-						}
-					}
-				})
-			);
-		}
-
-		subscriptions.push(
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_END_SCRIPTING,
-					action: this.overlay.dialogueid
-				},
-				callback: () => ZABBIX.EventHub.unsubscribeAll(subscriptions)
-			})
-		);
-	}
-
-	#isConfirmed() {
-		const fields = this.#getFormFields(this.form);
-
-		fields.show_inherited_tags = this.initial_form_fields.show_inherited_tags;
-
-		if (!fields.tags.length) {
-			fields.tags.push({tag: '', value: ''});
-		}
-
-		return JSON.stringify(this.initial_form_fields) === JSON.stringify(fields)
-			|| window.confirm(<?= json_encode(_('Any changes made in the current form will be lost.')) ?>);
-	}
-
 	initItemPrototypeEvents() {
 		this.form.querySelector('[name="master-item-prototype"]').addEventListener('click', (e) => {
 			this.#openMasterItemPrototypePopup();
@@ -333,10 +315,12 @@ window.item_edit_form = new class {
 	}
 
 	clone() {
-		this.overlay = ZABBIX.PopupManager.open(
-			this.source === 'itemprototype' ? 'item.prototype.edit' : 'item.edit',
-			{clone: 1, ...this.#getFormFields()}
-		);
+		this.overlay.setLoading();
+
+		PopUp(this.actions.form, {clone: 1, ...this.#getFormFields()}, {
+			dialogueid: this.overlay.dialogueid,
+			dialogue_class: 'modal-popup-large'
+		});
 	}
 
 	create() {
@@ -574,6 +558,22 @@ window.item_edit_form = new class {
 			: this.testable_item_types.indexOf(type) != -1;
 	}
 
+	#isFormModified() {
+		const fields = this.#getFormFields(this.form);
+
+		fields.show_inherited_tags = this.initial_form_fields.show_inherited_tags;
+
+		if (!fields.tags.length) {
+			fields.tags.push({tag: '', value: ''});
+		}
+
+		return JSON.stringify(this.initial_form_fields) !== JSON.stringify(fields);
+	}
+
+	#isConfirmed() {
+		return window.confirm(<?= json_encode(_('Any changes made in the current form will be lost.')) ?>);
+	}
+
 	#updateActionButtons() {
 		this.footer.querySelector('.js-test-item')?.toggleAttribute('disabled', !this.#isTestableItem());
 	}
@@ -708,8 +708,8 @@ window.item_edit_form = new class {
 	}
 
 	#updateHistoryModeVisibility() {
-		const mode_field = [].filter.call(this.field.history_mode, e => e.matches(':checked')).pop();
-		const disabled = mode_field.value == ITEM_STORAGE_OFF && !mode_field.readOnly;
+		const mode_field = [].filter.call(this.field.history_mode, e => e.matches(':checked')).pop(),
+			disabled = mode_field.value == ITEM_STORAGE_OFF && (!mode_field.readOnly || this.field.history.readOnly);
 
 		this.field.history.toggleAttribute('disabled', disabled);
 		this.field.history.classList.toggle(ZBX_STYLE_DISPLAY_NONE, disabled);
@@ -717,8 +717,8 @@ window.item_edit_form = new class {
 	}
 
 	#updateTrendsModeVisibility() {
-		const mode_field = [].filter.call(this.field.trends_mode, e => e.matches(':checked')).pop();
-		const disabled = mode_field.value == ITEM_STORAGE_OFF && !mode_field.readOnly;
+		const mode_field = [].filter.call(this.field.trends_mode, e => e.matches(':checked')).pop(),
+			disabled = mode_field.value == ITEM_STORAGE_OFF && (!mode_field.readOnly || this.field.trends.readOnly);
 
 		this.field.trends.toggleAttribute('disabled', disabled);
 		this.field.trends.classList.toggle(ZBX_STYLE_DISPLAY_NONE, disabled);
@@ -794,9 +794,11 @@ window.item_edit_form = new class {
 	#keyChangeHandler() {
 		const inferred_type = this.#getInferredValueType(this.field.key.value);
 
-		if (inferred_type !== null) {
+		if (inferred_type !== null && this.last_inferred_type !== inferred_type) {
 			this.field.value_type.value = inferred_type;
 		}
+
+		this.last_inferred_type = inferred_type;
 
 		this.updateFieldsVisibility();
 	}
@@ -815,6 +817,30 @@ window.item_edit_form = new class {
 		this.#updateTagsList(this.form.querySelector('.tags-table'));
 	}
 
+	#openRelatedItem(parameters) {
+		overlayDialogueDestroy(this.overlay.dialogueid);
+
+		const overlay = PopUp(parameters.action, parameters, {
+			dialogueid: this.overlay.dialogueid,
+			dialogue_class: 'modal-popup-large',
+			prevent_navigation: true
+		});
+
+		this.#proxyDialogueSubmitEvent(overlay);
+	}
+
+	#openProxyPopup(parameters) {
+		overlayDialogueDestroy(this.overlay.dialogueid);
+
+		const overlay = PopUp('popup.proxy.edit', parameters, {
+			dialogueid: 'proxy_edit',
+			dialogue_class: 'modal-popup-static',
+			prevent_navigation: true
+		});
+
+		this.#proxyDialogueSubmitEvent(overlay);
+	}
+
 	#openMasterItemPrototypePopup() {
 		const parameters = {
 			srctbl: 'item_prototypes',
@@ -827,6 +853,24 @@ window.item_edit_form = new class {
 		}
 
 		PopUp('popup.generic', parameters, {dialogue_class: 'modal-popup-generic'});
+	}
+
+	#openTemplatePopup(template_data) {
+		overlayDialogueDestroy(this.overlay.dialogueid);
+
+		const overlay =  PopUp('template.edit', template_data, {
+			dialogueid: 'templates-form',
+			dialogue_class: 'modal-popup-large',
+			prevent_navigation: true
+		});
+
+		this.#proxyDialogueSubmitEvent(overlay);
+	}
+
+	#proxyDialogueSubmitEvent(overlay) {
+		overlay.$dialogue[0].addEventListener('dialogue.submit',
+			(e) => this.dialogue.dispatchEvent(new CustomEvent('dialogue.submit', {detail: e.detail}))
+		);
 	}
 }
 })();

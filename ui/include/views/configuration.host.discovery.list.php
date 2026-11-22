@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -247,16 +247,12 @@ foreach ($data['discoveries'] as $discovery) {
 			$description[] = $discovery['master_item']['name'];
 		}
 		else {
-			$item_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'item.edit')
-				->setArgument('context', $data['context'])
-				->setArgument('itemid', $discovery['master_item']['itemid'])
-				->getUrl();
-
-			$description[] = (new CLink($discovery['master_item']['name'], $item_url))
+			$description[] = (new CLink($discovery['master_item']['name']))
 				->addClass(ZBX_STYLE_LINK_ALT)
-				->addClass(ZBX_STYLE_TEAL);
+				->addClass(ZBX_STYLE_TEAL)
+				->addClass('js-update-item')
+				->setAttribute('data-itemid', $discovery['master_item']['itemid'])
+				->setAttribute('data-context', $data['context']);
 		}
 
 		$description[] = NAME_DELIMITER;
@@ -315,13 +311,9 @@ foreach ($data['discoveries'] as $discovery) {
 		$checkbox->setAttribute('data-actions', 'execute');
 	}
 
-	$host_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', $data['context'] === 'host' ? 'host.edit' : 'template.edit')
-		->setArgument($data['context'] === 'host' ? 'hostid' : 'templateid', $discovery['hosts'][0]['hostid'])
-		->getUrl();
-
-	$host = new CLink($discovery['hosts'][0]['name'], $host_url);
+	$host = (new CLink($discovery['hosts'][0]['name']))
+		->setAttribute('data-hostid', $discovery['hosts'][0]['hostid'])
+		->addClass('js-edit-'.$data['context']);
 
 	$discoveryTable->addRow([
 		$checkbox,
@@ -353,7 +345,7 @@ foreach ($data['discoveries'] as $discovery) {
 			),
 			CViewHelper::showNum($discovery['graphs'])
 		],
-		($discovery['hosts'][0]['flags'] == ZBX_FLAG_DISCOVERY_NORMAL)
+		$discovery['hosts'][0]['flags'] == ZBX_FLAG_DISCOVERY_NORMAL
 			? [
 				new CLink(_('Host prototypes'),
 					(new CUrl('host_prototypes.php'))

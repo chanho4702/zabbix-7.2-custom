@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -79,7 +79,6 @@ $search = (new CForm('get', 'zabbix.php'))
 	->addItem([$header, $server_name, $search])
 	->addItem(
 		(new CDiv([
-			// [DM 해설] 사이드바 메뉴 출력. 모듈이 Module::init() 에서 추가한 메뉴도 menu.main 에 들어 있어 여기서 함께 그려진다.
 			(new CTag('nav', true, APP::Component()->get('menu.main')->addClass('menu-main')))
 				->addClass('nav-main')
 				->setAttribute('role', 'navigation')

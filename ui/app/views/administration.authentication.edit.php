@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,7 @@
  * @var array $data
  */
 
+$this->addJsFile('class.form.fieldset.collapsible.js');
 $this->includeJsFile('administration.authentication.edit.js.php');
 
 $form = (new CForm())
@@ -175,7 +176,7 @@ $ldap_tab = (new CFormGrid())
 							new CColHeader(_('Host')),
 							(new CColHeader(_('User groups')))->addClass(ZBX_STYLE_NOWRAP),
 							_('Default'),
-							_('Action')
+							''
 						]))->addClass(ZBX_STYLE_GREY)
 					)
 					->addItem(
@@ -203,7 +204,8 @@ $ldap_tab = (new CFormGrid())
 	->addItem([
 		new CLabel(_('Provisioning period'), 'jit_provision_interval'),
 		new CFormField(
-			(new CTextBox('jit_provision_interval', $data['jit_provision_interval']))
+			(new CTextBox('jit_provision_interval', $data['jit_provision_interval'], false,
+					DB::getFieldLength('config', 'jit_provision_interval')))
 				->setWidth(ZBX_TEXTAREA_4DIGITS_WIDTH)
 				->setEnabled($ldap_auth_enabled && $data['ldap_jit_status'] == JIT_PROVISIONING_ENABLED)
 		)
@@ -469,10 +471,7 @@ $saml_tab = (new CFormGrid())
 					->addClass($saml_auth_enabled ? null : ZBX_STYLE_DISABLED)
 					->setHeader(
 						(new CRowHeader([
-							_('Name'),
-							_('Media type'),
-							_('Attribute'),
-							(new CColHeader(_('Action')))->setWidth('12%')
+							_('Name '), _('Media type'), _('Attribute'), ''
 						]))->addClass(ZBX_STYLE_GREY)
 					)
 					->addItem(

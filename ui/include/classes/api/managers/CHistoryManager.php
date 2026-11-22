@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1047,6 +1047,10 @@ class CHistoryManager {
 				'group_by_script' => [
 					'terms' => [
 						'size' => $width,
+						'order' => [
+							'_key' => ZBX_SORT_UP
+						],
+						'value_type' => 'integer',
 						'script' => $script
 					],
 					'aggs' => $aggs
@@ -1125,16 +1129,19 @@ class CHistoryManager {
 	 * @see CHistoryManager::getGraphAggregationByWidth
 	 */
 	private function getGraphAggregationByWidthFromSql(array $items, $time_from, $time_to, $width) {
-		$group_by = 'itemid';
 		$sql_select_extra = '';
+		$group_by = 'itemid';
+		$order_by = '';
 
 		if ($width !== null) {
 			$period = $time_to - $time_from;
 
+			// Required for 'group by' support of Oracle.
 			$calc_field = 'round('.$width.'.0*(clock-'.$time_from.')/'.$period.',0)';
 
 			$sql_select_extra = ','.$calc_field.' AS i';
 			$group_by .= ','.$calc_field;
+			$order_by .= ' ORDER BY itemid,i';
 		}
 
 		$results = [];
@@ -1171,7 +1178,8 @@ class CHistoryManager {
 					' WHERE itemid='.zbx_dbstr($item['itemid']).
 						' AND clock>='.zbx_dbstr($_time_from).
 						' AND clock<='.zbx_dbstr($time_to).
-					' GROUP BY '.$group_by
+					' GROUP BY '.$group_by.
+					$order_by
 				);
 
 				while (($row = DBfetch($result)) !== false) {

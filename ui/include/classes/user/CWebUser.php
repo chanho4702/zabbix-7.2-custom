@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -40,9 +40,6 @@ class CWebUser {
 	 *
 	 * @return bool
 	 */
-	// [DM 해설] 화면 로그인의 실제 처리. 내부에서 API user.login (include/classes/api/services/CUser.php 의 login())을 부른다.
-	// [DM 해설] 성공하면 CWebUser::$data 에 사용자 정보(userid, username, roleid, sessionid, mfaid ...)가 채워진다.
-	// [DM 해설] 5버전과 다른 점: 사용자 아이디 필드가 'alias' 에서 'username' 으로 바뀌었다. ($data['alias'] 를 쓰던 코드는 고쳐야 한다)
 	public static function login(string $login, string $password): bool {
 		try {
 			self::$data = API::User()->login([
@@ -56,7 +53,7 @@ class CWebUser {
 			}
 
 			API::getWrapper()->auth = [
-				'type' => CJsonRpc::AUTH_TYPE_COOKIE,
+				'type' => CJsonRpc::AUTH_TYPE_FRONTEND,
 				'auth' => self::$data['sessionid']
 			];
 

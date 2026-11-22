@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -50,7 +50,6 @@ class CMenu extends CTag {
 	 *
 	 * @return CMenu
 	 */
-	// [DM 해설] 메뉴 목록 맨 끝에 항목을 추가한다.
 	public function add(CMenuItem $menu_item): self {
 		$this->menu_items[] = $menu_item;
 
@@ -64,7 +63,6 @@ class CMenu extends CTag {
 	 *
 	 * @return CMenuItem|null
 	 */
-	// [DM 해설] 화면에 보이는 라벨 문자열로 항목을 찾는다. 없으면 null. 라벨은 번역된 문자열이므로 _('Inventory') 처럼 넘긴다.
 	public function find(string $label): ?CMenuItem {
 		foreach ($this->menu_items as $item) {
 			if ($item->getLabel() === $label) {
@@ -82,7 +80,6 @@ class CMenu extends CTag {
 	 *
 	 * @return CMenuItem
 	 */
-	// [DM 해설] 찾아서 없으면 새로 만들어 추가한다. 모듈에서 가장 많이 쓰는 메소드.
 	public function findOrAdd(string $label): CMenuItem {
 		$item = $this->find($label);
 
@@ -117,7 +114,6 @@ class CMenu extends CTag {
 	 *
 	 * @return CMenu
 	 */
-	// [DM 해설] 지정한 라벨의 항목 바로 뒤에 끼워 넣는다. 예) ->insertAfter(_('Hosts'), $item)
 	public function insertAfter(string $label, CMenuItem $menu_item): self {
 		return $this->insert($label, $menu_item, true);
 	}
@@ -130,7 +126,6 @@ class CMenu extends CTag {
 	 *
 	 * @return CMenu
 	 */
-	// [DM 해설] 지정한 라벨의 항목 바로 앞에 끼워 넣는다.
 	public function insertBefore(string $label, CMenuItem $menu_item): self {
 		return $this->insert($label, $menu_item);
 	}
@@ -142,7 +137,6 @@ class CMenu extends CTag {
 	 *
 	 * @return CMenu
 	 */
-	// [DM 해설] 라벨로 항목을 지운다. 코어 메뉴를 숨길 때도 코어 파일을 고치지 않고 모듈에서 이 메소드를 쓴다.
 	public function remove(string $label): self {
 		foreach ($this->menu_items as $index => $item) {
 			if ($item->getLabel() === $label) {

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -575,8 +575,8 @@ var hintBox = {
 		target.hintBoxItem.show();
 
 		if (target.isStatic) {
-			Overlay.prototype.recoverFocus.call({'$dialogue': target.hintBoxItem});
-			Overlay.prototype.containFocus.call({'$dialogue': target.hintBoxItem});
+			Focuser.recoverFocus(target.hintBoxItem[0]);
+			Focuser.containFocus(target.hintBoxItem[0]);
 		}
 
 		target.dispatchEvent(new CustomEvent('onShowHint.hintBox'));
@@ -779,20 +779,17 @@ var hintBox = {
 function ApiCall(method, params, id = 1) {
 	return fetch(new Curl('api_jsonrpc.php').getUrl(), {
 		method: 'POST',
-		headers: {'Content-Type': 'application/json'},
+		headers: {
+			'Content-Type': 'application/json'
+		},
 		credentials: 'same-origin',
-		body: JSON.stringify({jsonrpc: '2.0', method, params, id}),
-	})
-		.then(response => response.json())
-		.then(response => {
-			if ('error' in response) {
-				throw new Error(response.error.message, {
-					cause: { code: response.error.code, data: response.error.data }
-				});
-			}
-
-			return response;
-		});
+		body: JSON.stringify({
+			jsonrpc: '2.0',
+			method,
+			params,
+			id
+		}),
+	}).then((response) => response.json());
 }
 
 /**
@@ -1210,11 +1207,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	if (typeof CSoftwareVersionCheck !== 'undefined') {
 		ZABBIX.SoftwareVersionCheck = new CSoftwareVersionCheck();
 	}
-
-	// Popup manager initialization (no object creation).
-
-	ZABBIX.PopupManager = CPopupManager;
-	ZABBIX.PopupManager.init();
 });
 
 window.addEventListener('load', () => {

@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: Zabbix 6.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-19 13:48+0300\n"
-"PO-Revision-Date: 2025-08-12 18:33+0000\n"
+"PO-Revision-Date: 2026-03-21 08:16+0000\n"
 "Last-Translator: Xevi Noè i Nogueiras <xevi.noe@gmail.com>\n"
 "Language-Team: none\n"
 "Language: ca\n"
@@ -693,10 +693,6 @@ msgid_plural "Actions disabled"
 msgstr[0] "Acció desactivada"
 msgstr[1] "Accions desactivades"
 
-#: app/controllers/CControllerPopup.php:42
-msgid "Action edit"
-msgstr "Edició d'acció"
-
 #: app/controllers/CControllerActionEnable.php:84
 msgid "Action enabled"
 msgid_plural "Actions enabled"
@@ -960,7 +956,7 @@ msgstr "Afegeix un giny nou"
 
 #: widgets/navtree/Widget.php:34
 msgid "Add child element"
-msgstr "Afegir un element fill"
+msgstr "Afegeix un element fill"
 
 #: widgets/navtree/Widget.php:39
 msgid "Add child elements"
@@ -1664,10 +1660,6 @@ msgstr "Cal triar, com a mínim, un dia de la setmana o un dia del mes."
 msgid "At least one host group or host must be selected."
 msgstr "S'ha de triar, com a mínim, almenys un grup d'equips o un equip."
 
-#: include/classes/setup/CFrontendSetup.php:252
-msgid "At least one of MySQL or PostgreSQL should be supported."
-msgstr "Com a mínim hauria d'admetre MySQL o PostgreSQL."
-
 #: include/classes/setup/CFrontendSetup.php:241
 msgid "At least one of MySQL, PostgreSQL or Oracle should be supported."
 msgstr "Com a mínim MySQL, PostgreSQL o Oracle haurien d'ésser suportats."
@@ -1886,11 +1878,6 @@ msgstr "Disponibilitat"
 #: include/classes/helpers/CRoleHelper.php:423 report2.php:25 report2.php:156
 msgid "Availability report"
 msgstr "Informe de disponibilitat"
-
-#: app/controllers/CControllerAvailabilityReportTrigger.php:70
-#: app/views/reports.availabilityreport.trigger.php:23
-msgid "Availability report graph"
-msgstr "Gràfic de l'informe de disponibilitat"
 
 #: include/classes/html/CHostAvailability.php:80
 #: widgets/hostavail/views/widget.view.php:32
@@ -2695,7 +2682,7 @@ msgstr "No es pot pas esborrar el mètode MFA predeterminat."
 msgid "Cannot delete default user directory."
 msgstr "No es pot pas esborrar el directori d'usuaris per defecte."
 
-#: include/classes/api/services/CDRule.php:772
+#: include/classes/api/services/CDRule.php:773
 #, c-format
 msgid "Cannot delete discovery check \"%1$s\" of discovery rule \"%2$s\": %3$s."
 msgstr "No es pot esborrar la comprovació de descoberta \"%1$s\" de la regla de descoberta \"%2$s\": %3$s."
@@ -2707,7 +2694,7 @@ msgid_plural "Cannot delete discovery rules"
 msgstr[0] "No es pot pas esborrar la regla de descoberta"
 msgstr[1] "No es poden pas esborrar les regles de descoberta"
 
-#: include/classes/api/services/CDRule.php:979
+#: include/classes/api/services/CDRule.php:980
 #, c-format
 msgid "Cannot delete discovery rule \"%1$s\": %2$s."
 msgstr "No es pot pas esborrar la regla de descoberta \"%1$s\": %2$s."
@@ -2736,7 +2723,7 @@ msgid_plural "Cannot delete hosts"
 msgstr[0] "No es pot esborrar l'equip"
 msgstr[1] "No es poden pas esborrar els equips"
 
-#: include/classes/api/services/CHost.php:1631
+#: include/classes/api/services/CHost.php:1636
 #, c-format
 msgid "Cannot delete host \"%1$s\": %2$s."
 msgstr "No es pot pas esborrar l'equip \"%1$s\": %2$s."
@@ -2754,7 +2741,7 @@ msgid_plural "Cannot delete host groups"
 msgstr[0] "No es pot pas esborrar el grup d'equips"
 msgstr[1] "No es poden pas esborrar els grups d'equips"
 
-#: include/classes/api/services/CHostGroup.php:767
+#: include/classes/api/services/CHostGroup.php:769
 #, c-format
 msgid "Cannot delete host group \"%1$s\": %2$s."
 msgstr "No es pot pas esborrar el grup d'equips \"%1$s\": %2$s."
@@ -2842,8 +2829,8 @@ msgstr "No es poden pas esborrar els servidors intermediaris"
 #: app/controllers/CControllerProxyDelete.php:79
 msgid "Cannot delete proxy"
 msgid_plural "Cannot delete proxies"
-msgstr[0] "No es pot pas esborrar el servidor intermediari"
-msgstr[1] "No es poden pas esborrar els servidors intermediaris"
+msgstr[0] "No es pot esborrar el servidor intermediari"
+msgstr[1] "No es poden esborrar els servidors intermediaris"
 
 #: app/controllers/CControllerProxyGroupDelete.php:78
 msgid "Cannot delete proxy group"
@@ -2853,7 +2840,7 @@ msgstr[1] "No es poden pas esborrar els grups de proxys"
 
 #: app/controllers/CControllerProxyGroupDelete.php:39
 msgid "Cannot delete proxy groups"
-msgstr "No es poden pas esborrar els grups de proxys"
+msgstr "No es poden esborrar els grups de proxys"
 
 #: include/classes/api/services/CRole.php:362
 #, c-format
@@ -2901,7 +2888,7 @@ msgid_plural "Cannot delete templates"
 msgstr[0] "No es pot pas esborrar la plantilla"
 msgstr[1] "No es poden pas esborrar les plantilles"
 
-#: include/classes/api/services/CTemplate.php:805
+#: include/classes/api/services/CTemplate.php:809
 #, c-format
 msgid "Cannot delete template \"%1$s\": %2$s."
 msgstr "No es pot pas esborrar la plantilla \"%1$s\": %2$s."
@@ -2969,12 +2956,12 @@ msgid_plural "Cannot delete user groups"
 msgstr[0] "No es pot pas esborrar el grup d'usuaris"
 msgstr[1] "No es poden pas esborrar els grups d'usuaris"
 
-#: include/classes/api/services/CUserGroup.php:1306
+#: include/classes/api/services/CUserGroup.php:1340
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by LDAP userdirectory \"%2$s\"."
 msgstr "No es pot esborrar el grup d'usuaris \"%1$s\", perquè l'empra el directori d'usuaris LDAP \"%2$s\"."
 
-#: include/classes/api/services/CUserGroup.php:1301
+#: include/classes/api/services/CUserGroup.php:1335
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by SAML userdirectory."
 msgstr "No es pot esborrar el grup d'usuaris \"%1$s\", perquè l'empra el directori d'usuaris de SAML."
@@ -3392,47 +3379,47 @@ msgstr "No es poden pas heretar les regles LLD la clau \"%1$s\" dels models \"%2
 #: include/classes/api/services/CItemGeneral.php:819
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to host \"%3$s\", because a discovered item with the same key already exists."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha un element descobert amb la mateixa clau."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha un element descobert amb la mateixa clau."
 
 #: include/classes/api/services/CItemGeneral.php:1230
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to host \"%3$s\", because a host interface of type \"%4$s\" is required."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs es requereix una interfície d'equip del tipus \"%4$s\"."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs es requereix una interfície d'equip del tipus \"%4$s\"."
 
 #: include/classes/api/services/CItemGeneral.php:874
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to host \"%3$s\", because an LLD rule with the same key is already inherited from template \"%4$s\"."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha una regla LLD amb la mateixa clau heretat de la plantilla \"%4$s\"."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha una regla LLD amb la mateixa clau heretat de la plantilla \"%4$s\"."
 
 #: include/classes/api/services/CItemGeneral.php:813
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to host \"%3$s\", because an item prototype with the same key already exists."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha un prototip d'element amb la mateixa clau."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha un prototip d'element amb la mateixa clau."
 
 #: include/classes/api/services/CItemGeneral.php:807
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to host \"%3$s\", because an item with the same key already exists."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha un element amb la mateixa clau."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a l'equip \"%3$s\", doncs ja hi ha un element amb la mateixa clau."
 
 #: include/classes/api/services/CItemGeneral.php:820
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to template \"%3$s\", because a discovered item with the same key already exists."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha un element descobert amb la mateixa clau."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha un element descobert amb la mateixa clau."
 
 #: include/classes/api/services/CItemGeneral.php:875
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to template \"%3$s\", because an LLD rule with the same key is already inherited from template \"%4$s\"."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha una regla LLD amb la mateixa clau heretat de la plantilla \"%4$s\"."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha una regla LLD amb la mateixa clau heretat de la plantilla \"%4$s\"."
 
 #: include/classes/api/services/CItemGeneral.php:814
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to template \"%3$s\", because an item prototype with the same key already exists."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha un prototip d'element amb la mateixa clau."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha un prototip d'element amb la mateixa clau."
 
 #: include/classes/api/services/CItemGeneral.php:808
 #, c-format
 msgid "Cannot inherit LLD rule with key \"%1$s\" of template \"%2$s\" to template \"%3$s\", because an item with the same key already exists."
-msgstr "No es pot pas heretar la regla LLD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha un element amb la mateixa clau."
+msgstr "No es pot pas heretar la regla LDD amb la clau \"%1$s\" de la plantilla \"%2$s\" a la plantilla \"%3$s\", doncs ja hi ha un element amb la mateixa clau."
 
 #: include/classes/api/services/CItemGeneral.php:684
 #, c-format
@@ -3770,6 +3757,11 @@ msgstr "No es pot pas llegir l'XML: %1$s."
 msgid "Cannot read YAML: %1$s."
 msgstr "No es pot pas llegir el YAML: %1$s."
 
+#: include/classes/server/CZabbixServer.php:502
+#, c-format
+msgid "Cannot read response from Zabbix server \"%1$s\"."
+msgstr "No es pot llegir la resposta del servidor Zabbix \"%1$s\"."
+
 #: include/classes/server/CZabbixServer.php:567
 #, c-format
 msgid "Cannot read the response, check connection with the Zabbix server \"%1$s\"."
@@ -3831,6 +3823,10 @@ msgstr "No es pot pas establir \"%1$s\" per al prototip de gràfic \"%2$s\"."
 #: widgets/piechart/includes/CWidgetFieldDataSet.php:175
 msgid "Cannot set \"Data set aggregation\" when item with type \"Total\" is added to the chart."
 msgstr "No es pot pas establir \"Afegit del conjunt de dades\" quan s'afegeix un element de tipus \"Total\" al gràfic."
+
+#: include/classes/db/MysqlDbBackend.php:197
+msgid "Cannot set charset."
+msgstr "No es pot definir el joc de caràcters."
 
 #: include/classes/api/services/CItemGeneral.php:2478
 #, c-format
@@ -4032,7 +4028,7 @@ msgstr "No es pot pas actualitzar l'autenticació"
 #: app/controllers/CControllerTrigDisplayUpdate.php:59
 #: app/controllers/CControllerTrigDisplayUpdate.php:111
 msgid "Cannot update configuration"
-msgstr "No es pot pas actualitzar la configuració"
+msgstr "No es pot actualitzar la configuració"
 
 #: app/controllers/CControllerConnectorUpdate.php:83
 #: app/controllers/CControllerConnectorUpdate.php:157
@@ -5121,10 +5117,6 @@ msgid_plural "Connectors disabled"
 msgstr[0] "Connector desactivat"
 msgstr[1] "Connectors desactivats"
 
-#: app/controllers/CControllerPopup.php:43
-msgid "Connector edit"
-msgstr "Edició del connector"
-
 #: app/controllers/CControllerConnectorEnable.php:69
 msgid "Connector enabled"
 msgid_plural "Connectors enabled"
@@ -5282,10 +5274,6 @@ msgstr[1] "Copiar els triggers %1$s"
 #: app/views/popup.token.view.php:51
 msgid "Copy to clipboard"
 msgstr "Copiar al portapapers"
-
-#: app/controllers/CControllerPopup.php:44
-msgid "Correlation edit"
-msgstr "Edició de correlació"
 
 #: app/controllers/CControllerPopupTriggerExpr.php:52
 #: app/controllers/CControllerPopupTriggerExpr.php:693
@@ -5961,8 +5949,8 @@ msgstr "Xifratge TLS de bases de dades"
 msgid "Database TLS key file"
 msgstr "Fitxer de claus TLS de la base de dades"
 
-#: include/classes/api/clients/CLocalApiClient.php:124
-#: include/classes/api/clients/CLocalApiClient.php:138
+#: include/classes/api/clients/CLocalApiClient.php:133
+#: include/classes/api/clients/CLocalApiClient.php:147
 msgid "Database error occurred."
 msgstr "S'ha produït un error de base de dades."
 
@@ -6804,6 +6792,10 @@ msgstr "Detalls de l'escenari web"
 msgid "Detected TimescaleDB license does not support compression. Compression is supported in TimescaleDB Community Edition."
 msgstr "La llicència TimescaleDB detectada no admet pas compressió. La compressió és compatible amb TimescaleDB Community Edition."
 
+#: app/views/administration.housekeeping.edit.php:204
+msgid "Detected license does not support compression. Compression is supported in TimescaleDB Community Edition."
+msgstr "La llicència detectada no admet pas compressió. La compressió és compatible amb TimescaleDB Community Edition."
+
 #: app/controllers/CControllerPopupTriggerExpr.php:1130
 msgid "Detection period"
 msgstr "Període de detecció"
@@ -7164,7 +7156,7 @@ msgstr "Objecte de descobriment"
 msgid "Discovery of VMware clusters, \"url\" - VMware service URL. Returns JSON"
 msgstr "Descoberta de clústers de VMware, \"url\" - URL del servei de VMware. Retorna un JSON"
 
-#: include/classes/data/CItemData.php:1932
+#: include/classes/data/CItemData.php:1931
 msgid "Discovery of VMware datastores, \"url\" - VMware service URL, \"filter_uuid\" - one hv uuid or vm uuid (empty by default). Returns JSON"
 msgstr "Descoberta de magatzems de dades de VMware, \"url\" - URL del servei de VMware, \"filter_uuid\" - un hv uuid o vm uuid (buit per defecte). Retorna JSON"
 
@@ -7248,10 +7240,6 @@ msgid_plural "Discovery rules disabled"
 msgstr[0] "Regla de descobriment desactivada"
 msgstr[1] "Regles de descobriment desactivades"
 
-#: app/controllers/CControllerPopup.php:45
-msgid "Discovery rule edit"
-msgstr "Edició de la regla de descoberta"
-
 #: app/controllers/CControllerDiscoveryEnable.php:68 host_discovery.php:580
 msgid "Discovery rule enabled"
 msgid_plural "Discovery rules enabled"
@@ -7305,10 +7293,6 @@ msgstr "Veure accions"
 msgid "Display graph"
 msgstr "Mostra el gràfic"
 
-#: widgets/tophosts/views/column.edit.php:136
-msgid "Display item value as"
-msgstr "Mostra el valor de l'element com a"
-
 #: widgets/itemhistory/views/column.edit.php:241
 msgid "Display local time"
 msgstr "Mostra l'hora local"
@@ -7332,10 +7316,6 @@ msgstr "Mostra els problemes"
 #: app/partials/monitoring.latest.view.html.php:308
 msgid "Display stacked graph"
 msgstr "Mostra el gràfic apilat"
-
-#: widgets/topitems/views/column.edit.php:90
-msgid "Display value as"
-msgstr "Veure el valor com a"
 
 #: app/controllers/CControllerHintboxActionlist.php:99
 #: app/views/administration.queue.details.php:86
@@ -9607,10 +9587,6 @@ msgstr "Disponibilitat de l'equip"
 msgid "Host cannot have more than one default interface of the same type."
 msgstr "L'equip no pot pas tindre més d'una interfície predeterminada del mateix tipus."
 
-#: widgets/hostcard/Widget.php:32
-msgid "Host card"
-msgstr "Tarja d'equip"
-
 #: app/views/administration.proxy.list.php:91 hostinventoriesoverview.php:85
 #: widgets/tophosts/includes/WidgetForm.php:159
 msgid "Host count"
@@ -9633,10 +9609,6 @@ msgid "Host disabled"
 msgid_plural "Hosts disabled"
 msgstr[0] "Equip desactivat"
 msgstr[1] "Equips desactivats"
-
-#: app/controllers/CControllerPopup.php:46
-msgid "Host edit"
-msgstr "Edició de l'equip"
 
 #: app/controllers/CControllerHostGroupEnable.php:76
 #: app/controllers/CControllerPopupMassupdateHost.php:491
@@ -9696,10 +9668,6 @@ msgid "Host group deleted"
 msgid_plural "Host groups deleted"
 msgstr[0] "S'ha esborrat el grup d'equips"
 msgstr[1] "S'han esborrat els grups d'equips"
-
-#: app/controllers/CControllerPopup.php:47
-msgid "Host group edit"
-msgstr "Edició del grup d'equips"
 
 #: include/views/js/monitoring.sysmaps.js.php:112
 msgid "Host group elements"
@@ -9832,12 +9800,6 @@ msgstr "Navegador d'equips"
 #: include/hosts.inc.php:284
 msgid "Host networks"
 msgstr "Xarxes d'equips"
-
-#: widgets/topitems/includes/WidgetForm.php:116
-#: widgets/topitems/includes/WidgetForm.php:128
-#: widgets/topitems/views/widget.edit.php:63
-msgid "Host ordering"
-msgstr "Comandes de l'equip"
 
 #: widgets/hostnavigator/includes/WidgetForm.php:65
 msgid "Host patterns"
@@ -11924,12 +11886,6 @@ msgstr "Inventari desactivat per a l'equip \"%1$s\"."
 msgid "Inventory field"
 msgstr "Camp d'inventari"
 
-#: include/classes/html/widgets/fields/CWidgetFieldMultiSelectHostInventoryView.php:30
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-#: widgets/hostcard/includes/WidgetForm.php:50
-msgid "Inventory fields"
-msgstr "Camps d'inventari"
-
 #: app/views/popup.massupdate.host.php:175
 #: app/views/popup.operation.edit.php:402
 msgid "Inventory mode"
@@ -12007,10 +11963,6 @@ msgid_plural "Items disabled"
 msgstr[0] "Element desactivat"
 msgstr[1] "Elements desactivats"
 
-#: app/controllers/CControllerPopup.php:48
-msgid "Item edit"
-msgstr "Edició d'elements"
-
 #: items.php:707
 msgid "Item enabled"
 msgid_plural "Items enabled"
@@ -12046,12 +11998,6 @@ msgstr "Navegador d'elements"
 msgid "Item not selected"
 msgstr "Element no triat"
 
-#: widgets/topitems/includes/WidgetForm.php:145
-#: widgets/topitems/includes/WidgetForm.php:157
-#: widgets/topitems/views/widget.edit.php:81
-msgid "Item ordering"
-msgstr "Comanda d'elements"
-
 #: widgets/piechart/views/widget.edit.js.php:203
 #: widgets/svggraph/views/widget.edit.js.php:281
 msgid "Item pattern"
@@ -12083,10 +12029,6 @@ msgid "Item prototype deleted"
 msgid_plural "Item prototypes deleted"
 msgstr[0] "S'ha esborrat el prototip d'element"
 msgstr[1] "S'han esborrat els prototips d'elements"
-
-#: app/controllers/CControllerPopup.php:49
-msgid "Item prototype edit"
-msgstr "Edició del prototip d'element"
 
 #: app/controllers/CControllerPopupMassupdateItem.php:286
 #: disc_prototypes.php:457 disc_prototypes.php:483 disc_prototypes.php:522
@@ -12603,15 +12545,6 @@ msgstr "Allargada"
 msgid "Licensed under"
 msgstr "Llicenciat sota"
 
-#: widgets/topitems/includes/WidgetForm.php:125
-#: widgets/topitems/includes/WidgetForm.php:154
-msgid "Limit"
-msgstr "Límit"
-
-#: widgets/topitems/views/widget.edit.php:95
-msgid "Limit applies to each \"Item pattern\" separately"
-msgstr "El límit s'aplica a cada \"patró d'element\" per separat"
-
 #: app/views/administration.gui.edit.php:93
 msgid "Limit for search and filter results"
 msgstr "Limitar la cerca i filtrar els resultats"
@@ -12637,11 +12570,6 @@ msgstr "Tipus de línia"
 #: include/views/js/monitoring.sysmaps.js.php:598
 msgid "Line width"
 msgstr "Amplada de línia"
-
-#: widgets/svggraph/includes/WidgetForm.php:301
-#: widgets/svggraph/includes/WidgetForm.php:333
-msgid "Linear"
-msgstr "Lineal"
 
 #: app/views/popup.massupdate.host.php:42 app/views/template.massupdate.php:45
 #: include/views/monitoring.sysmap.constructor.php:43
@@ -12852,11 +12780,6 @@ msgstr "Format d'hora de registre"
 msgid "Log unmatched SNMP traps"
 msgstr "Registra captures SNMP no coincidents"
 
-#: widgets/svggraph/includes/WidgetForm.php:302
-#: widgets/svggraph/includes/WidgetForm.php:334
-msgid "Logarithmic"
-msgstr "Logarítmic"
-
 #: app/controllers/CControllerAuditLogList.php:201
 #: app/views/administration.user.list.php:135
 #: app/views/popup.ldap.test.edit.php:33 app/views/system.warning.php:43
@@ -13016,10 +12939,6 @@ msgstr "Manteniment"
 #, c-format
 msgid "Maintenance \"%1$s\" already exists."
 msgstr "El manteniment \"%1$s\" ja existeix."
-
-#: app/controllers/CControllerPopup.php:50
-msgid "Maintenance edit"
-msgstr "Edició de manteniment"
 
 #: app/controllers/CControllerMaintenanceTimePeriodEdit.php:142
 #: app/views/maintenance.edit.php:238
@@ -13387,6 +13306,11 @@ msgstr "Nombre màxim de fileres"
 msgid "Maximum required %1$s database version is %2$s."
 msgstr "La versió màxima necessària de la base de dades %1$s és %2$s."
 
+#: app/partials/administration.system.info.php:221
+#, c-format
+msgid "Maximum required version is %1$s."
+msgstr "La versió màxima requerida és %1$s."
+
 #: app/controllers/CControllerTimeSelectorUpdate.php:136
 #: include/classes/mvc/CController.php:320
 #: include/classes/widgets/fields/CWidgetFieldTimePeriod.php:203
@@ -13447,7 +13371,7 @@ msgstr "Tipus de suport"
 msgid "Media type \"%1$s\" already exists."
 msgstr "El tipus de suport \"%1$s\" ja existeix."
 
-#: include/classes/api/services/CMediatype.php:878
+#: include/classes/api/services/CMediatype.php:927
 #, c-format
 msgid "Media type \"%1$s\" is used by action \"%2$s\"."
 msgstr "El tipus de suport \"%1$s\" s'empra per l'acció \"%2$s\"."
@@ -13471,10 +13395,6 @@ msgstr[1] "Desactivats els tipus de suport"
 #: app/views/administration.user.edit.php:359
 msgid "Media type disabled by Administration."
 msgstr "Tipus de suport desactivat per l'Administrador."
-
-#: app/controllers/CControllerPopup.php:51
-msgid "Media type edit"
-msgstr "Edició del tipus de suport"
 
 #: app/controllers/CControllerMediatypeEnable.php:87
 #: app/controllers/CControllerMediatypeEnable.php:94
@@ -13726,6 +13646,12 @@ msgstr "El límit mínim requerit en el temps d'anàlisi d'entrada per als scrip
 msgid "Minimum required size of PHP post is %1$s (configuration option \"post_max_size\")."
 msgstr "La mida mínima necessària de la publicació PHP és %1$s (opció de configuració \"post_max_size\")."
 
+#: app/partials/administration.system.info.php:212
+#: app/views/administration.housekeeping.edit.php:183
+#, c-format
+msgid "Minimum required version is %1$s."
+msgstr "La versió mínima requerida és %1$s."
+
 #: app/views/monitoring.map.view.php:48
 #: include/views/monitoring.sysmap.edit.php:276
 msgid "Minimum severity"
@@ -13825,10 +13751,6 @@ msgid "Module disabled"
 msgid_plural "Modules disabled"
 msgstr[0] "Mòdul desactivat"
 msgstr[1] "Mòduls desactivats"
-
-#: app/controllers/CControllerPopup.php:52
-msgid "Module edit"
-msgstr "Edició del mòdul"
 
 #: app/controllers/CControllerModuleEnable.php:91
 msgid "Module enabled"
@@ -13957,6 +13879,16 @@ msgstr "Múltiple"
 #: include/triggers.inc.php:611
 msgid "Multiple PROBLEM events"
 msgstr "Múltiples PROBLEM"
+
+#: app/partials/administration.system.info.php:235
+#, c-format
+msgid "Must be at least %1$s."
+msgstr "Ha de ser com a mínim %1$s."
+
+#: app/partials/administration.system.info.php:254
+#, c-format
+msgid "Must not be higher than %1$s."
+msgstr "No ha de ser superior a %1$s."
 
 #: jsLoader.php:284
 msgid "Mute"
@@ -15325,10 +15257,6 @@ msgstr "Nombre o percentatge d'inodes. Retorna enter per nombre; flotant per per
 msgid "Numeral systems"
 msgstr "Sistemes numèrics"
 
-#: widgets/tophosts/views/column.edit.php:139
-msgid "Numeric"
-msgstr "Numèric"
-
 #: app/partials/configuration.filter.items.php:143
 #: app/views/popup.massupdate.item.php:148 include/items.inc.php:125
 #: include/triggers.inc.php:1214 include/views/configuration.item.edit.php:123
@@ -16270,10 +16198,6 @@ msgstr "Enganxa sense enllaços externs"
 msgid "Pattern"
 msgstr "Patró"
 
-#: widgets/topitems/includes/CWidgetFieldColumnsListView.php:58
-msgid "Patterns"
-msgstr "Patrons"
-
 #: app/views/popup.action.edit.php:238
 msgid "Pause operations for suppressed problems"
 msgstr "Pausa les operacions per problemes esborrats"
@@ -16933,10 +16857,6 @@ msgid_plural "Proxies deleted"
 msgstr[0] "S'ha esborrat el servidor intermediari"
 msgstr[1] "S'han esborrat els servidors intermediaris"
 
-#: app/controllers/CControllerPopup.php:53
-msgid "Proxy edit"
-msgstr "Edició de proxy"
-
 #: app/controllers/CControllerAuditLogList.php:239
 #: app/partials/configuration.host.edit.html.php:266
 #: app/views/configuration.host.list.php:153
@@ -16970,10 +16890,6 @@ msgid "Proxy group deleted"
 msgid_plural "Proxy groups deleted"
 msgstr[0] "S'ha esborrat el grup de proxys"
 msgstr[1] "S'han esborrat els grups de proxys"
-
-#: app/controllers/CControllerPopup.php:54
-msgid "Proxy group edit"
-msgstr "Edició del grup de proxys"
 
 #: app/controllers/CControllerProxyGroupUpdate.php:74
 msgid "Proxy group updated"
@@ -17281,7 +17197,7 @@ msgstr "Recarregar"
 #: app/views/administration.proxy.list.php:206
 #: app/views/popup.proxy.edit.php:334
 msgid "Refresh configuration"
-msgstr "Configuració de recàrrega"
+msgstr "Recarregar configuració"
 
 #: app/views/js/administration.proxy.list.js.php:98
 msgid "Refresh configuration of the selected proxies?"
@@ -17803,6 +17719,11 @@ msgstr "Codi de resposta"
 msgid "Response time"
 msgstr "Hora de resposta"
 
+#: include/classes/server/CZabbixServer.php:498
+#, c-format
+msgid "Response timeout of %1$s exceeded when connecting to Zabbix server \"%2$s\"."
+msgstr "S'ha superat el temps d'espera de resposta de %1$s en connectar al servidor Zabbix \"%2$s\"."
+
 #: app/controllers/CControllerMediatypeTestSend.php:182
 msgid "Response type: JSON"
 msgstr "Tipus de resposta: JSON"
@@ -18087,10 +18008,6 @@ msgid "SLA disabled"
 msgid_plural "SLAs disabled"
 msgstr[0] "SLA desactivat"
 msgstr[1] "SLAs desactivats"
-
-#: app/controllers/CControllerPopup.php:58
-msgid "SLA edit"
-msgstr "Edició d'SLA"
 
 #: app/controllers/CControllerSlaEnable.php:73
 msgid "SLA enabled"
@@ -18531,10 +18448,6 @@ msgstr[1] "S'han esborrat els scripts"
 msgid "Script does not have parameters."
 msgstr "L'script no té paràmetres."
 
-#: app/controllers/CControllerPopup.php:56
-msgid "Script edit"
-msgstr "Edició d'script"
-
 #: app/views/administration.timeouts.edit.php:168
 msgid "Script execution"
 msgstr "Execució d'script"
@@ -18868,10 +18781,6 @@ msgid_plural "Services deleted"
 msgstr[0] "Servei esborrat"
 msgstr[1] "Serveis esborrats"
 
-#: app/controllers/CControllerPopup.php:57
-msgid "Service edit"
-msgstr "Edició del servei"
-
 #: app/views/administration.userrole.edit.php:166
 #: app/views/administration.userrole.edit.php:207
 msgid "Service list"
@@ -19107,6 +19016,18 @@ msgstr "Curt"
 #: widgets/problems/includes/WidgetForm.php:106
 msgid "Shortened"
 msgstr "Escurçat"
+
+#: app/partials/administration.system.info.php:243
+#: app/views/administration.housekeeping.edit.php:187
+#, c-format
+msgid "Should be at least %1$s."
+msgstr "Hauria de ser com a mínim %1$s."
+
+#: app/partials/administration.system.info.php:262
+#: app/views/administration.housekeeping.edit.php:197
+#, c-format
+msgid "Should not be higher than %1$s."
+msgstr "No hauria de ser superior a %1$s."
 
 #: app/partials/monitoring.problem.filter.php:27
 #: app/views/monitoring.charts.view.php:80
@@ -19509,13 +19430,6 @@ msgstr "Espai entre sectors"
 msgid "Spanish (es_ES)"
 msgstr "Espanyol (es_ES)"
 
-#: widgets/item/includes/WidgetForm.php:191
-#: widgets/item/includes/WidgetForm.php:321
-#: widgets/tophosts/views/column.edit.php:155
-#: widgets/tophosts/views/column.edit.php:162
-msgid "Sparkline"
-msgstr "Sparkline"
-
 #: app/views/mediatype.list.php:83 app/views/mediatype.list.php:91
 msgid "Specific"
 msgstr "Específic"
@@ -19643,7 +19557,7 @@ msgstr "Estadístiques i disponibilitat de la memòria cau d'escriptura de Zabbi
 msgid "Statistics and availability of proxy memory buffer. Mode (modes: pfree, free, total, used, pused)."
 msgstr "Estadístiques i disponibilitat del buffer de memòria proxy. Mode (modes: pfree, free, total, used, pused)."
 
-#: include/classes/data/CItemData.php:2862
+#: include/classes/data/CItemData.php:2854
 msgid "Statistics of values received by the preprocessing manager."
 msgstr "Estadístiques dels valors rebuts pel gestor de preprocessament."
 
@@ -19978,6 +19892,10 @@ msgstr "Canvia la mida de l'espai en octets o en percentatge del total. Retorna 
 msgid "Swedish (sv_SE)"
 msgstr "Suec (sv_SE)"
 
+#: index_sso.php:346
+msgid "Switch SSO user"
+msgstr "Canviar usuari SSO"
+
 #: app/views/js/administration.authentication.edit.js.php:241
 msgid "Switching authentication method will reset all except this session! Continue?"
 msgstr "Si canvieu el mètode d'autenticació, es restablirà tot excepte aquesta sessió! Continuem?"
@@ -20271,10 +20189,6 @@ msgid_plural "Templates deleted"
 msgstr[0] "S'ha esborrat la plantilla"
 msgstr[1] "S'han esborrat les plantilles"
 
-#: app/controllers/CControllerPopup.php:59
-msgid "Template edit"
-msgstr "Edició de la plantilla"
-
 #: app/controllers/CControllerAuditLogList.php:259
 #: app/partials/configuration.templategroup.edit.html.php:52
 #: app/views/configuration.templategroup.edit.php:52
@@ -20297,10 +20211,6 @@ msgid "Template group deleted"
 msgid_plural "Template groups deleted"
 msgstr[0] "S'ha esborrat el grup de plantilles"
 msgstr[1] "S'han esborrat els grups de plantilles"
-
-#: app/controllers/CControllerPopup.php:55
-msgid "Template group edit"
-msgstr "Edició del grup de plantilles"
 
 #: app/controllers/CControllerTemplateGroupUpdate.php:86
 msgid "Template group updated"
@@ -20683,11 +20593,11 @@ msgstr "Tema"
 msgid "These parameters will be passed to the script as command-line arguments in the specified order."
 msgstr "Els paràmetre es passaran a l'script com arguments de línia de comandes en l'ordre donat."
 
-#: app/views/action.list.php:163
+#: app/views/action.list.php:156
 msgid "This action has conditions or operations referencing deleted object(s)."
 msgstr "Aquesta acció té condicions o operacions que fan referència a objectes esborrats."
 
-#: app/views/action.list.php:158
+#: app/views/action.list.php:151
 msgid "This action has missing conditions or operations due to previously deleted object(s)."
 msgstr "Aquesta acció té condicions o operacions que manquen a causa d'objectes esborrats anteriorment."
 
@@ -20985,10 +20895,6 @@ msgstr "Avui"
 msgid "Today so far"
 msgstr "El que duem de dia"
 
-#: app/controllers/CControllerPopup.php:60
-msgid "Token edit"
-msgstr "Edició del token"
-
 #: include/views/js/monitoring.sysmaps.js.php:40
 #: include/views/js/monitoring.sysmaps.js.php:159
 #: include/views/js/monitoring.sysmaps.js.php:684
@@ -21017,10 +20923,6 @@ msgstr "Top N"
 #: widgets/tophosts/Widget.php:34
 msgid "Top hosts"
 msgstr "Els equips top"
-
-#: widgets/topitems/Widget.php:32
-msgid "Top items"
-msgstr "Elements principals"
 
 #: widgets/toptriggers/Widget.php:29
 msgid "Top triggers"
@@ -21250,10 +21152,6 @@ msgstr[1] "Triggers desactivats"
 msgid "Trigger displaying options"
 msgstr "Opcions de visualització dels triggers"
 
-#: app/controllers/CControllerPopup.php:61
-msgid "Trigger edit"
-msgstr "Edició de trigger"
-
 #: app/controllers/CControllerTriggerEnable.php:67
 msgid "Trigger enabled"
 msgid_plural "Triggers enabled"
@@ -21392,10 +21290,6 @@ msgid "Trigger prototype deleted"
 msgid_plural "Trigger prototypes deleted"
 msgstr[0] "Prototip de trigger esborrat"
 msgstr[1] "S'han esborrat els prototips de triggers"
-
-#: app/controllers/CControllerPopup.php:62
-msgid "Trigger prototype edit"
-msgstr "Edició de prototip de trigger"
 
 #: app/controllers/CControllerTriggerMassupdate.php:219
 #: app/controllers/CControllerTriggerPrototypeDisable.php:76
@@ -21706,6 +21600,14 @@ msgstr "No s'ha pogut pas recuperar l'estat de suport de la compressió de Times
 msgid "Unable to retrieve TimescaleDB version."
 msgstr "No es pot pas recuperar la versió de TimescaleDB."
 
+#: app/views/administration.housekeeping.edit.php:173
+msgid "Unable to retrieve compression support status of TimescaleDB time-series database extension for PostgreSQL."
+msgstr "No s'ha pogut recuperar l'estat de compatibilitat amb la compressió de l'extensió de base de dades de sèries temporals TimescaleDB per a PostgreSQL."
+
+#: app/views/administration.housekeeping.edit.php:178
+msgid "Unable to retrieve version of TimescaleDB time-series database extension for PostgreSQL."
+msgstr "No es pot recuperar la versió de l'extensió de base de dades de sèries temporals TimescaleDB per a PostgreSQL."
+
 #: include/views/mfa.login.php:65
 #, c-format
 msgid "Unable to scan? You can use %1$s secret key to manually configure your authenticator app:"
@@ -21983,6 +21885,11 @@ msgstr "La versió %1$s del servidor de bases de dades no és pas compatible. Ha
 #, c-format
 msgid "Unsupported %1$s database server version. Must not be higher than %2$s."
 msgstr "La versió %1$s del servidor de bases de dades no és pas compatible. No ha d'ésser superior a %2$s."
+
+#: app/partials/administration.system.info.php:206
+#: app/views/administration.housekeeping.edit.php:169
+msgid "Unsupported TimescaleDB time-series database extension for PostgreSQL is used."
+msgstr "S'utilitza l'extensió de base de dades de sèries temporals TimescaleDB no compatible per a PostgreSQL."
 
 #: app/views/administration.housekeeping.edit.php:190
 #, c-format
@@ -22664,10 +22571,6 @@ msgstr "Atribut de nom d'usuari"
 msgid "Users"
 msgstr "Usuaris"
 
-#: include/locales.inc.php:62
-msgid "Uzbek (uz_UZ)"
-msgstr "Uzbek (uz_UZ)"
-
 #: include/classes/data/CItemData.php:1876
 msgid "VMware Distributed Virtual Switch, \"url\" - VMware service URL. Returns JSON"
 msgstr "Switch virtual distribuït de VMware, \"url\" - URL del servei VMware. Retorna un JSON"
@@ -22799,10 +22702,6 @@ msgstr "Llistat dels magatzem de dades de l'hipervisor de VMware, \"url\" - URL 
 #: include/classes/data/CItemData.php:2156
 msgid "VMware hypervisor health state rollup sensor, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - gray; 1 - green; 2 - yellow; 3 - red"
 msgstr "Sensor acumulatiu d'estat de salut de l'hipervisor de VMware, \"url\" - URL del servei de VMware, \"uuid\" - identificador únic global de l'hipervisor de VMware. Retorna 0 - gris; 1 - verd; 2 - groc; 3 - vermell"
-
-#: include/classes/data/CItemData.php:2237
-msgid "VMware hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
-msgstr "Estat de manteniment de l'hipervisor de VMware, \"url\" - URL del servei de VMware, \"uuid\" - identificador únic global de l'hipervisor de VMware. Retorna 0 - no en manteniment; 1 - en manteniment"
 
 #: include/classes/data/CItemData.php:2051
 msgid "VMware hypervisor model, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier"
@@ -22940,10 +22839,6 @@ msgstr "Ús de memòria convidada de la màquina virtual de VMware, \"url\" - UR
 msgid "VMware virtual machine host memory usage, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Ús de memòria convidada de la màquina virtual de VMware, \"url\" - URL del servei de VMware, \"uuid\" - identificador únic global de la màquina virtual de VMware"
 
-#: include/classes/data/CItemData.php:2482
-msgid "VMware virtual machine hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
-msgstr "Estat de manteniment de l'hipervisor de màquines virtuals VMware, \"url\" - URL del servei de VMware, \"uuid\" - identificador únic global de l'hipervisor de màquines virtuals VMware. Retorna 0 - no en manteniment; 1 - en manteniment"
-
 #: include/classes/data/CItemData.php:2331
 msgid "VMware virtual machine hypervisor name, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Nom de l'hipervisor de la màquina virtual de VMware, \"url\" - URL del servei de VMware, \"uuid\" - identificador únic global de la màquina virtual de VMware"
@@ -22968,7 +22863,7 @@ msgstr "Comptador de rendiment de la màquina virtual de VMware, \"url\" - URL d
 msgid "VMware virtual machine power state, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Estat d'energia de la màquina virtual de VMware, \"url\" - URL del servei de VMware, \"uuid\" - identificador únic global de la màquina virtual de VMware"
 
-#: include/classes/data/CItemData.php:2498
+#: include/classes/data/CItemData.php:2490
 msgid "VMware virtual machine private memory size, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Mida de memòria privada de la màquina virtual de VMware, \"url\" - URL del servei de VMware, \"uuid\" - identificador únic global de la màquina virtual de VMware"
 
@@ -23410,6 +23305,11 @@ msgstr "Avís"
 msgid "Warning message"
 msgstr "Missatge d'avís"
 
+#: app/partials/administration.system.info.php:243
+#: app/partials/administration.system.info.php:262
+msgid "Warning!"
+msgstr "Avís!"
+
 #: app/partials/administration.system.info.php:198
 msgid "Warning! Support for Oracle DB is deprecated since Zabbix 7.0 and will be removed in future versions."
 msgstr "Compte! El suport per a Oracle DB és obsolet des de Zabbix 7.0 i s'esborrarà en versions posteriors."
@@ -23813,13 +23713,13 @@ msgstr "YAML"
 #: app/views/slareport.list.php:86 widgets/slareport/views/widget.edit.php:42
 #: widgets/slareport/views/widget.edit.php:43
 msgid "YYYY-MM-DD"
-msgstr "AAAA-MM-DD"
+msgstr "DD/MM/AAAA"
 
 #: app/views/maintenance.edit.php:148 app/views/maintenance.edit.php:158
 #: app/views/maintenance.timeperiod.edit.php:184
 #: app/views/popup.sla.excludeddowntime.edit.php:53
 msgid "YYYY-MM-DD hh:mm"
-msgstr "AAAA-MM-DD hh:mm"
+msgstr "DD/MM/AAAA hh:mm"
 
 #: app/views/popup.token.edit.php:103
 #: widgets/actionlog/views/widget.edit.php:48
@@ -23835,7 +23735,7 @@ msgstr "AAAA-MM-DD hh:mm"
 #: widgets/toptriggers/views/widget.edit.php:57
 #: widgets/toptriggers/views/widget.edit.php:58
 msgid "YYYY-MM-DD hh:mm:ss"
-msgstr "AAAA-MM-DD hh:mm:ss"
+msgstr "DD/MM/AAAA hh:mm:ss"
 
 #: include/classes/import/validators/C20XmlValidator.php:802
 #: include/classes/import/validators/C30XmlValidator.php:865
@@ -23851,7 +23751,7 @@ msgstr "AAAA-MM-DD hh:mm:ss"
 #: include/classes/import/validators/C62XmlValidator.php:2054
 msgctxt "XML date and time format"
 msgid "YYYY-MM-DDThh:mm:ssZ"
-msgstr "AAAA-MM-DDThh:mm:ssZ"
+msgstr "DD/MM/AAAAThh:mm:ssZ"
 
 #: app/controllers/CControllerPopupTriggerExpr.php:122
 #: include/classes/helpers/CSlaHelper.php:65 report4.php:118 report4.php:153
@@ -23939,6 +23839,10 @@ msgstr "No podeu pas canviar les plantilles per a la selecció actual."
 #: include/classes/api/services/CToken.php:436
 msgid "You do not have permission to perform this operation."
 msgstr "No teniu pas permís per realitzar aquesta operació."
+
+#: index_sso.php:337
+msgid "You have been authorized via Single sign-on (SSO), but logging in to Zabbix failed."
+msgstr "Heu estat autoritzat mitjançant l'inici de sessió únic (SSO), però no s'ha pogut iniciar la sessió a Zabbix."
 
 #: include/classes/core/ZBase.php:759 include/func.inc.php:1686
 msgid "You have no permissions to access this page."
@@ -24219,22 +24123,22 @@ msgstr "abs() - Valor absolut"
 msgid "acos() - The arccosine of a value as an angle, expressed in radians"
 msgstr "acos() - L'arccosinus d'un valor com a angle, expressat en radians"
 
-#: include/classes/api/services/CDRule.php:773
+#: include/classes/api/services/CDRule.php:774
 #, c-format
 msgid "action \"%1$s\" uses this discovery check"
 msgstr "l'acció \"%1$s\" empra aquesta comprovació de descoberta"
 
-#: include/classes/api/services/CDRule.php:980
+#: include/classes/api/services/CDRule.php:981
 #, c-format
 msgid "action \"%1$s\" uses this discovery rule"
 msgstr "l'acció \"%1$s\" empra aquesta regla de descoberta"
 
-#: include/classes/api/services/CHost.php:1632
+#: include/classes/api/services/CHost.php:1637
 #, c-format
 msgid "action \"%1$s\" uses this host"
 msgstr "l'acció \"%1$s\" empra aquest equip"
 
-#: include/classes/api/services/CHostGroup.php:768
+#: include/classes/api/services/CHostGroup.php:770
 #, c-format
 msgid "action \"%1$s\" uses this host group"
 msgstr "l'acció \"%1$s\" empra aquest grup d'equips"
@@ -24244,7 +24148,7 @@ msgstr "l'acció \"%1$s\" empra aquest grup d'equips"
 msgid "action \"%1$s\" uses this service"
 msgstr "l'acció \"%1$s\" empra aquest servei"
 
-#: include/classes/api/services/CTemplate.php:806
+#: include/classes/api/services/CTemplate.php:810
 #, c-format
 msgid "action \"%1$s\" uses this template"
 msgstr "l'acció \"%1$s\" empra aquesta plantilla"
@@ -25279,10 +25183,6 @@ msgstr "nom del grup d'equips no vàlid"
 msgid "invalid host name"
 msgstr "nom d'equip no vàlid"
 
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-msgid "invalid inventory field"
-msgstr "camp d'inventari no vàlid"
-
 #: include/classes/validators/CHistFunctionValidator.php:82
 #: include/classes/validators/CMathFunctionValidator.php:86
 #, c-format
@@ -25605,11 +25505,6 @@ msgstr "monodec() - Comprova la disminució contínua del valor de l'element (1 
 #: app/controllers/CControllerPopupTriggerExpr.php:858
 msgid "monoinc() - Check for continuous item value increase (1 - data is monotonic, 0 - otherwise), Mode (strict - require strict monotonicity)"
 msgstr "monoinc() - Comproveu l'augment continu del valor de l'element (1 - les dades són monòtones, 0 - en cas contrari), Mode (strict - requereix una monotonia estricta)"
-
-#: widgets/hostcard/views/widget.view.php:157
-#: widgets/hostcard/views/widget.view.php:338
-msgid "more"
-msgstr "més"
 
 #: include/func.inc.php:571
 msgctxt "millisecond short"

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -114,14 +114,8 @@ $popup_parameters = [
 	'context' => $data['context']
 ];
 
-$return_url = (new CUrl('zabbix.php'))
-	->setArgument('action', 'trigger.prototype.list')
-	->setArgument('context', $data['context']);
-
 if (array_key_exists('parent_discoveryid', $data)) {
 	$popup_parameters['parent_discoveryid'] = $data['parent_discoveryid'];
-
-	$return_url->setArgument('parent_discoveryid', $data['parent_discoveryid']);
 }
 
 if ($data['hostid']) {
@@ -137,10 +131,7 @@ $trigger_form
 			'dependencies' => $data['db_dependencies'],
 			'action' => 'trigger.prototype.edit',
 			'context' => $data['context'],
-			'db_trigger' => $data['db_trigger'],
-			'return_url' => $return_url->getUrl(),
-			'overlayid' => 'trigger.prototype.edit',
-			'parent_discoveryid' => array_key_exists('parent_discoveryid', $data) ? $data['parent_discoveryid'] : null
+			'db_trigger' => $data['db_trigger']
 		]).');'))->setOnDocumentReady()
 	);
 
@@ -149,8 +140,7 @@ $output = [
 	'doc_url' => CDocHelper::getUrl(CDocHelper::DATA_COLLECTION_TRIGGER_PROTOTYPE_EDIT),
 	'body' => $trigger_form->toString(),
 	'buttons' => $buttons,
-	'script_inline' => getPagePostJs().$this->readJsFile('trigger.edit.js.php'),
-	'dialogue_class' => 'modal-popup-large'
+	'script_inline' => getPagePostJs().$this->readJsFile('trigger.edit.js.php')
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

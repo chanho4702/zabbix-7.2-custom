@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -88,27 +88,15 @@ class CControllerTriggerPrototypeList extends CController {
 			'sortorder' => $sort_order
 		];
 
-		[$lld] = API::DiscoveryRule()->get([
-			'output' => ['hostid'],
-			'selectHosts' => ['status'],
-			'itemids' => $this->getInput('parent_discoveryid'),
-			'editable' => true
-		]);
+		$options = [
+			'editable' => true,
+			'output' => ['triggerid', $sort_field],
+			'discoveryids' => $data['parent_discoveryid'],
+			'sortfield' => $sort_field,
+			'limit' => CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT) + 1
+		];
 
-		$context = $this->getInput('context');
-		$is_template_lld = $lld['hosts'][0]['status'] == HOST_STATUS_TEMPLATE;
-
-		if (($context === 'template' && $is_template_lld) || ($context === 'host' && !$is_template_lld)) {
-			$options = [
-				'editable' => true,
-				'output' => ['triggerid', $sort_field],
-				'discoveryids' => $data['parent_discoveryid'],
-				'sortfield' => $sort_field,
-				'limit' => CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT) + 1
-			];
-
-			$data['triggers'] = API::TriggerPrototype()->get($options);
-		}
+		$data['triggers'] = API::TriggerPrototype()->get($options);
 
 		order_result($data['triggers'], $sort_field, $sort_order);
 

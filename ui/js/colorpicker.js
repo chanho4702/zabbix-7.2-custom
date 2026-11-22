@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -61,20 +61,20 @@ const ZBX_TEXTAREA_COLOR_WIDTH = 96;
 		 * @param {string} color
 		 */
 		setPreviewColor = function (color) {
-			color = `#${color.toString().trim().toUpperCase()}`;
+			color = $.trim(color).toUpperCase();
 
-			if (isColorHex(color)) {
-				$overlay_colorbox
-					.css({'background': color})
-					.attr('title', color)
-					.removeClass(['use-default', 'use-transparent']);
-			}
-			else if (input.data('use_default')) {
+			if (input.data('use_default') && color.length == 0) {
 				$overlay_colorbox
 					.css({'background': ''})
 					.attr('title', t('Use default'))
 					.addClass('use-default')
 					.removeClass('use-transparent');
+			}
+			else if (/^[0-9A-F]{6}$/i.test(color)) {
+				$overlay_colorbox
+					.css({'background': '#' + color})
+					.attr('title', '#' + color)
+					.removeClass(['use-default', 'use-transparent']);
 			}
 			else {
 				$overlay_colorbox
@@ -279,8 +279,8 @@ const ZBX_TEXTAREA_COLOR_WIDTH = 96;
 
 				addToOverlaysStack('color_picker', target, 'color_picker');
 
-				Overlay.prototype.recoverFocus.call({'$dialogue': overlay});
-				Overlay.prototype.containFocus.call({'$dialogue': overlay});
+				Focuser.recoverFocus(overlay[0]);
+				Focuser.containFocus(overlay[0]);
 			},
 			/**
 			 * Set color as background color value of colorbox and as value for input.
@@ -288,20 +288,20 @@ const ZBX_TEXTAREA_COLOR_WIDTH = 96;
 			 * @param string color    Desired hex color.
 			 */
 			set_color: function(color) {
-				color = color.toString().trim().toUpperCase();
+				color = $.trim(color).toUpperCase();
 
-				if (isColorHex(`#${color}`)) {
-					colorbox
-						.css({'background': `#${color}`})
-						.attr('title', `#${color}`)
-						.removeClass(['use-default', 'use-transparent']);
-				}
-				else if (input.data('use_default')) {
+				if (input.data('use_default') && color.length == 0) {
 					colorbox
 						.css({'background': ''})
 						.attr('title', t('Use default'))
 						.addClass('use-default')
 						.removeClass('use-transparent');
+				}
+				else if (/^[0-9A-F]{6}$/i.test(color)) {
+					colorbox
+						.css({'background': '#' + color})
+						.attr('title', '#' + color)
+						.removeClass(['use-default', 'use-transparent']);
 				}
 				else {
 					colorbox

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -43,7 +43,8 @@ function DBconnect(&$error) {
 
 	$db_types = [
 		ZBX_DB_MYSQL => MysqlDbBackend::class,
-		ZBX_DB_POSTGRESQL => PostgresqlDbBackend::class
+		ZBX_DB_POSTGRESQL => PostgresqlDbBackend::class,
+		ZBX_DB_ORACLE => OracleDbBackend::class
 	];
 
 	if (!array_key_exists($DB['TYPE'], $db_types)) {
@@ -75,7 +76,7 @@ function DBconnect(&$error) {
 	return true;
 }
 
-function DBclose(): bool {
+function DBclose() {
 	global $DB;
 
 	$result = false;
@@ -88,30 +89,44 @@ function DBclose(): bool {
 			case ZBX_DB_POSTGRESQL:
 				$result = pg_close($DB['DB']);
 				break;
+			case ZBX_DB_ORACLE:
+				$result = oci_close($DB['DB']);
+				break;
 		}
 	}
 	unset($DB['DB']);
-
 	return $result;
 }
 
-function DBstart(): bool {
+function DBstart() {
 	global $DB;
+
+	$result = false;
 
 	if ($DB['TRANSACTIONS'] != 0) {
 		info('POSSIBLE ERROR: Used incorrect logic in database processing, started subtransaction!');
-
-		return false;
+		return $result;
 	}
 
 	$DB['TRANSACTIONS']++;
 	$DB['TRANSACTION_NO_FAILED_SQLS'] = true;
 
 	if (!isset($DB['DB']) || empty($DB['DB'])) {
-		return false;
+		return $result;
 	}
 
-	return DBexecute('BEGIN');
+	switch ($DB['TYPE']) {
+		case ZBX_DB_MYSQL:
+			$result = DBexecute('BEGIN');
+			break;
+		case ZBX_DB_POSTGRESQL:
+			$result = DBexecute('BEGIN');
+			break;
+		case ZBX_DB_ORACLE:
+			$result = true;
+			break;
+	}
+	return $result;
 }
 
 /**
@@ -149,12 +164,42 @@ function DBend($doCommit = true) {
 	return (!is_null($doCommit) && $DBresult) ? $doCommit : $DBresult;
 }
 
-function DBcommit(): bool {
-	return DBexecute('COMMIT');
+function DBcommit() {
+	global $DB;
+
+	$result = false;
+
+	switch ($DB['TYPE']) {
+		case ZBX_DB_MYSQL:
+			$result = DBexecute('COMMIT');
+			break;
+		case ZBX_DB_POSTGRESQL:
+			$result = DBexecute('COMMIT');
+			break;
+		case ZBX_DB_ORACLE:
+			$result = oci_commit($DB['DB']);
+			break;
+	}
+	return $result;
 }
 
-function DBrollback(): bool {
-	return DBexecute('ROLLBACK');
+function DBrollback() {
+	global $DB;
+
+	$result = false;
+
+	switch ($DB['TYPE']) {
+		case ZBX_DB_MYSQL:
+			$result = DBexecute('ROLLBACK');
+			break;
+		case ZBX_DB_POSTGRESQL:
+			$result = DBexecute('ROLLBACK');
+			break;
+		case ZBX_DB_ORACLE:
+			$result = oci_rollback($DB['DB']);
+			break;
+	}
+	return $result;
 }
 
 /**
@@ -164,25 +209,23 @@ function DBrollback(): bool {
  * DBselect('select * from users')
  * DBselect('select * from users',50,200)
  *
- * @param string   $query
- * @param int|null $limit   Maximum number of records to return.
- * @param int      $offset  Return starting from $offset record.
+ * @param string $query
+ * @param int $limit    max number of record to return
+ * @param int $offset   return starting from $offset record
  *
  * @return resource|false
  */
-function DBselect(string $query, ?int $limit = null, int $offset = 0) {
+function DBselect($query, $limit = null, $offset = 0) {
 	global $DB;
 
 	if (!array_key_exists('DB', $DB) || $DB['DB'] === null) {
 		return false;
 	}
 
-	if ($limit !== null) {
-		$query .= ' LIMIT '.$limit;
+	$query = DBaddLimit($query, $limit, $offset);
 
-		if ($offset != 0) {
-			$query .= ' OFFSET '.$offset;
-		}
+	if ($query === false) {
+		return false;
 	}
 
 	$time_start = microtime(true);
@@ -208,6 +251,23 @@ function DBselect(string $query, ?int $limit = null, int $offset = 0) {
 			}
 
 			break;
+
+		case ZBX_DB_ORACLE:
+			$result = oci_parse($DB['DB'], $query);
+
+			if ($result === false) {
+				$e = oci_error();
+				trigger_error('SQL error ['.$e['message'].'] in ['.$e['sqltext'].']', E_USER_WARNING);
+
+				break;
+			}
+
+			if (!@oci_execute($result, ($DB['TRANSACTIONS'] ? OCI_DEFAULT : OCI_COMMIT_ON_SUCCESS))) {
+				$e = oci_error($result);
+				trigger_error('SQL error ['.$e['message'].'] in ['.$e['sqltext'].']', E_USER_WARNING);
+			}
+
+			break;
 	}
 
 	if (!$result) {
@@ -220,6 +280,59 @@ function DBselect(string $query, ?int $limit = null, int $offset = 0) {
 	}
 
 	return $result;
+}
+
+/**
+ * Add the LIMIT clause to the given query.
+ *
+ * NOTE:
+ * LIMIT and OFFSET records
+ *
+ * Example: select 6-15 row.
+ *
+ * MySQL:
+ * SELECT a FROM tbl LIMIT 5,10
+ * SELECT a FROM tbl LIMIT 10 OFFSET 5
+ *
+ * PostgreSQL:
+ * SELECT a FROM tbl LIMIT 10 OFFSET 5
+ *
+ * Oracle:
+ * SELECT a FROM tbl WHERE rownum < 15 // ONLY < 15
+ * SELECT * FROM (SELECT * FROM tbl) WHERE rownum BETWEEN 6 AND 15
+ *
+ * @param $query
+ * @param int $limit    max number of record to return
+ * @param int $offset   return starting from $offset record
+ *
+ * @return bool|string
+ */
+function DBaddLimit($query, $limit = 0, $offset = 0) {
+	global $DB;
+
+	if ((isset($limit) && ($limit < 0 || !zbx_ctype_digit($limit))) || $offset < 0 || !zbx_ctype_digit($offset)) {
+		$moreDetails = isset($limit) ? ' Limit ['.$limit.'] Offset ['.$offset.']' : ' Offset ['.$offset.']';
+		error('Incorrect parameters for limit and/or offset. Query ['.$query.']'.$moreDetails, true);
+
+		return false;
+	}
+
+	// Process limit and offset
+	if (isset($limit)) {
+		switch ($DB['TYPE']) {
+			case ZBX_DB_MYSQL:
+			case ZBX_DB_POSTGRESQL:
+				$query .= ' LIMIT '.intval($limit);
+				$query .= $offset != 0 ? ' OFFSET '.intval($offset) : '';
+				break;
+			case ZBX_DB_ORACLE:
+				$till = $offset + $limit;
+				$query = 'SELECT * FROM ('.$query.') WHERE rownum BETWEEN '.intval($offset).' AND '.intval($till);
+				break;
+		}
+	}
+
+	return $query;
 }
 
 /**
@@ -254,6 +367,18 @@ function DBexecute($query): bool {
 		case ZBX_DB_POSTGRESQL:
 			if (!$result = (bool) pg_query($DB['DB'], $query)) {
 				error('Error in query ['.$query.'] ['.pg_last_error($DB['DB']).']', true);
+			}
+
+			break;
+
+		case ZBX_DB_ORACLE:
+			$handle = oci_parse($DB['DB'], $query);
+
+			$result = $handle && @oci_execute($handle, $DB['TRANSACTIONS'] ? OCI_DEFAULT : OCI_COMMIT_ON_SUCCESS);
+
+			if (!$result) {
+				$error = $handle ? oci_error($handle) : oci_error();
+				error('SQL error ['.$error['message'].'] in ['.$error['sqltext'].']', true);
 			}
 
 			break;
@@ -311,6 +436,28 @@ function DBfetch($cursor, $convertNulls = true) {
 			}
 			else {
 				pg_free_result($cursor);
+			}
+
+			break;
+
+		case ZBX_DB_ORACLE:
+			if ($row = oci_fetch_assoc($cursor)) {
+				$result = [];
+
+				foreach ($row as $key => $value) {
+					$field_type = strtolower(oci_field_type($cursor, $key));
+
+					// Since Oracle reports nulls for empty strings, convert those back to empty strings.
+					$value = (str_in_array($field_type, ['varchar', 'varchar2', 'blob', 'clob']) && is_null($value))
+						? ''
+						: $value;
+
+					if (is_object($value) && (strpos($field_type, 'lob') !== false)) {
+						$value = $value->load();
+					}
+
+					$result[strtolower($key)] = $value;
+				}
 			}
 
 			break;
@@ -394,6 +541,7 @@ function get_dbid($table, $field) {
 }
 
 function zbx_db_search($table, $options, &$sql_parts) {
+	global $DB;
 	list($table, $tableShort) = explode(' ', $table);
 
 	$tableSchema = DB::getSchema($table);
@@ -429,7 +577,14 @@ function zbx_db_search($table, $options, &$sql_parts) {
 				? $start.$pattern.'%'
 				: str_replace('*', '%', $pattern);
 
-			$pattern = zbx_dbstr($pattern);
+			if ($DB['TYPE'] == ZBX_DB_ORACLE && $tableSchema['fields'][$field]['type'] & DB::FIELD_TYPE_NCLOB
+					&& strlen($pattern) > ORACLE_MAX_STRING_SIZE) {
+				$chunks = zbx_dbstr(DB::chunkMultibyteStr($pattern, ORACLE_MAX_STRING_SIZE));
+				$pattern = 'TO_NCLOB('.implode(') || TO_NCLOB(', $chunks).')';
+			}
+			else {
+				$pattern = zbx_dbstr($pattern);
+			}
 
 			$fieldSearch[] = DB::uppercaseField($field, $table, $tableShort).$exclude.' LIKE '.$pattern." ESCAPE '!'";
 		}
@@ -483,60 +638,99 @@ function check_db_fields($dbFields, &$args) {
  *
  * @param string $field_name
  * @param array  $values
- * @param bool   $not_in        Create inverse condition.
- * @param bool   $zero_to_null  Cast zero to null.
+ * @param bool   $not_in              Create inverse condition.
+ * @param bool   $zero_includes_null  ID fields may have default DB column value either null or 0. Consider them
+ *                                    equivalent for 0 in the given values.
  *
  * @return string
  */
-function dbConditionInt($field_name, array $values, $not_in = false, $zero_to_null = false) {
+function dbConditionInt($field_name, array $values, $not_in = false, $zero_includes_null = false) {
+	global $DB;
+
+	$MIN_NUM_BETWEEN = 4; // Minimum number of consecutive values for using "BETWEEN <id1> AND <idN>".
+	$MAX_NUM_IN = 950; // Maximum number of values for using "IN (<id1>,<id2>,...,<idN>)".
+
 	if (is_bool(reset($values))) {
 		return $not_in ? '1=1' : '1=0';
 	}
 
 	$values = array_flip($values);
 
-	$has_zero = false;
+	$condition = '';
 
-	if ($zero_to_null && array_key_exists(0, $values)) {
-		$has_zero = true;
-		unset($values[0]);
+	if ($zero_includes_null && array_key_exists(0, $values)) {
+		$condition .= $field_name.($not_in ? ' IS NOT NULL' : ' IS NULL');
 	}
 
 	$values = array_keys($values);
 	natsort($values);
 	$values = array_values($values);
 
-	$singles = array_map(function($value) {
-		return dbQuoteInt($value);
-	}, $values);
+	$intervals = [];
+	$singles = [];
 
-	$condition = '';
+	if ($DB['TYPE'] == ZBX_DB_ORACLE) {
+		// For better performance, use "BETWEEN" constructs for sequential integer values, for Oracle database.
 
-	// Limit maximum number of values for using in "IN (<id1>,<id2>,...,<idN>)".
-	$single_chunks = array_chunk($singles, 950);
+		for ($i = 0, $size = count($values); $i < $size; $i++) {
+			if ($i + $MIN_NUM_BETWEEN < $size && bcsub($values[$i + $MIN_NUM_BETWEEN], $values[$i]) == $MIN_NUM_BETWEEN) {
+				$interval_first = $values[$i];
+
+				// Search for the last sequential integer value.
+				for ($i += $MIN_NUM_BETWEEN; $i < $size && bcsub($values[$i], $values[$i - 1]) == 1; $i++);
+				$i--;
+
+				$interval_last = $values[$i];
+
+				// Save the first and last values of the sequential interval.
+				$intervals[] = [dbQuoteInt($interval_first), dbQuoteInt($interval_last)];
+			}
+			else {
+				$singles[] = dbQuoteInt($values[$i]);
+			}
+		}
+	}
+	else {
+		// For better performance, use only "IN" constructs all other databases, except Oracle.
+
+		$singles = array_map(function($value) {
+			return dbQuoteInt($value);
+		}, $values);
+	}
+
+	$multiple_conditions = false;
+
+	// Process intervals.
+
+	foreach ($intervals as $interval) {
+		if ($condition !== '') {
+			$condition .= $not_in ? ' AND ' : ' OR ';
+			$multiple_conditions = true;
+		}
+
+		$condition .= ($not_in ? 'NOT ' : '').$field_name.' BETWEEN '.$interval[0].' AND '.$interval[1];
+	}
+
+	// Process individual values.
+
+	$single_chunks = $DB['TYPE'] === ZBX_DB_ORACLE ? array_chunk($singles, $MAX_NUM_IN) : [$singles];
 
 	foreach ($single_chunks as $chunk) {
 		if ($condition !== '') {
 			$condition .= $not_in ? ' AND ' : ' OR ';
+			$multiple_conditions = true;
 		}
 
-		$condition .= count($chunk) == 1
-			? $field_name.($not_in ? '!=' : '=').$chunk[0]
-			: $field_name.($not_in ? ' NOT' : '').' IN ('.implode(',', $chunk).')';
+		if (count($chunk) == 1) {
+			$condition .= $field_name.($not_in ? '!=' : '=').$chunk[0];
+		}
+		else {
+			$condition .= $field_name.($not_in ? ' NOT' : '').' IN ('.implode(',', $chunk).')';
+		}
 	}
 
-	if ($has_zero) {
-		if ($condition !== '') {
-			$condition .= $not_in ? ' AND ' : ' OR ';
-		}
-
-		$condition .= $field_name.($not_in ? ' IS NOT NULL' : ' IS NULL');
-	}
-
-	if (!$not_in) {
-		if ((int) $has_zero + count($single_chunks) > 1) {
-			$condition = '('.$condition.')';
-		}
+	if (!$not_in && $multiple_conditions) {
+		$condition = '('.$condition.')';
 	}
 
 	return $condition;
@@ -565,9 +759,11 @@ function dbConditionId($fieldName, array $values, $notIn = false) {
  * @return string
  */
 function dbConditionString($fieldName, array $values, $notIn = false) {
+	global $DB;
+
 	switch (count($values)) {
 		case 0:
-			return '1=0';
+			return $notIn ? '1=1' : '1=0';
 		case 1:
 			return $notIn
 				? $fieldName.'!='.zbx_dbstr(reset($values))
@@ -576,7 +772,7 @@ function dbConditionString($fieldName, array $values, $notIn = false) {
 
 	$in = $notIn ? ' NOT IN ' : ' IN ';
 	$concat = $notIn ? ' AND ' : ' OR ';
-	$items = array_chunk($values, 950);
+	$items = $DB['TYPE'] === ZBX_DB_ORACLE ? array_chunk($values, 950) : [$values];
 
 	$condition = '';
 	foreach ($items as $values) {
@@ -601,7 +797,8 @@ function dbQuoteInt($value) {
 }
 
 /**
- * Return SQL for COALESCE like select.
+ * Return SQL for COALESCE like select. For fields with type NCHAR, NVARCHAR or NTEXT in Oracle NVL should be used
+ * instead of COALESCE because it will not check that all arguments have same type.
  *
  * @param string     $field_name       Field name to be used in returned query part.
  * @param int|string $default_value    Default value to be returned.
@@ -609,11 +806,13 @@ function dbQuoteInt($value) {
  * @return string
  */
 function dbConditionCoalesce($field_name, $default_value, $alias = '') {
+	global $DB;
+
 	if (is_string($default_value)) {
 		$default_value = ($default_value == '') ? '\'\'' : zbx_dbstr($default_value);
 	}
 
-	$query = 'COALESCE('.$field_name.','.$default_value.')';
+	$query = (($DB['TYPE'] == ZBX_DB_ORACLE) ? 'NVL(' : 'COALESCE(').$field_name.','.$default_value.')';
 
 	if ($alias) {
 		$query .= ' AS '.$alias;
@@ -691,6 +890,7 @@ function pg_connect_escape($string) {
 
 /**
  * Escape string for safe usage in SQL queries.
+ * Works for mysql, oracle, postgresql.
  *
  * @param array|string $var
  *
@@ -713,6 +913,15 @@ function zbx_dbstr($var) {
 			}
 			return "'".mysqli_real_escape_string($DB['DB'], $var)."'";
 
+		case ZBX_DB_ORACLE:
+			if (is_array($var)) {
+				foreach ($var as $vnum => $value) {
+					$var[$vnum] = "'".preg_replace('/\'/', '\'\'', $value)."'";
+				}
+				return $var;
+			}
+			return "'".preg_replace('/\'/','\'\'',$var)."'";
+
 		case ZBX_DB_POSTGRESQL:
 			if (is_array($var)) {
 				foreach ($var as $vnum => $value) {
@@ -728,7 +937,8 @@ function zbx_dbstr($var) {
 }
 
 /**
- * Creates DB dependent string with SQL expression that casts passed value to bigint.
+ * Creates db dependent string with sql expression that casts passed value to bigint.
+ * Works for mysql, oracle, postgresql.
  *
  * @param int $field
  *
@@ -747,6 +957,9 @@ function zbx_dbcast_2bigint($field) {
 
 		case ZBX_DB_MYSQL:
 			return 'CAST('.$field.' AS UNSIGNED)';
+
+		case ZBX_DB_ORACLE:
+			return 'CAST('.$field.' AS NUMBER(20))';
 
 		default:
 			return false;

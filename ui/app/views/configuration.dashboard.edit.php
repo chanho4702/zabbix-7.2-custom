@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,7 @@
  * @var array $data
  */
 
+$this->addJsFile('class.calendar.js');
 $this->addJsFile('class.cnavtree.js');
 $this->addJsFile('class.coverride.js');
 $this->addJsFile('class.crangecontrol.js');
@@ -26,8 +27,10 @@ $this->addJsFile('class.csvggraph.js');
 $this->addJsFile('class.dashboard.js');
 $this->addJsFile('class.dashboard.page.js');
 $this->addJsFile('class.dashboard.widget.placeholder.js');
+$this->addJsFile('class.form.fieldset.collapsible.js');
 $this->addJsFile('class.svg.canvas.js');
 $this->addJsFile('class.svg.map.js');
+$this->addJsFile('class.tagfilteritem.js');
 $this->addJsFile('class.widgets-data.js');
 $this->addJsFile('class.widget-base.js');
 $this->addJsFile('class.widget.js');

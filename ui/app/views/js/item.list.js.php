@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -27,18 +27,18 @@
 <script>
 	const view = new class {
 
-		init({context, confirm_messages, field_switches, form_name, hostid, token}) {
+		init({context, confirm_messages, field_switches, form_name, hostids, token, filter_values}) {
 			this.confirm_messages = confirm_messages;
 			this.token = token;
 			this.context = context;
-			this.hostid = hostid;
+			this.hostids = hostids;
 
 			this.form = document.forms[form_name];
 			this.filter_form = document.querySelector('form[name="zbx_filter"]');
 
 			this.initForm(field_switches);
 			this.initEvents();
-			this.#initPopupListeners();
+			this._init_filter_values = this.getInitFilterValues(filter_values);
 		}
 
 		initForm(field_switches) {
@@ -62,19 +62,53 @@
 				const target = e.target;
 
 				if (target.matches('.link-action') && target.closest('.subfilter') !== null) {
+					const filters = {...this._init_filter_values, subfilter_set: 1};
 					const subfilter = target.closest('.subfilter');
 
-					if (subfilter.matches('.subfilter-enabled')) {
-						subfilter.querySelector('input[type="hidden"]').remove();
-						this.filter_form.submit();
-					}
-					else {
-						const name = target.getAttribute('data-name');
-						const value = target.getAttribute('data-value');
+					const key_parts = [...target.getAttribute('data-name').matchAll(/[^\[\]]+|\[\]/g)];
 
-						subfilter.classList.add('subfilter-enabled');
-						submitFormWithParam('zbx_filter', name, value);
-					}
+					const update_filter = (current_filter, key_parts, i, value, remove) => {
+						const key_name = key_parts[i][0];
+
+						if (i == key_parts.length - 1) {
+							if (remove) {
+								current_filter.forEach((value, idx) => {
+									if (value == target.getAttribute('data-value')) {
+										delete current_filter[idx];
+									}
+								});
+							}
+							else {
+								current_filter.push(value);
+							}
+
+							return current_filter;
+						}
+						else {
+							if (!(key_name in current_filter)) {
+								current_filter[key_name] = [];
+							}
+
+							update_filter(current_filter[key_name], key_parts, i + 1, value, remove);
+
+							if (i == key_parts.length - 2) {
+								current_filter[key_name] = Object.values(current_filter[key_name]);
+							}
+							else {
+								current_filter[key_name] = Object.assign({}, current_filter[key_name]);
+							}
+
+							if (Object.values(current_filter[key_name]).length == 0) {
+								delete current_filter[key_name];
+							}
+						}
+					};
+
+					update_filter(filters, key_parts, 0, target.getAttribute('data-value'),
+						subfilter.matches('.subfilter-enabled')
+					);
+
+					location.href = zabbixUrl(filters);
 				}
 				else if (target.matches('[name="filter_state"]')) {
 					const disabled = e.target.getAttribute('value') != -1;
@@ -85,11 +119,49 @@
 				}
 			});
 
-			this.form.addEventListener('click', e => {
+			this.filter_form.addEventListener('submit', e => {
+				e.preventDefault();
+
+				const filters = {
+					...getFormFields(e.target),
+					filter_set: 1,
+					sort: this._init_filter_values.sort,
+					sortorder: this._init_filter_values.sortorder
+				};
+
+				Object.keys(filters).forEach(key => {
+					if (key.startsWith('subfilter_')) {
+						delete filters[key];
+					}
+				});
+
+				location.href = zabbixUrl(filters);
+			});
+
+			this.form.querySelectorAll('.list-table thead th a').forEach(link => {
+				link.addEventListener('click', e => {
+					e.preventDefault();
+
+					const search_params = new URLSearchParams(e.currentTarget.href);
+
+					const filters = {...this._init_filter_values,
+						subfilter_set: 1,
+						sort: search_params.get('sort'),
+						sortorder: search_params.get('sortorder')
+					};
+
+					location.href = zabbixUrl(filters);
+				});
+			});
+
+			this.form.addEventListener('click', (e) => {
 				const target = e.target;
 				const itemids = Object.keys(chkbxRange.getSelectedIds());
 
-				if (target.classList.contains('js-enable-item')) {
+				if (target.classList.contains('js-update-item')) {
+					this.#edit(target, {itemid: target.dataset.itemid, context: this.context});
+				}
+				else if (target.classList.contains('js-enable-item')) {
 					this.#enable(null, {itemids: [target.dataset.itemid], context: this.context});
 				}
 				else if (target.classList.contains('js-disable-item')) {
@@ -116,11 +188,51 @@
 				else if (target.classList.contains('js-massdelete-item')) {
 					this.#delete(target, {itemids: itemids, context: this.context});
 				}
+				else if (target.classList.contains('js-edit-host')) {
+					this.editHost(e, target.dataset.hostid);
+				}
+				else if (target.classList.contains('js-edit-template')) {
+					this.editTemplate(e, target.dataset.hostid);
+				}
 			});
 
-			document.querySelector('.js-create-item')?.addEventListener('click', () => {
-				ZABBIX.PopupManager.open('item.edit', {hostid: this.hostid, context: this.context});
+			document.addEventListener('click', e => {
+				const target = e.target;
+
+				if (target.classList.contains('js-create-item')) {
+					this.#edit(target, target.dataset);
+				}
+				else if (target.classList.contains('js-trigger-edit')) {
+					this.editTrigger(target.dataset);
+				}
 			});
+		}
+
+		getInitFilterValues(filter_values) {
+			filter_values.action = 'item.list';
+			filter_values.context = this.context;
+
+			const clear_keys = ['filter_set', 'filter_rst', 'page', 'subfilter_set'];
+
+			clear_keys.forEach(key => delete filter_values[key]);
+
+			return filter_values;
+		}
+
+		editItem(target, data) {
+			this.#edit(target, data);
+		}
+
+		editTrigger(trigger_data) {
+			clearMessages();
+
+			const overlay = PopUp('trigger.edit', trigger_data, {
+				dialogueid: 'trigger-edit',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
 		}
 
 		executeNow(target, data) {
@@ -128,6 +240,57 @@
 
 			curl.setArgument('action', 'item.execute');
 			this.#post(curl, data);
+		}
+
+		editHost(e, hostid) {
+			e.preventDefault();
+			const host_data = {hostid};
+
+			this.openHostPopup(host_data);
+		}
+
+		editTemplate(e, templateid) {
+			e.preventDefault();
+			const template_data = {templateid};
+
+			this.openTemplatePopup(template_data);
+		}
+
+		openHostPopup(host_data) {
+			let original_url = location.href;
+			const overlay = PopUp('popup.host.edit', host_data, {
+				dialogueid: 'host_edit',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', e => {
+				history.replaceState({}, '', original_url);
+				this.elementSuccess(e);
+			}, {once: true});
+
+			overlay.$dialogue[0].addEventListener('dialogue.close', e => history.replaceState({}, '', original_url));
+		}
+
+		openTemplatePopup(template_data) {
+			const overlay =  PopUp('template.edit', template_data, {
+				dialogueid: 'templates-form',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
+		}
+
+		#edit(target, parameters = {}) {
+			const overlay = PopUp('item.edit', parameters, {
+				dialogueid: 'item-edit',
+				dialogue_class: 'modal-popup-large',
+				trigger_element: target,
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', this.elementSuccess.bind(this), {once: true});
 		}
 
 		#enable(target, parameters) {
@@ -232,38 +395,6 @@
 				});
 		}
 
-		#initPopupListeners() {
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_SUBMIT
-				},
-				callback: ({data, descriptor, event}) => {
-					if ('error' in data.submit) {
-						if ('title' in data.submit.error) {
-							postMessageError(data.submit.error.title);
-						}
-
-						postMessageDetails('error', data.submit.error.messages);
-					}
-					else {
-						chkbxRange.clearSelectedOnFilterChange();
-					}
-
-					// If host or template was deleted while being in item list, redirect to item list.
-					if (descriptor.action !== 'item.delete' && data.submit.success.action === 'delete') {
-						const url = new URL('zabbix.php', location.href);
-
-						url.searchParams.set('action', 'item.list');
-						url.searchParams.set('context', this.context);
-						url.searchParams.set('filter_set', 1);
-
-						event.setRedirectUrl(url.href);
-					}
-				}
-			});
-		}
-
 		elementSuccess(e) {
 			let new_href = location.href;
 			const response = e.detail;
@@ -289,7 +420,6 @@
 
 					list_url.setArgument('action', 'item.list');
 					list_url.setArgument('context', this.context);
-					list_url.setArgument('filter_set', 1);
 					new_href = list_url.getUrl();
 				}
 			}

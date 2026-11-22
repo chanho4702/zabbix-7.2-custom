@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -23,8 +23,7 @@ $form = (new CForm())
 	->addItem((new CVar(CSRF_TOKEN_NAME, CCsrfTokenHelper::get('module')))->removeId())
 	->setName('module-form')
 	->addVar('moduleid', $data['moduleid'])
-	->addItem((new CSubmitButton())->addClass(ZBX_STYLE_FORM_SUBMIT_HIDDEN))
-	->setAttribute('autofocus', 'autofocus');
+	->addItem((new CSubmitButton())->addClass(ZBX_STYLE_FORM_SUBMIT_HIDDEN));
 
 $module_form = (new CFormGrid())
 	->addItem([
@@ -84,8 +83,7 @@ $output = [
 			'action' => 'module_edit.submit();'
 		]
 	],
-	'script_inline' => getPagePostJs().$this->readJsFile('module.edit.js.php'),
-	'dialogue_class' => 'modal-popup-medium'
+	'script_inline' => getPagePostJs().$this->readJsFile('module.edit.js.php')
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

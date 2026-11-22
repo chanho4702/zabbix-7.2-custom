@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,6 +20,8 @@
  */
 
 $this->includeJsFile('administration.script.list.js.php');
+$this->addJsFile('multilineinput.js');
+$this->addJsFile('class.form.fieldset.collapsible.js');
 
 if ($data['uncheck']) {
 	uncheckTableRows('script');
@@ -106,15 +108,11 @@ foreach ($data['scripts'] as $script) {
 				$action_count_total = (new CSpan($script['action_count_total']))->addClass(ZBX_STYLE_ENTITY_COUNT);
 
 				foreach ($script['actions'] as $action) {
-					$action_url = (new CUrl('zabbix.php'))
-						->setArgument('action', 'popup')
-						->setArgument('popup', 'action.edit')
-						->setArgument('actionid', $action['actionid'])
-						->setArgument('eventsource', $action['eventsource'])
-						->getUrl();
-
 					$actions[] = $action['is_editable']
-						? (new CLink($action['name'], $action_url))
+						? (new CLink($action['name']))
+							->addClass('js-action-edit')
+							->setAttribute('data-actionid', $action['actionid'])
+							->setAttribute('data-eventsource', $action['eventsource'])
 							->addClass(ZBX_STYLE_LINK_ALT)
 							->addClass(ZBX_STYLE_GREY)
 						: (new CSpan($action['name']))->addClass(ZBX_STYLE_GREY);
@@ -183,13 +181,9 @@ foreach ($data['scripts'] as $script) {
 		$execute_on = '';
 	}
 
-	$script_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'script.edit')
-		->setArgument('scriptid', $script['scriptid'])
-		->getUrl();
-
-	$link = new CLink($script['name'], $script_url);
+	$link = (new CLink($script['name']))
+		->addClass('js-edit')
+		->setAttribute('data-scriptid', $script['scriptid']);
 
 	$scriptsTable->addRow([
 		new CCheckBox('scriptids['.$script['scriptid'].']', $script['scriptid']),

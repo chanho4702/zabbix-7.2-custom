@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -22,36 +22,27 @@ window.widget_item_form = new class {
 
 	#is_item_numeric = false;
 
-	/**
-	 * @type {HTMLFormElement}
-	 */
-	#form;
-
 	init({thresholds_colors}) {
-		this.#form = document.getElementById('widget-dialogue-form');
+		this._form = document.getElementById('widget-dialogue-form');
 
 		this._show_description = document.getElementById(`show_${<?= Widget::SHOW_DESCRIPTION ?>}`);
 		this._show_value = document.getElementById(`show_${<?= Widget::SHOW_VALUE ?>}`);
 		this._show_time = document.getElementById(`show_${<?= Widget::SHOW_TIME ?>}`);
 		this._show_change_indicator = document.getElementById(`show_${<?= Widget::SHOW_CHANGE_INDICATOR ?>}`);
-		this._show_sparkline = document.getElementById(`show_${<?= Widget::SHOW_SPARKLINE ?>}`);
 
 		this._units_show = document.getElementById('units_show');
 
 		jQuery('#itemid').on('change', () => {
 			this.#promiseGetItemType()
 				.then((type) => {
-					if (this.#form.isConnected) {
+					if (this._form.isConnected) {
 						this.#is_item_numeric = type !== null && this.#isItemValueTypeNumeric(type);
 						this.updateForm();
 					}
 				});
 		});
 
-		const colorpickers = this.#form
-			.querySelectorAll('.<?= ZBX_STYLE_COLOR_PICKER ?> input:not([name="sparkline[color]"])');
-
-		for (const colorpicker of colorpickers) {
+		for (const colorpicker of this._form.querySelectorAll('.<?= ZBX_STYLE_COLOR_PICKER ?> input')) {
 			$(colorpicker).colorpicker({
 				appendTo: ".overlay-dialogue-body",
 				use_default: !colorpicker.name.includes('thresholds'),
@@ -61,9 +52,7 @@ window.widget_item_form = new class {
 			});
 		}
 
-		const show = [this._show_description, this._show_value, this._show_time, this._show_change_indicator,
-			this._show_sparkline
-		];
+		const show = [this._show_description, this._show_value, this._show_time, this._show_change_indicator];
 
 		for (const checkbox of show) {
 			checkbox.addEventListener('change', () => this.updateForm());
@@ -79,7 +68,7 @@ window.widget_item_form = new class {
 
 		this.#promiseGetItemType()
 			.then((type) => {
-				if (this.#form.isConnected) {
+				if (this._form.isConnected) {
 					this.#is_item_numeric = type !== null && this.#isItemValueTypeNumeric(type);
 					this.updateForm();
 				}
@@ -89,7 +78,7 @@ window.widget_item_form = new class {
 	updateForm() {
 		const aggregate_function = document.getElementById('aggregate_function');
 
-		for (const element of this.#form.querySelectorAll('.fields-group-description')) {
+		for (const element of this._form.querySelectorAll('.fields-group-description')) {
 			element.style.display = this._show_description.checked ? '' : 'none';
 
 			for (const input of element.querySelectorAll('input, textarea')) {
@@ -97,7 +86,7 @@ window.widget_item_form = new class {
 			}
 		}
 
-		for (const element of this.#form.querySelectorAll('.fields-group-value')) {
+		for (const element of this._form.querySelectorAll('.fields-group-value')) {
 			element.style.display = this._show_value.checked ? '' : 'none';
 
 			for (const input of element.querySelectorAll('input')) {
@@ -109,7 +98,7 @@ window.widget_item_form = new class {
 			element.disabled = !this._show_value.checked || !document.getElementById('units_show').checked;
 		}
 
-		for (const element of this.#form.querySelectorAll('.fields-group-time')) {
+		for (const element of this._form.querySelectorAll('.fields-group-time')) {
 			element.style.display = this._show_time.checked ? '' : 'none';
 
 			for (const input of element.querySelectorAll('input')) {
@@ -117,7 +106,7 @@ window.widget_item_form = new class {
 			}
 		}
 
-		for (const element of this.#form.querySelectorAll('.fields-group-change-indicator')) {
+		for (const element of this._form.querySelectorAll('.fields-group-change-indicator')) {
 			element.style.display = this._show_change_indicator.checked ? '' : 'none';
 
 			for (const input of element.querySelectorAll('input')) {
@@ -125,17 +114,7 @@ window.widget_item_form = new class {
 			}
 		}
 
-		for (const element of this.#form.querySelectorAll('.js-sparkline-row')) {
-			element.style.display = this._show_sparkline.checked ? '' : 'none';
-
-			for (const input of element.querySelectorAll('input')) {
-				input.disabled = !this._show_sparkline.checked;
-			}
-		}
-
-		this.#form.fields['sparkline[time_period]'].disabled = !this._show_sparkline.checked;
-
-		this.#form.fields.time_period.hidden = aggregate_function.value == <?= AGGREGATE_NONE ?>;
+		this._form.fields.time_period.hidden = aggregate_function.value == <?= AGGREGATE_NONE ?>;
 
 		const aggregate_warning_functions = [<?= AGGREGATE_AVG ?>, <?= AGGREGATE_MIN ?>, <?= AGGREGATE_MAX ?>,
 			<?= AGGREGATE_SUM ?>

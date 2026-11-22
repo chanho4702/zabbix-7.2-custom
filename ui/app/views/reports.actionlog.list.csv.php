@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -86,5 +86,4 @@ foreach ($data['alerts'] as $alert) {
 	$csv[] = $row;
 }
 
-// [DM 해설] CSV 뷰의 출력. 첫 행이 헤더, 나머지가 데이터인 2차원 배열을 문자열로 바꿔 echo 한다.
 echo zbx_toCSV($csv);

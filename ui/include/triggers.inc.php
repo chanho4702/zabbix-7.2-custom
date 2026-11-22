@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1873,19 +1873,9 @@ function makeTriggerTemplatesHtml($triggerid, array $parent_templates, $flag, bo
 					$prototype = '0';
 				}
 
-				$trigger_url = (new CUrl('zabbix.php'))
-					->setArgument('action', 'popup')
-					->setArgument('popup', $prototype === '1' ? 'trigger.prototype.edit' : 'trigger.edit')
-					->setArgument('triggerid', $parent_templates['links'][$triggerid]['triggerid'])
-					->setArgument('context', 'template')
-					->setArgument($attribute_name === 'data-parent_discoveryid'
-						? 'parent_discoveryid'
-						: 'data-hostid',
-					$attribute_value)
-					->getUrl();
-
-				$name = (new CLink($template['name'], $trigger_url))
+				$name = (new CLink($template['name']))
 					->addClass('js-related-trigger-edit')
+					->setAttribute('data-prototype', $prototype)
 					->setAttribute('data-triggerid', $parent_templates['links'][$triggerid]['triggerid'])
 					->setAttribute('data-context', 'template')
 					->setAttribute($attribute_name, $attribute_value);
@@ -1913,6 +1903,20 @@ function makeTriggerTemplatesHtml($triggerid, array $parent_templates, $flag, bo
 	}
 
 	return $list;
+}
+
+/**
+ * Check if user has read permissions for triggers.
+ *
+ * @param $triggerids
+ *
+ * @return bool
+ */
+function isReadableTriggers(array $triggerids) {
+	return count($triggerids) == API::Trigger()->get([
+		'triggerids' => $triggerids,
+		'countOutput' => true
+	]);
 }
 
 /**

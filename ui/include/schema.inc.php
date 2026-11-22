@@ -187,7 +187,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'active_since' => [
@@ -324,7 +323,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'tls_connect' => [
@@ -887,7 +885,6 @@ return [
 			'posts' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'required' => [
@@ -1137,8 +1134,7 @@ return [
 			],
 			'params' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'ipmi_sensor' => [
@@ -1192,8 +1188,7 @@ return [
 			],
 			'description' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'inventory_link' => [
@@ -1241,14 +1236,12 @@ return [
 			],
 			'query_fields' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'posts' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'status_codes' => [
@@ -1277,8 +1270,7 @@ return [
 			],
 			'headers' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'retrieve_mode' => [
@@ -1551,8 +1543,7 @@ return [
 			],
 			'script' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'timeout' => [
@@ -1588,7 +1579,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'provider' => [
@@ -1667,8 +1657,7 @@ return [
 			],
 			'message' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			]
 		]
@@ -1806,8 +1795,7 @@ return [
 			],
 			'command' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'host_access' => [
@@ -1833,7 +1821,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'confirmation' => [
@@ -2152,7 +2139,6 @@ return [
 			'message' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'mediatypeid' => [
@@ -2926,7 +2912,6 @@ return [
 			'dbversion_status' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'hk_events_service' => [
@@ -3000,7 +2985,6 @@ return [
 			'server_status' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'jit_provision_interval' => [
@@ -3111,7 +3095,6 @@ return [
 			'software_update_check_data' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'timeout_browser' => [
@@ -3175,7 +3158,6 @@ return [
 			'comments' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'error' => [
@@ -3625,7 +3607,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'type' => [
@@ -3666,7 +3647,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'type' => [
@@ -3942,7 +3922,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'uuid' => [
@@ -4718,7 +4697,6 @@ return [
 			'test_string' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			]
 		]
@@ -4842,8 +4820,7 @@ return [
 			],
 			'message' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'status' => [
@@ -4892,8 +4869,7 @@ return [
 			],
 			'parameters' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => '{}'
 			]
 		]
@@ -5023,8 +4999,7 @@ return [
 			],
 			'value' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'logeventid' => [
@@ -5059,8 +5034,7 @@ return [
 			],
 			'value' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'ns' => [
@@ -5142,8 +5116,7 @@ return [
 			],
 			'value' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'logeventid' => [
@@ -5553,8 +5526,7 @@ return [
 			],
 			'details' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			]
 		]
@@ -5629,8 +5601,7 @@ return [
 			],
 			'host_metadata' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'flags' => [
@@ -5687,8 +5658,7 @@ return [
 			],
 			'host_metadata' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'flags' => [
@@ -6047,7 +6017,6 @@ return [
 			'hardware_full' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'software' => [
@@ -6059,7 +6028,6 @@ return [
 			'software_full' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'software_app_a' => [
@@ -6095,13 +6063,11 @@ return [
 			'contact' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'location' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'location_lat' => [
@@ -6119,7 +6085,6 @@ return [
 			'notes' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'chassis' => [
@@ -6185,7 +6150,6 @@ return [
 			'host_networks' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'host_netmask' => [
@@ -6293,7 +6257,6 @@ return [
 			'site_notes' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'poc_1_name' => [
@@ -6335,7 +6298,6 @@ return [
 			'poc_1_notes' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'poc_2_name' => [
@@ -6377,7 +6339,6 @@ return [
 			'poc_2_notes' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			]
 		]
@@ -6621,8 +6582,7 @@ return [
 			],
 			'value_str' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'source' => [
@@ -7117,7 +7077,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'evaltype' => [
@@ -7371,8 +7330,7 @@ return [
 			],
 			'params' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'error_handler' => [
@@ -7449,8 +7407,7 @@ return [
 			],
 			'command' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'alertid' => [
@@ -7501,8 +7458,7 @@ return [
 			],
 			'info' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			]
 		]
@@ -7525,8 +7481,7 @@ return [
 			],
 			'data' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			],
 			'parent_taskid' => [
@@ -7563,8 +7518,7 @@ return [
 			],
 			'info' => [
 				'null' => false,
-				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
+				'type' => DB::FIELD_TYPE_NCLOB,
 				'default' => ''
 			]
 		]
@@ -7636,7 +7590,6 @@ return [
 			'text' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'font' => [
@@ -7755,7 +7708,6 @@ return [
 			'value' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			]
 		]
@@ -7790,7 +7742,6 @@ return [
 			'value' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			]
 		]
@@ -8319,7 +8270,6 @@ return [
 			'config' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			]
 		]
@@ -8832,7 +8782,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'userid' => [
@@ -9093,7 +9042,6 @@ return [
 			'value' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			]
 		]
@@ -9393,7 +9341,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			]
 		]
@@ -9532,7 +9479,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'idp_type' => [
@@ -10071,7 +10017,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'status' => [
@@ -10158,7 +10103,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'tls_connect' => [
@@ -10355,7 +10299,6 @@ return [
 			'description' => [
 				'null' => false,
 				'type' => DB::FIELD_TYPE_TEXT,
-				'length' => 65535,
 				'default' => ''
 			],
 			'failover_delay' => [

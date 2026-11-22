@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,8 +20,7 @@
  */
 
 $discovered_trigger = array_key_exists('discovered_trigger', $data) ? $data['discovered_trigger'] : false;
-
-$dependency_link = (new CLink(['#{name}'], '#{trigger_url}'))
+$dependency_link = (new CLink(['#{name}']))
 	->addClass('js-related-trigger-edit')
 	->addClass(ZBX_STYLE_WORDWRAP)
 	->setAttribute('data-triggerid', '#{triggerid}')

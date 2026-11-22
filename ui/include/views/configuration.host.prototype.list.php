@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -97,15 +97,11 @@ foreach ($this->data['hostPrototypes'] as $hostPrototype) {
 
 			if ($data['allowed_ui_conf_templates']
 					&& array_key_exists($template['templateid'], $data['writable_templates'])) {
-				$template_url = (new CUrl('zabbix.php'))
-					->setArgument('action', 'popup')
-					->setArgument('popup', 'template.edit')
-					->setArgument('templateid', $template['templateid'])
-					->getUrl();
-
-				$caption[] = (new CLink($template['name'], $template_url))
+				$caption[] = (new CLink($template['name']))
+					->addClass('js-edit-template')
 					->addClass(ZBX_STYLE_LINK_ALT)
-					->addClass(ZBX_STYLE_GREY);
+					->addClass(ZBX_STYLE_GREY)
+					->setAttribute('data-templateid', $template['templateid']);
 			}
 			else {
 				$caption[] = (new CSpan($template['name']))->addClass(ZBX_STYLE_GREY);
@@ -117,14 +113,10 @@ foreach ($this->data['hostPrototypes'] as $hostPrototype) {
 
 				$caption[] = ' (';
 				foreach ($linkedTemplates as $tpl) {
-					$tpl_url = (new CUrl('zabbix.php'))
-						->setArgument('action', 'popup')
-						->setArgument('popup', 'template.edit')
-						->setArgument('templateid', $tpl['templateid'])
-						->getUrl();
-
 					if (array_key_exists($tpl['templateid'], $data['writable_templates'])) {
-						$caption[] = (new CLink($tpl['name'], $tpl_url))
+						$caption[] = (new CLink($tpl['name']))
+							->addClass('js-edit-template')
+							->setAttribute('data-templateid',  $tpl['templateid'])
 							->addClass(ZBX_STYLE_LINK_ALT)
 							->addClass(ZBX_STYLE_GREY);
 					}
@@ -187,7 +179,7 @@ foreach ($this->data['hostPrototypes'] as $hostPrototype) {
 		$hostTemplates,
 		$status,
 		$discover,
-		$data['tags'][$hostPrototype['hostid']]
+		(new CDiv($data['tags'][$hostPrototype['hostid']]))->addClass(ZBX_STYLE_TAGS_WRAPPER)
 	]);
 }
 

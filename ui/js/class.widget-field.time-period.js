@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -42,11 +42,6 @@ class CWidgetFieldTimePeriod {
 	#field_name;
 
 	/**
-	 * @type {string}
-	 */
-	#field_selector;
-
-	/**
 	 * @type {Object}
 	 */
 	#field_value = null;
@@ -85,7 +80,6 @@ class CWidgetFieldTimePeriod {
 
 	constructor({
 		field_name,
-		field_selector,
 		field_value = {from: '', to: ''},
 		in_type,
 		widget_accepted = false,
@@ -93,7 +87,6 @@ class CWidgetFieldTimePeriod {
 		data_source = CWidgetFieldTimePeriod.DATA_SOURCE_DEFAULT
 	}) {
 		this.#field_name = field_name;
-		this.#field_selector = field_selector;
 		this.#in_type = in_type;
 		this.#data_source = data_source;
 		this.#widget_accepted = widget_accepted;
@@ -157,7 +150,7 @@ class CWidgetFieldTimePeriod {
 
 	#initField() {
 		if (this.#widget_accepted) {
-			const $multiselect = jQuery(`#${this.#field_selector}_reference`);
+			const $multiselect = jQuery(`#${this.#field_name}_reference`);
 
 			$multiselect[0].dataset.params = JSON.stringify({
 				name: `${this.#field_name}[${CWidgetBase.FOREIGN_REFERENCE_KEY}]`,
@@ -183,8 +176,8 @@ class CWidgetFieldTimePeriod {
 				});
 		}
 
-		this.#date_from_input = document.getElementById(`${this.#field_selector}_from`);
-		this.#date_to_input = document.getElementById(`${this.#field_selector}_to`);
+		this.#date_from_input = document.getElementById(`${this.#field_name}_from`);
+		this.#date_to_input = document.getElementById(`${this.#field_name}_to`);
 	}
 
 	#registerEvents() {
@@ -197,7 +190,7 @@ class CWidgetFieldTimePeriod {
 	}
 
 	#updateField() {
-		for (const element of document.querySelectorAll(`.js-${this.#field_selector}-data-source`)) {
+		for (const element of document.querySelectorAll(`.js-${this.#field_name}-data-source`)) {
 			element.style.display = this.#is_hidden ? 'none' : '';
 		}
 
@@ -206,14 +199,14 @@ class CWidgetFieldTimePeriod {
 			element.disabled = this.#is_hidden || this.#is_disabled;
 		}
 
-		const reference_dashboard = document.getElementById(`${this.#field_selector}_reference_dashboard`);
+		const reference_dashboard = document.getElementById(`${this.#field_name}_reference_dashboard`);
 
 		if (reference_dashboard !== null) {
 			reference_dashboard.disabled = this.#is_hidden || this.#is_disabled
 				|| this.#data_source != CWidgetFieldTimePeriod.DATA_SOURCE_DASHBOARD;
 		}
 
-		for (const element of document.querySelectorAll(`.js-${this.#field_selector}-reference`)) {
+		for (const element of document.querySelectorAll(`.js-${this.#field_name}-reference`)) {
 			element.style.display = this.#is_hidden || this.#data_source != CWidgetFieldTimePeriod.DATA_SOURCE_WIDGET
 				? 'none'
 				: '';
@@ -230,10 +223,10 @@ class CWidgetFieldTimePeriod {
 		}
 
 		const date_picker_element_ids = [
-			`${this.#field_selector}_from`,
-			`${this.#field_selector}_from_calendar`,
-			`${this.#field_selector}_to`,
-			`${this.#field_selector}_to_calendar`
+			`${this.#field_name}_from`,
+			`${this.#field_name}_from_calendar`,
+			`${this.#field_name}_to`,
+			`${this.#field_name}_to_calendar`
 		];
 
 		for (const element_id of date_picker_element_ids) {
@@ -245,7 +238,7 @@ class CWidgetFieldTimePeriod {
 			}
 		}
 
-		const date_picker_form_rows = `.js-${this.#field_selector}-from, .js-${this.#field_selector}-to`;
+		const date_picker_form_rows = `.js-${this.#field_name}-from, .js-${this.#field_name}-to`;
 
 		for (const element of document.querySelectorAll(date_picker_form_rows)) {
 			element.style.display = this.#is_hidden || this.#data_source != CWidgetFieldTimePeriod.DATA_SOURCE_DEFAULT

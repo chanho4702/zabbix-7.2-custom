@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1043,7 +1043,9 @@ class CScreenProblem extends CScreenBase {
 				$header[] = $header_clock;
 			}
 
-			$table = (new CTableInfo())->setPageNavigation($paging);
+			$table = (new CTableInfo())
+				->setPageNavigation($paging)
+				->addClass($this->data['filter']['highlight_row'] == ZBX_HIGHLIGHT_ON ? 'has-highlighted-rows' : null);
 
 			// Create table.
 			if ($this->data['filter']['compact_view']) {
@@ -1150,14 +1152,11 @@ class CScreenProblem extends CScreenBase {
 			self::addProblemsToTable($table, $data['problems'], $data, false);
 
 			$footer = new CActionButtonList('action', 'eventids', [
-				'acknowledge.edit' => [
-					'content' => (new CSimpleButton(_('Mass update')))
-						->addClass(ZBX_STYLE_BTN_ALT)
-						->addClass('js-massupdate-problem')
-						->addClass('js-no-chkbxrange')
-						->setEnabled($allowed['add_comments'] || $allowed['change_severity'] || $allowed['acknowledge']
+				'popup.acknowledge.edit' => [
+					'name' => _('Mass update'),
+					'disabled' => !($allowed['add_comments'] || $allowed['change_severity'] || $allowed['acknowledge']
 							|| $allowed['close'] || $allowed['suppress_problems'] || $allowed['rank_change']
-						)
+					)
 				]
 			], 'problem');
 
@@ -1640,17 +1639,14 @@ class CScreenProblem extends CScreenBase {
 				);
 			}
 
-			$problem_update_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'acknowledge.edit')
-				->setArgument('eventids[]', $problem['eventid'])
-				->getUrl();
-
 			// Create acknowledge link.
 			$problem_update_link = ($data['allowed']['add_comments'] || $data['allowed']['change_severity']
 					|| $data['allowed']['acknowledge'] || $can_be_closed || $data['allowed']['suppress_problems']
 					|| $data['allowed']['rank_change'])
-				? (new CLink(_('Update'), $problem_update_url))->addClass(ZBX_STYLE_LINK_ALT)
+				? (new CLink(_('Update')))
+					->addClass(ZBX_STYLE_LINK_ALT)
+					->setAttribute('data-eventid', $problem['eventid'])
+					->onClick('acknowledgePopUp({eventids: [this.dataset.eventid]}, this);')
 				: new CSpan(_('Update'));
 
 			$row->addItem([
@@ -1672,13 +1668,15 @@ class CScreenProblem extends CScreenBase {
 					: zbx_date2age($problem['clock']),
 				$problem_update_link,
 				makeEventActionsIcons($problem['eventid'], $data['actions'], $data['users'], $is_acknowledged),
-				$data['filter']['show_tags'] ? $data['tags'][$problem['eventid']] : null
+				$data['filter']['show_tags']
+					? (new CDiv($data['tags'][$problem['eventid']]))->addClass(ZBX_STYLE_TAGS_WRAPPER)
+					: null
 			]);
 
 			// Add table row.
-			$table->addRow($row, ($data['filter']['highlight_row'] && $value == TRIGGER_VALUE_TRUE)
-					? self::getSeverityFlhStyle($problem['severity'])
-					: null
+			$table->addRow($row, $data['filter']['highlight_row'] == ZBX_HIGHLIGHT_ON && $value == TRIGGER_VALUE_TRUE
+				? CSeverityHelper::getSeverityFlhStyle($problem['severity'])
+				: null
 			);
 
 			if ($problem['cause_eventid'] == 0 && $problem['symptoms']) {
@@ -1775,7 +1773,6 @@ class CScreenProblem extends CScreenBase {
 		foreach ($items as $itemid => $item) {
 			if (array_key_exists($itemid, $history_values)) {
 				$last_value = reset($history_values[$itemid]);
-				$last_value['original_value'] = $last_value['value'];
 
 				if ($item['value_type'] != ITEM_VALUE_TYPE_BINARY) {
 					$last_value['value'] = formatHistoryValue(str_replace(["\r\n", "\n"], [" "], $last_value['value']),
@@ -1788,40 +1785,39 @@ class CScreenProblem extends CScreenBase {
 					'itemid' => null,
 					'clock' => null,
 					'value' => UNRESOLVED_MACRO_STRING,
-					'original_value' => UNRESOLVED_MACRO_STRING,
 					'ns' => null
 				];
 			}
 
 			if ($html) {
 				$hint_table->addRow([
-					(new CCol($item['name']))->addStyle('max-width: '.ZBX_OPDATA_HINTBOX_COLUMN_MAX_WIDTH.'px'),
-					(new CCol(
+					new CCol($item['name']),
+					new CCol(
 						($last_value['clock'] !== null)
 							? zbx_date2str(DATE_TIME_FORMAT_SECONDS, $last_value['clock'])
 							: UNRESOLVED_MACRO_STRING
-					))->addClass(ZBX_STYLE_NOWRAP),
-					(new CCol($item['value_type'] == ITEM_VALUE_TYPE_BINARY
+					),
+					new CCol($item['value_type'] == ITEM_VALUE_TYPE_BINARY
 						? italic(_('binary value'))->addClass(ZBX_STYLE_GREY)
-						: $last_value['original_value']
-					))->addStyle('max-width: '.ZBX_OPDATA_HINTBOX_COLUMN_MAX_WIDTH.'px'),
-					(new CCol(
+						: $last_value['value']
+					),
+					new CCol(
 						($item['value_type'] == ITEM_VALUE_TYPE_FLOAT || $item['value_type'] == ITEM_VALUE_TYPE_UINT64)
 							? (CWebUser::checkAccess(CRoleHelper::UI_MONITORING_LATEST_DATA)
-							? new CLink(_('Graph'), (new CUrl('history.php'))
-								->setArgument('action', HISTORY_GRAPH)
-								->setArgument('itemids[]', $itemid)
-								->getUrl()
-							)
-							: _('Graph'))
+								? new CLink(_('Graph'), (new CUrl('history.php'))
+									->setArgument('action', HISTORY_GRAPH)
+									->setArgument('itemids[]', $itemid)
+									->getUrl()
+								)
+								: _('Graph'))
 							: (CWebUser::checkAccess(CRoleHelper::UI_MONITORING_LATEST_DATA)
-							? new CLink(_('History'), (new CUrl('history.php'))
-								->setArgument('action', HISTORY_VALUES)
-								->setArgument('itemids[]', $itemid)
-								->getUrl()
-							)
-							: _('History'))
-					))->addClass(ZBX_STYLE_NOWRAP)
+								? new CLink(_('History'), (new CUrl('history.php'))
+									->setArgument('action', HISTORY_VALUES)
+									->setArgument('itemids[]', $itemid)
+									->getUrl()
+								)
+								: _('History'))
+					)
 				]);
 
 				$latest_values[] = (new CLinkAction(
@@ -1830,56 +1826,26 @@ class CScreenProblem extends CScreenBase {
 						: $last_value['value']
 				))
 					->addClass('hint-item')
-					->setAttribute('data-hintbox', '1');
+					->setAttribute('data-hintbox', '1')
+					->addClass(ZBX_STYLE_NO_INDENT);
 				$latest_values[] = ', ';
 			}
 			else {
 				$latest_values[] = $item['value_type'] == ITEM_VALUE_TYPE_BINARY
 					? UNRESOLVED_MACRO_STRING
-					: $last_value['original_value'];
+					: $last_value['value'];
 			}
 		}
 
 		if ($html) {
-			$hint_container = (new CDiv())
-				->addClass(ZBX_STYLE_HINTBOX_WRAP)
-				->addItem($hint_table);
-
 			array_pop($latest_values);
 			array_unshift($latest_values, (new CDiv())
 				->addClass('main-hint')
-				->setHint($hint_container)
+				->setHint($hint_table)
 			);
-
 			return $latest_values;
 		}
 
 		return implode(', ', $latest_values);
-	}
-
-	/**
-	 * Get trigger severity full line height css style name.
-	 *
-	 * @param int $severity  Trigger severity.
-	 *
-	 * @return string|null
-	 */
-	private static function getSeverityFlhStyle($severity) {
-		switch ($severity) {
-			case TRIGGER_SEVERITY_DISASTER:
-				return ZBX_STYLE_FLH_DISASTER_BG;
-			case TRIGGER_SEVERITY_HIGH:
-				return ZBX_STYLE_FLH_HIGH_BG;
-			case TRIGGER_SEVERITY_AVERAGE:
-				return ZBX_STYLE_FLH_AVERAGE_BG;
-			case TRIGGER_SEVERITY_WARNING:
-				return ZBX_STYLE_FLH_WARNING_BG;
-			case TRIGGER_SEVERITY_INFORMATION:
-				return ZBX_STYLE_FLH_INFO_BG;
-			case TRIGGER_SEVERITY_NOT_CLASSIFIED:
-				return ZBX_STYLE_FLH_NA_BG;
-			default:
-				return null;
-		}
 	}
 }

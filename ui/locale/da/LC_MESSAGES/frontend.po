@@ -4,8 +4,8 @@ msgstr ""
 "Project-Id-Version: Zabbix 6.4\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-19 13:48+0300\n"
-"PO-Revision-Date: 2025-03-20 12:51+0000\n"
-"Last-Translator: Ryan Skov <rsk@capmon.dk>\n"
+"PO-Revision-Date: 2025-03-24 19:06+0000\n"
+"Last-Translator: natalja.romancaka <natalja.romancaka@zabbix.com>\n"
 "Language-Team: none\n"
 "Language: da\n"
 "MIME-Version: 1.0\n"
@@ -692,10 +692,6 @@ msgid_plural "Actions disabled"
 msgstr[0] "Handling deaktiveret"
 msgstr[1] "Handling deaktiveret"
 
-#: app/controllers/CControllerPopup.php:42
-msgid "Action edit"
-msgstr "Handling redigering"
-
 #: app/controllers/CControllerActionEnable.php:84
 msgid "Action enabled"
 msgid_plural "Actions enabled"
@@ -1030,7 +1026,7 @@ msgstr "Tilføj side"
 
 #: app/views/js/popup.service.edit.js.php:405
 msgid "Add parent services"
-msgstr "Tilføj forældre tjenester"
+msgstr "Tilføj forældretjenester"
 
 #: include/classes/helpers/CRoleHelper.php:543
 msgid "Add problem comments"
@@ -1663,10 +1659,6 @@ msgstr "Mindst en dag i ugen eller dag i måneden skal være specificeret."
 msgid "At least one host group or host must be selected."
 msgstr "Mindst en værts-gruppe eller vært skal være valgt."
 
-#: include/classes/setup/CFrontendSetup.php:252
-msgid "At least one of MySQL or PostgreSQL should be supported."
-msgstr "Mindst én af MySQL eller PostgreSQL bør understøttes."
-
 #: include/classes/setup/CFrontendSetup.php:241
 msgid "At least one of MySQL, PostgreSQL or Oracle should be supported."
 msgstr "Minimum en af MySQL, PostgreSQL eller Oracle burde være understøttet."
@@ -1885,11 +1877,6 @@ msgstr "Tilgængelighed"
 #: include/classes/helpers/CRoleHelper.php:423 report2.php:25 report2.php:156
 msgid "Availability report"
 msgstr "Tilgængeligheds rapport"
-
-#: app/controllers/CControllerAvailabilityReportTrigger.php:70
-#: app/views/reports.availabilityreport.trigger.php:23
-msgid "Availability report graph"
-msgstr "Graf for tilgængelighedsrapport"
 
 #: include/classes/html/CHostAvailability.php:80
 #: widgets/hostavail/views/widget.view.php:32
@@ -2665,7 +2652,7 @@ msgstr "Kan ikke slette Zabbix intern bruger \"%1$s\", prøv at deaktivere den b
 msgid "Cannot delete action"
 msgid_plural "Cannot delete actions"
 msgstr[0] "Kan ikke slette handling"
-msgstr[1] "Kan ikke slette handling"
+msgstr[1] "Kan ikke slette handlinger"
 
 #: include/classes/api/services/CRole.php:368
 #, c-format
@@ -2694,7 +2681,7 @@ msgstr "Kan ikke slette standard MFA-metode."
 msgid "Cannot delete default user directory."
 msgstr "Kan ikke slette standard bruger-bibliotek."
 
-#: include/classes/api/services/CDRule.php:772
+#: include/classes/api/services/CDRule.php:773
 #, c-format
 msgid "Cannot delete discovery check \"%1$s\" of discovery rule \"%2$s\": %3$s."
 msgstr "Kan ikke slette opdagelseskontrol \"%1$s\" for opdagelsesreglen \"%2$s\": %3$s."
@@ -2706,7 +2693,7 @@ msgid_plural "Cannot delete discovery rules"
 msgstr[0] "Kan ikke slette opdagelsesregel"
 msgstr[1] "Kan ikke slette opdagelsesregler"
 
-#: include/classes/api/services/CDRule.php:979
+#: include/classes/api/services/CDRule.php:980
 #, c-format
 msgid "Cannot delete discovery rule \"%1$s\": %2$s."
 msgstr "Kan ikke slette opdagelsesreglen \"%1$s\": %2$s."
@@ -2715,27 +2702,27 @@ msgstr "Kan ikke slette opdagelsesreglen \"%1$s\": %2$s."
 msgid "Cannot delete event correlation"
 msgid_plural "Cannot delete event correlations"
 msgstr[0] "Kan ikke slette begivenhedskorrelation"
-msgstr[1] "Kan ikke slette begivenhedskorrelationer"
+msgstr[1] "Kan ikke slette begivenhedskorrelation"
 
 #: graphs.php:281 graphs.php:338
 msgid "Cannot delete graph"
 msgid_plural "Cannot delete graphs"
 msgstr[0] "Kan ikke slette graf"
-msgstr[1] "Kan ikke slette graf"
+msgstr[1] "Kan ikke slette grafer"
 
 #: graphs.php:273 graphs.php:317
 msgid "Cannot delete graph prototype"
 msgid_plural "Cannot delete graph prototypes"
 msgstr[0] "Kan ikke slette graf prototype"
-msgstr[1] "Kan ikke slette graf prototype"
+msgstr[1] "Kan ikke slette graf prototyper"
 
 #: app/controllers/CControllerHostMassDelete.php:76
 msgid "Cannot delete host"
 msgid_plural "Cannot delete hosts"
 msgstr[0] "Kan ikke slette vært"
-msgstr[1] "Kan ikke slette vært"
+msgstr[1] "Kan ikke slette værter"
 
-#: include/classes/api/services/CHost.php:1631
+#: include/classes/api/services/CHost.php:1636
 #, c-format
 msgid "Cannot delete host \"%1$s\": %2$s."
 msgstr "Kan ikke slette værten \"%1$s\": %2$s."
@@ -2753,7 +2740,7 @@ msgid_plural "Cannot delete host groups"
 msgstr[0] "Kan ikke slette værts-gruppe"
 msgstr[1] "Kan ikke slette værts-grupper"
 
-#: include/classes/api/services/CHostGroup.php:767
+#: include/classes/api/services/CHostGroup.php:769
 #, c-format
 msgid "Cannot delete host group \"%1$s\": %2$s."
 msgstr "Kan ikke slette værtsgruppen \"%1$s\": %2$s."
@@ -2801,7 +2788,7 @@ msgstr "Kan ikke slette indholdsfortegnelse."
 msgid "Cannot delete item"
 msgid_plural "Cannot delete items"
 msgstr[0] "Kan ikke slette datapunkt"
-msgstr[1] "Kan ikke slette datapunkt"
+msgstr[1] "Kan ikke slette datapunkter"
 
 #: disc_prototypes.php:302 disc_prototypes.php:500
 msgid "Cannot delete item prototype"
@@ -2898,9 +2885,9 @@ msgstr "Kan ikke slette service \"%1$s\": %2$s."
 msgid "Cannot delete template"
 msgid_plural "Cannot delete templates"
 msgstr[0] "Kan ikke slette skabelon"
-msgstr[1] "Kan ikke slette skabelon"
+msgstr[1] "Kan ikke slette skabeloner"
 
-#: include/classes/api/services/CTemplate.php:805
+#: include/classes/api/services/CTemplate.php:809
 #, c-format
 msgid "Cannot delete template \"%1$s\": %2$s."
 msgstr "Kan ikke slette skabelonen \"%1$s\": %2$s."
@@ -2938,7 +2925,7 @@ msgstr "Kan ikke slette skabelons webscenarie \"%1$s\"."
 msgid "Cannot delete trigger"
 msgid_plural "Cannot delete triggers"
 msgstr[0] "Kan ikke slette udløser"
-msgstr[1] "Kan ikke slette udløsere"
+msgstr[1] "Kan ikke slette udløserne"
 
 #: include/classes/api/managers/CTriggerManager.php:126
 #, c-format
@@ -2949,7 +2936,7 @@ msgstr "Kan ikke slette udøseren \"%1$s\": %2$s."
 msgid "Cannot delete trigger prototype"
 msgid_plural "Cannot delete trigger prototypes"
 msgstr[0] "Kan ikke slette udløser prototype"
-msgstr[1] "Kan ikke slette udløser prototyper"
+msgstr[1] "Kan ikke slette udløser prototyperne"
 
 #: app/controllers/CControllerUserDelete.php:59
 msgid "Cannot delete user"
@@ -2968,12 +2955,12 @@ msgid_plural "Cannot delete user groups"
 msgstr[0] "Kan ikke slette bruger gruppe"
 msgstr[1] "Kan ikke slette bruger grupper"
 
-#: include/classes/api/services/CUserGroup.php:1306
+#: include/classes/api/services/CUserGroup.php:1340
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by LDAP userdirectory \"%2$s\"."
 msgstr "Kan ikke slette brugergruppen \"%1$s\", fordi den bruges af LDAP-brugerkataloget \"%2$s\"."
 
-#: include/classes/api/services/CUserGroup.php:1301
+#: include/classes/api/services/CUserGroup.php:1335
 #, c-format
 msgid "Cannot delete user group \"%1$s\", because it is used by SAML userdirectory."
 msgstr "Kan ikke slette brugergruppen \"%1$s\", fordi den bruges af SAML-brugermappe."
@@ -3769,6 +3756,11 @@ msgstr "Kan ikke læse XML: %1$s."
 msgid "Cannot read YAML: %1$s."
 msgstr "Kan ikke læse YAML: %1$s."
 
+#: include/classes/server/CZabbixServer.php:502
+#, c-format
+msgid "Cannot read response from Zabbix server \"%1$s\"."
+msgstr ""
+
 #: include/classes/server/CZabbixServer.php:567
 #, c-format
 msgid "Cannot read the response, check connection with the Zabbix server \"%1$s\"."
@@ -3830,6 +3822,10 @@ msgstr "Kan ikke sætte \"%1$s\" for graf prototype \"%2$s\"."
 #: widgets/piechart/includes/CWidgetFieldDataSet.php:175
 msgid "Cannot set \"Data set aggregation\" when item with type \"Total\" is added to the chart."
 msgstr "Kan ikke indstille \"Datasætaggregation\", når datapunktet med typen \"Total\" føjes til diagrammet."
+
+#: include/classes/db/MysqlDbBackend.php:197
+msgid "Cannot set charset."
+msgstr ""
 
 #: include/classes/api/services/CItemGeneral.php:2478
 #, c-format
@@ -4078,7 +4074,7 @@ msgstr "Kan ikke opdatere grupper for opdagede vært \"%1$s\"."
 msgid "Cannot update host"
 msgid_plural "Cannot update hosts"
 msgstr[0] "Kan ikke opdatere vært"
-msgstr[1] "Kan ikke opdatere værter"
+msgstr[1] "Kan ikke opdatere vært"
 
 #: include/classes/api/services/CHost.php:982
 msgid "Cannot update host encryption settings. Connection settings for both directions should be specified."
@@ -4113,7 +4109,7 @@ msgstr "Kan ikke opdatere grænsefladen for den opdagede vært \"%1$s\"."
 #: app/controllers/CControllerPopupMassupdateItem.php:279 items.php:670
 msgid "Cannot update item"
 msgid_plural "Cannot update items"
-msgstr[0] "Kan ikke opdatere datapunkt"
+msgstr[0] "Kan ikke opdatere datapunkter"
 msgstr[1] "Kan ikke opdatere datapunkter"
 
 #: app/controllers/CControllerPopupMassupdateItem.php:278
@@ -4228,7 +4224,7 @@ msgstr "Kan ikke opdatere skabelon-gruppe"
 msgid "Cannot update trigger"
 msgid_plural "Cannot update triggers"
 msgstr[0] "Kan ikke opdatere udløser"
-msgstr[1] "Kan ikke opdatere udløsere"
+msgstr[1] "Kan ikke opdatere udløser"
 
 #: include/classes/api/services/CTriggerGeneral.php:2305
 #, c-format
@@ -4422,19 +4418,19 @@ msgstr "Check udtryksdelen der starter fra \"%1$s\"."
 
 #: include/items.inc.php:1614
 msgid "Check for error in JSON"
-msgstr "Cjeck for fejl i JSON"
+msgstr "Tjek for fejl i JSON"
 
 #: include/items.inc.php:1618
 msgid "Check for error in XML"
-msgstr "Check for fejl i XML"
+msgstr "Tjek for fejl i XML"
 
 #: include/items.inc.php:1622
 msgid "Check for error using regular expression"
-msgstr "Check for fejl ved brug af regulært udtryk"
+msgstr "Tjek for fejl ved brug af regulært udtryk"
 
 #: include/items.inc.php:1626
 msgid "Check for not supported value"
-msgstr "Check for ikke-supporteret værdi"
+msgstr "Tjek for ikke-supporteret værdi"
 
 #: include/classes/setup/CSetupWizard.php:56
 #: include/classes/setup/CSetupWizard.php:510
@@ -5111,18 +5107,14 @@ msgstr "Forbindelse oprettet"
 #: app/controllers/CControllerConnectorDelete.php:60
 msgid "Connector deleted"
 msgid_plural "Connectors deleted"
-msgstr[0] "Forbindelse slettet"
+msgstr[0] "Forbindelsesled slettet"
 msgstr[1] "Forbindelser slettet"
 
 #: app/controllers/CControllerConnectorDisable.php:69
 msgid "Connector disabled"
 msgid_plural "Connectors disabled"
-msgstr[0] "Forbindelse deaktiveret"
+msgstr[0] "Forbindelsesled deaktiveret"
 msgstr[1] "Forbindelser deaktiveret"
-
-#: app/controllers/CControllerPopup.php:43
-msgid "Connector edit"
-msgstr "Redigering af forbindelsesled"
 
 #: app/controllers/CControllerConnectorEnable.php:69
 msgid "Connector enabled"
@@ -5281,10 +5273,6 @@ msgstr[1] "Kopiér %1$s udløsere"
 #: app/views/popup.token.view.php:51
 msgid "Copy to clipboard"
 msgstr "Kopier til udklipsholder"
-
-#: app/controllers/CControllerPopup.php:44
-msgid "Correlation edit"
-msgstr "Korrelationsredigering"
 
 #: app/controllers/CControllerPopupTriggerExpr.php:52
 #: app/controllers/CControllerPopupTriggerExpr.php:693
@@ -5960,8 +5948,8 @@ msgstr "Database TLS-kryptering"
 msgid "Database TLS key file"
 msgstr "Database TLS nøglefil"
 
-#: include/classes/api/clients/CLocalApiClient.php:124
-#: include/classes/api/clients/CLocalApiClient.php:138
+#: include/classes/api/clients/CLocalApiClient.php:133
+#: include/classes/api/clients/CLocalApiClient.php:147
 msgid "Database error occurred."
 msgstr "Der opstod en databasefejl."
 
@@ -6199,7 +6187,7 @@ msgstr "Standard tidszone"
 #: app/views/administration.proxygroup.list.php:55
 #: app/views/administration.proxygroup.list.php:111
 msgid "Degrading"
-msgstr ""
+msgstr "Degraderet"
 
 #: app/views/popup.lldoperation.php:160 app/views/popup.massupdate.item.php:276
 msgid "Delay"
@@ -6803,6 +6791,10 @@ msgstr "Detaljer om webscenarie"
 msgid "Detected TimescaleDB license does not support compression. Compression is supported in TimescaleDB Community Edition."
 msgstr "Detekteret TimescaleDB-licens understøtter ikke komprimering. Komprimering understøttes i TimescaleDB Community Edition."
 
+#: app/views/administration.housekeeping.edit.php:204
+msgid "Detected license does not support compression. Compression is supported in TimescaleDB Community Edition."
+msgstr ""
+
 #: app/controllers/CControllerPopupTriggerExpr.php:1130
 msgid "Detection period"
 msgstr "Detektionsperiode"
@@ -7163,7 +7155,7 @@ msgstr "Opdagelsesobjekt"
 msgid "Discovery of VMware clusters, \"url\" - VMware service URL. Returns JSON"
 msgstr "Opdagelse af VMware clusters, \"url\" - VMware-tjenestens URL. Returnerer JSON"
 
-#: include/classes/data/CItemData.php:1932
+#: include/classes/data/CItemData.php:1931
 msgid "Discovery of VMware datastores, \"url\" - VMware service URL, \"filter_uuid\" - one hv uuid or vm uuid (empty by default). Returns JSON"
 msgstr ""
 
@@ -7238,8 +7230,8 @@ msgstr "Opdagelsesregel oprettet"
 #: host_discovery.php:596
 msgid "Discovery rule deleted"
 msgid_plural "Discovery rules deleted"
-msgstr[0] "Opdagelsesregler slettet"
-msgstr[1] "Opdagelsesregl slettet"
+msgstr[0] "Opdagelsesregl slettet"
+msgstr[1] "Opdagelsesregler slettet"
 
 #: app/controllers/CControllerDiscoveryDisable.php:68 host_discovery.php:581
 msgid "Discovery rule disabled"
@@ -7247,15 +7239,11 @@ msgid_plural "Discovery rules disabled"
 msgstr[0] "Opdagelsesregel deaktiveret"
 msgstr[1] "Opdagelsesregler deaktiveret"
 
-#: app/controllers/CControllerPopup.php:45
-msgid "Discovery rule edit"
-msgstr "Redigering af opdagelsesregel"
-
 #: app/controllers/CControllerDiscoveryEnable.php:68 host_discovery.php:580
 msgid "Discovery rule enabled"
 msgid_plural "Discovery rules enabled"
-msgstr[0] "Opdagelsesregel er aktiveret"
-msgstr[1] "Opdagelsesregel aktiveret"
+msgstr[0] "Opdagelsesregel aktiveret"
+msgstr[1] "Opdagelsesregler aktiveret"
 
 #: app/controllers/CControllerDiscoveryUpdate.php:88 host_discovery.php:545
 msgid "Discovery rule updated"
@@ -7304,10 +7292,6 @@ msgstr "Visnings handlinger"
 msgid "Display graph"
 msgstr "Vis graf"
 
-#: widgets/tophosts/views/column.edit.php:136
-msgid "Display item value as"
-msgstr "Vis datapunkt værdi som"
-
 #: widgets/itemhistory/views/column.edit.php:241
 msgid "Display local time"
 msgstr "Vis lokal tid"
@@ -7331,10 +7315,6 @@ msgstr "Vis problemer"
 #: app/partials/monitoring.latest.view.html.php:308
 msgid "Display stacked graph"
 msgstr "Vis stablet graf"
-
-#: widgets/topitems/views/column.edit.php:90
-msgid "Display value as"
-msgstr "Vis værdi som"
 
 #: app/controllers/CControllerHintboxActionlist.php:99
 #: app/views/administration.queue.details.php:86
@@ -7422,7 +7402,7 @@ msgstr "Matcher ikke regulært udtryk"
 #: include/graphs.inc.php:61 include/views/js/monitoring.sysmaps.js.php:803
 #: include/views/js/monitoring.sysmaps.js.php:889
 msgid "Dot"
-msgstr ""
+msgstr "Prik"
 
 #: widgets/piechart/includes/WidgetForm.php:122
 msgid "Doughnut"
@@ -8074,7 +8054,7 @@ msgstr "Hændelseskorrelation oprettet"
 msgid "Event correlation deleted"
 msgid_plural "Event correlations deleted"
 msgstr[0] "Hændelseskorrelation slettet"
-msgstr[1] "Hændelseskorrelationer slettet"
+msgstr[1] "Hændelseskorrelation slettet"
 
 #: app/controllers/CControllerCorrelationDisable.php:68
 msgid "Event correlation disabled"
@@ -8090,7 +8070,7 @@ msgstr[1] "Hændelseskorrelationer aktiveret"
 
 #: include/events.inc.php:143
 msgid "Event correlation rule"
-msgstr "Begivenhedskorrelationsregel"
+msgstr "Hændelseskorrelationsregl"
 
 #: app/controllers/CControllerCorrelationEdit.php:130
 #: app/controllers/CControllerCorrelationList.php:128
@@ -8149,7 +8129,7 @@ msgstr "Begivenhedstype"
 msgid "Event updated"
 msgid_plural "Events updated"
 msgstr[0] "Begivenheden er opdateret"
-msgstr[1] "Begivenheden er opdateret"
+msgstr[1] "Begivenheder opdateret"
 
 #: app/views/connector.edit.php:58 app/views/connector.list.php:100
 msgid "Events"
@@ -9494,7 +9474,7 @@ msgstr "Hjem"
 
 #: widgets/honeycomb/Widget.php:29
 msgid "Honeycomb"
-msgstr ""
+msgstr "Bikage"
 
 #: widgets/hostavail/includes/WidgetForm.php:56
 #: widgets/problemsbysv/includes/WidgetForm.php:88
@@ -9606,10 +9586,6 @@ msgstr "Vært tilgængelighed"
 msgid "Host cannot have more than one default interface of the same type."
 msgstr "Værten kan ikke have mere end én standard interface af samme type."
 
-#: widgets/hostcard/Widget.php:32
-msgid "Host card"
-msgstr "Værtskort"
-
 #: app/views/administration.proxy.list.php:91 hostinventoriesoverview.php:85
 #: widgets/tophosts/includes/WidgetForm.php:159
 msgid "Host count"
@@ -9632,10 +9608,6 @@ msgid "Host disabled"
 msgid_plural "Hosts disabled"
 msgstr[0] "Vært deaktiveret"
 msgstr[1] "Værter deaktiveret"
-
-#: app/controllers/CControllerPopup.php:46
-msgid "Host edit"
-msgstr "Værtsredigering"
 
 #: app/controllers/CControllerHostGroupEnable.php:76
 #: app/controllers/CControllerPopupMassupdateHost.php:491
@@ -9695,10 +9667,6 @@ msgid "Host group deleted"
 msgid_plural "Host groups deleted"
 msgstr[0] "Værtsgruppe slettet"
 msgstr[1] "Værtsgrupper slettet"
-
-#: app/controllers/CControllerPopup.php:47
-msgid "Host group edit"
-msgstr "Værtsgrupperedigering"
 
 #: include/views/js/monitoring.sysmaps.js.php:112
 msgid "Host group elements"
@@ -9831,12 +9799,6 @@ msgstr "Værtsnavigator"
 #: include/hosts.inc.php:284
 msgid "Host networks"
 msgstr "Værtsnetværk"
-
-#: widgets/topitems/includes/WidgetForm.php:116
-#: widgets/topitems/includes/WidgetForm.php:128
-#: widgets/topitems/views/widget.edit.php:63
-msgid "Host ordering"
-msgstr "Værts sortering"
 
 #: widgets/hostnavigator/includes/WidgetForm.php:65
 msgid "Host patterns"
@@ -10241,12 +10203,12 @@ msgstr "Hvis HTTP-godkendelse er aktiveret, vil alle brugere (selv med frontend-
 msgid "If at least %2$s child service has %1$s status or above"
 msgid_plural "If at least %2$s child services have %1$s status or above"
 msgstr[0] "Hvis mindst %2$s under service har %1$s status eller derover"
-msgstr[1] "Hvis mindst %2$s under service har %1$s status eller derover"
+msgstr[1] "Hvis mindst %2$s børnetjenester har %1$s status eller derover"
 
 #: include/classes/helpers/CServiceHelper.php:35
 #, c-format
 msgid "If at least %2$s child services have %1$s status or above"
-msgstr "Hvis mindst %2$s under services har %1$s status eller derover"
+msgstr "Hvis mindst %2$s under service har %1$s status eller derover"
 
 #: include/classes/helpers/CServiceHelper.php:40
 #: include/classes/helpers/CServiceHelper.php:89
@@ -10263,7 +10225,7 @@ msgstr "Hvis filteret matcher"
 msgid "If less than %2$s child service has %1$s status or below"
 msgid_plural "If less than %2$s child services have %1$s status or below"
 msgstr[0] "Hvis mindst %2$s under service har %1$s status eller under"
-msgstr[1] "Hvis mindst %2$s under service har %1$s status eller under"
+msgstr[1] "Hvis mindre end %2$s børnetjenester har %1$s status eller derunder"
 
 #: include/classes/helpers/CServiceHelper.php:45
 #, c-format
@@ -11923,12 +11885,6 @@ msgstr "Inventarkartotek deaktiveret for værten \"%1$s\"."
 msgid "Inventory field"
 msgstr "Inventar felt"
 
-#: include/classes/html/widgets/fields/CWidgetFieldMultiSelectHostInventoryView.php:30
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-#: widgets/hostcard/includes/WidgetForm.php:50
-msgid "Inventory fields"
-msgstr "Inventar felter"
-
 #: app/views/popup.massupdate.host.php:175
 #: app/views/popup.operation.edit.php:402
 msgid "Inventory mode"
@@ -12004,11 +11960,7 @@ msgstr[1] "Datapunkter slettet"
 msgid "Item disabled"
 msgid_plural "Items disabled"
 msgstr[0] "Datapunkt deaktiveret"
-msgstr[1] "Datapunkt deaktiveret"
-
-#: app/controllers/CControllerPopup.php:48
-msgid "Item edit"
-msgstr "Datapunkt redigering"
+msgstr[1] "Datapunkter deaktiveret"
 
 #: items.php:707
 msgid "Item enabled"
@@ -12045,12 +11997,6 @@ msgstr "Datapunkt navigator"
 msgid "Item not selected"
 msgstr "Datapunkt ikke valgt"
 
-#: widgets/topitems/includes/WidgetForm.php:145
-#: widgets/topitems/includes/WidgetForm.php:157
-#: widgets/topitems/views/widget.edit.php:81
-msgid "Item ordering"
-msgstr "Datapunkt sortering"
-
 #: widgets/piechart/views/widget.edit.js.php:203
 #: widgets/svggraph/views/widget.edit.js.php:281
 msgid "Item pattern"
@@ -12082,10 +12028,6 @@ msgid "Item prototype deleted"
 msgid_plural "Item prototypes deleted"
 msgstr[0] "Datapunkt prototype slettet"
 msgstr[1] "Datapunkt prototyper slettet"
-
-#: app/controllers/CControllerPopup.php:49
-msgid "Item prototype edit"
-msgstr "Datapunkt prototype redigering"
 
 #: app/controllers/CControllerPopupMassupdateItem.php:286
 #: disc_prototypes.php:457 disc_prototypes.php:483 disc_prototypes.php:522
@@ -12591,7 +12533,7 @@ msgstr "Venstre trim"
 #: widgets/piechart/views/widget.edit.php:46
 #: widgets/svggraph/views/widget.edit.php:54
 msgid "Legend"
-msgstr ""
+msgstr "Forklaring"
 
 #: app/controllers/CControllerPopupTriggerExpr.php:673
 #: app/controllers/CControllerPopupTriggerExpr.php:821
@@ -12601,15 +12543,6 @@ msgstr "Længde"
 #: setup.php:189
 msgid "Licensed under"
 msgstr "Licenseret under"
-
-#: widgets/topitems/includes/WidgetForm.php:125
-#: widgets/topitems/includes/WidgetForm.php:154
-msgid "Limit"
-msgstr "Grænse"
-
-#: widgets/topitems/views/widget.edit.php:95
-msgid "Limit applies to each \"Item pattern\" separately"
-msgstr "Grænsen gælder for hvert \"datapunkt mønster\" separat"
 
 #: app/views/administration.gui.edit.php:93
 msgid "Limit for search and filter results"
@@ -12636,11 +12569,6 @@ msgstr "Linjetype"
 #: include/views/js/monitoring.sysmaps.js.php:598
 msgid "Line width"
 msgstr "Linjebredde"
-
-#: widgets/svggraph/includes/WidgetForm.php:301
-#: widgets/svggraph/includes/WidgetForm.php:333
-msgid "Linear"
-msgstr "Lineær"
 
 #: app/views/popup.massupdate.host.php:42 app/views/template.massupdate.php:45
 #: include/views/monitoring.sysmap.constructor.php:43
@@ -12851,11 +12779,6 @@ msgstr "Logtidsformat"
 msgid "Log unmatched SNMP traps"
 msgstr "Log umatchede SNMP traps"
 
-#: widgets/svggraph/includes/WidgetForm.php:302
-#: widgets/svggraph/includes/WidgetForm.php:334
-msgid "Logarithmic"
-msgstr "Logaritmisk"
-
 #: app/controllers/CControllerAuditLogList.php:201
 #: app/views/administration.user.list.php:135
 #: app/views/popup.ldap.test.edit.php:33 app/views/system.warning.php:43
@@ -13015,10 +12938,6 @@ msgstr "Vedligeholdelse"
 #, c-format
 msgid "Maintenance \"%1$s\" already exists."
 msgstr "Vedligeholdelse \"%1$s\" eksisterer allerede."
-
-#: app/controllers/CControllerPopup.php:50
-msgid "Maintenance edit"
-msgstr "Vedligeholdelsesredigering"
 
 #: app/controllers/CControllerMaintenanceTimePeriodEdit.php:142
 #: app/views/maintenance.edit.php:238
@@ -13386,6 +13305,11 @@ msgstr "Maksimalt antal rækker"
 msgid "Maximum required %1$s database version is %2$s."
 msgstr "Maksimum krævet %1$s databaseversion er %2$s."
 
+#: app/partials/administration.system.info.php:221
+#, c-format
+msgid "Maximum required version is %1$s."
+msgstr ""
+
 #: app/controllers/CControllerTimeSelectorUpdate.php:136
 #: include/classes/mvc/CController.php:320
 #: include/classes/widgets/fields/CWidgetFieldTimePeriod.php:203
@@ -13446,7 +13370,7 @@ msgstr "Medietype"
 msgid "Media type \"%1$s\" already exists."
 msgstr "Medietypen \"%1$s\" findes allerede."
 
-#: include/classes/api/services/CMediatype.php:878
+#: include/classes/api/services/CMediatype.php:927
 #, c-format
 msgid "Media type \"%1$s\" is used by action \"%2$s\"."
 msgstr "Medietypen \"%1$s\" bruges af handlingen \"%2$s\"."
@@ -13470,10 +13394,6 @@ msgstr[1] "Medietyper deaktiveret"
 #: app/views/administration.user.edit.php:359
 msgid "Media type disabled by Administration."
 msgstr "Medietype deaktiveret af administrationen."
-
-#: app/controllers/CControllerPopup.php:51
-msgid "Media type edit"
-msgstr "Medietype redigering"
 
 #: app/controllers/CControllerMediatypeEnable.php:87
 #: app/controllers/CControllerMediatypeEnable.php:94
@@ -13725,6 +13645,12 @@ msgstr "Minimum påkrævet grænse for input-parsetid for PHP-scripts er %1$s (\
 msgid "Minimum required size of PHP post is %1$s (configuration option \"post_max_size\")."
 msgstr "Minimum påkrævet størrelse på PHP-indlæg er %1$s (\"post_max_size\")."
 
+#: app/partials/administration.system.info.php:212
+#: app/views/administration.housekeeping.edit.php:183
+#, c-format
+msgid "Minimum required version is %1$s."
+msgstr ""
+
 #: app/views/monitoring.map.view.php:48
 #: include/views/monitoring.sysmap.edit.php:276
 msgid "Minimum severity"
@@ -13825,10 +13751,6 @@ msgid_plural "Modules disabled"
 msgstr[0] "Modul deaktiveret"
 msgstr[1] "Moduler deaktiveret"
 
-#: app/controllers/CControllerPopup.php:52
-msgid "Module edit"
-msgstr "Modul redigering"
-
 #: app/controllers/CControllerModuleEnable.php:91
 msgid "Module enabled"
 msgid_plural "Modules enabled"
@@ -13922,7 +13844,7 @@ msgstr "Mere end 10 minutter"
 
 #: include/classes/helpers/CServiceHelper.php:27
 msgid "Most critical if all children have problems"
-msgstr "Mest kritisk, hvis alle børn har problemer"
+msgstr "Mest kritisk, hvis alle under tjenester har problemer"
 
 #: include/classes/helpers/CServiceHelper.php:26
 msgid "Most critical of child services"
@@ -13956,6 +13878,16 @@ msgstr "Mange"
 #: include/triggers.inc.php:611
 msgid "Multiple PROBLEM events"
 msgstr "Flere PROBLEM begivenheder"
+
+#: app/partials/administration.system.info.php:235
+#, c-format
+msgid "Must be at least %1$s."
+msgstr ""
+
+#: app/partials/administration.system.info.php:254
+#, c-format
+msgid "Must not be higher than %1$s."
+msgstr ""
 
 #: jsLoader.php:284
 msgid "Mute"
@@ -15324,10 +15256,6 @@ msgstr "Antal eller procentdel af inoder. Returnerer heltal for tal; decimaltal 
 msgid "Numeral systems"
 msgstr "Talsystemer"
 
-#: widgets/tophosts/views/column.edit.php:139
-msgid "Numeric"
-msgstr "Numerisk"
-
 #: app/partials/configuration.filter.items.php:143
 #: app/views/popup.massupdate.item.php:148 include/items.inc.php:125
 #: include/triggers.inc.php:1214 include/views/configuration.item.edit.php:123
@@ -15798,7 +15726,7 @@ msgstr "Udgående trafikstatistik på netværks interface. Returnerer heltal"
 
 #: app/views/popup.scriptexec.php:48
 msgid "Output"
-msgstr ""
+msgstr "Output"
 
 #: include/classes/api/services/CDashboardGeneral.php:339
 #, c-format
@@ -16268,10 +16196,6 @@ msgstr "Indsæt uden eksterne links"
 #: app/controllers/CControllerPopupTriggerExpr.php:938
 msgid "Pattern"
 msgstr "Mønster"
-
-#: widgets/topitems/includes/CWidgetFieldColumnsListView.php:58
-msgid "Patterns"
-msgstr "Mønstre"
 
 #: app/views/popup.action.edit.php:238
 msgid "Pause operations for suppressed problems"
@@ -16932,10 +16856,6 @@ msgid_plural "Proxies deleted"
 msgstr[0] "Proxy slettet"
 msgstr[1] "Proxyer slettet"
 
-#: app/controllers/CControllerPopup.php:53
-msgid "Proxy edit"
-msgstr "Proxy-redigering"
-
 #: app/controllers/CControllerAuditLogList.php:239
 #: app/partials/configuration.host.edit.html.php:266
 #: app/views/configuration.host.list.php:153
@@ -16968,15 +16888,11 @@ msgstr "Proxy gruppe tilføjet"
 msgid "Proxy group deleted"
 msgid_plural "Proxy groups deleted"
 msgstr[0] "Proxy gruppe slettet"
-msgstr[1] "Proxy grupper slettet"
-
-#: app/controllers/CControllerPopup.php:54
-msgid "Proxy group edit"
-msgstr "Redigering af proxygruppe"
+msgstr[1] "Proxy gruppe slettet"
 
 #: app/controllers/CControllerProxyGroupUpdate.php:74
 msgid "Proxy group updated"
-msgstr "Proxy gruppe opdateret"
+msgstr "Proxy gruppe slettet"
 
 #: app/controllers/CControllerPopupGeneric.php:227
 #: app/views/administration.proxygroup.list.php:163
@@ -17802,6 +17718,11 @@ msgstr "Svarkode"
 msgid "Response time"
 msgstr "Svartid"
 
+#: include/classes/server/CZabbixServer.php:498
+#, c-format
+msgid "Response timeout of %1$s exceeded when connecting to Zabbix server \"%2$s\"."
+msgstr ""
+
 #: app/controllers/CControllerMediatypeTestSend.php:182
 msgid "Response type: JSON"
 msgstr "Svartype: JSON"
@@ -18086,10 +18007,6 @@ msgid "SLA disabled"
 msgid_plural "SLAs disabled"
 msgstr[0] "SLA deaktiveret"
 msgstr[1] "SLA deaktiveret"
-
-#: app/controllers/CControllerPopup.php:58
-msgid "SLA edit"
-msgstr "SLA-redigering"
 
 #: app/controllers/CControllerSlaEnable.php:73
 msgid "SLA enabled"
@@ -18530,10 +18447,6 @@ msgstr[1] "Script slettet"
 msgid "Script does not have parameters."
 msgstr "Scriptet har ikke parametre."
 
-#: app/controllers/CControllerPopup.php:56
-msgid "Script edit"
-msgstr "Script redigering"
-
 #: app/views/administration.timeouts.edit.php:168
 msgid "Script execution"
 msgstr "Script eksekvering"
@@ -18867,10 +18780,6 @@ msgid_plural "Services deleted"
 msgstr[0] "Tjenesten er slettet"
 msgstr[1] "Tjenesterne er slettet"
 
-#: app/controllers/CControllerPopup.php:57
-msgid "Service edit"
-msgstr "Serviceredigering"
-
 #: app/views/administration.userrole.edit.php:166
 #: app/views/administration.userrole.edit.php:207
 msgid "Service list"
@@ -19106,6 +19015,18 @@ msgstr "Kort"
 #: widgets/problems/includes/WidgetForm.php:106
 msgid "Shortened"
 msgstr "Forkortet"
+
+#: app/partials/administration.system.info.php:243
+#: app/views/administration.housekeeping.edit.php:187
+#, c-format
+msgid "Should be at least %1$s."
+msgstr ""
+
+#: app/partials/administration.system.info.php:262
+#: app/views/administration.housekeeping.edit.php:197
+#, c-format
+msgid "Should not be higher than %1$s."
+msgstr ""
 
 #: app/partials/monitoring.problem.filter.php:27
 #: app/views/monitoring.charts.view.php:80
@@ -19508,13 +19429,6 @@ msgstr "Rum mellem sektorer"
 msgid "Spanish (es_ES)"
 msgstr "Spansk (es_ES)"
 
-#: widgets/item/includes/WidgetForm.php:191
-#: widgets/item/includes/WidgetForm.php:321
-#: widgets/tophosts/views/column.edit.php:155
-#: widgets/tophosts/views/column.edit.php:162
-msgid "Sparkline"
-msgstr ""
-
 #: app/views/mediatype.list.php:83 app/views/mediatype.list.php:91
 msgid "Specific"
 msgstr "Bestemt"
@@ -19642,7 +19556,7 @@ msgstr "Statistik og tilgængelighed af Zabbix skrivecache. Cache - en af værdi
 msgid "Statistics and availability of proxy memory buffer. Mode (modes: pfree, free, total, used, pused)."
 msgstr "Statistik og tilgængelighed af proxyhukommelsesbuffer. Mode (tilstande: pfree, free, total, used, pused)."
 
-#: include/classes/data/CItemData.php:2862
+#: include/classes/data/CItemData.php:2854
 msgid "Statistics of values received by the preprocessing manager."
 msgstr ""
 
@@ -19977,6 +19891,10 @@ msgstr "Swap størrelse i bytes eller i procent af totalen. Returnerer heltal fo
 msgid "Swedish (sv_SE)"
 msgstr "Svensk (sv_SE)"
 
+#: index_sso.php:346
+msgid "Switch SSO user"
+msgstr ""
+
 #: app/views/js/administration.authentication.edit.js.php:241
 msgid "Switching authentication method will reset all except this session! Continue?"
 msgstr "Skift af godkendelsesmetode vil nulstille alle undtagen denne session! Blive ved?"
@@ -20270,10 +20188,6 @@ msgid_plural "Templates deleted"
 msgstr[0] "Skabelonen er slettet"
 msgstr[1] "Skabelonerne er slettet"
 
-#: app/controllers/CControllerPopup.php:59
-msgid "Template edit"
-msgstr "Skabelonredigering"
-
 #: app/controllers/CControllerAuditLogList.php:259
 #: app/partials/configuration.templategroup.edit.html.php:52
 #: app/views/configuration.templategroup.edit.php:52
@@ -20296,10 +20210,6 @@ msgid "Template group deleted"
 msgid_plural "Template groups deleted"
 msgstr[0] "Skabelongruppe slettet"
 msgstr[1] "Skabelongrupperne er slettet"
-
-#: app/controllers/CControllerPopup.php:55
-msgid "Template group edit"
-msgstr "Skabelongrupperedigering"
 
 #: app/controllers/CControllerTemplateGroupUpdate.php:86
 msgid "Template group updated"
@@ -20659,7 +20569,7 @@ msgstr "Tokenet er udløbet. Opdater venligst udløbsdatoen for at bruge tokenet
 #: include/html.inc.php:751
 #, c-format
 msgid "The trigger is not discovered anymore and will be deleted in %1$s (on %2$s at %3$s)."
-msgstr "Udløseren opdages ikke længere og vil blive slettet om %1$s (på %2$s kl %3$s)."
+msgstr "Udløseren opdages ikke længere og vil blive slettet om %1$s (på %2$s ved %3$s)."
 
 #: include/html.inc.php:746
 msgid "The trigger is not discovered anymore and will be deleted the next time discovery rule is processed."
@@ -20682,11 +20592,11 @@ msgstr "Tema"
 msgid "These parameters will be passed to the script as command-line arguments in the specified order."
 msgstr "Disse parametre sendes til scriptet som kommandolinjeargumenter i den angivne rækkefølge."
 
-#: app/views/action.list.php:163
+#: app/views/action.list.php:156
 msgid "This action has conditions or operations referencing deleted object(s)."
 msgstr "Denne handling har betingelser eller operationer, der refererer til slettede objekt(er)."
 
-#: app/views/action.list.php:158
+#: app/views/action.list.php:151
 msgid "This action has missing conditions or operations due to previously deleted object(s)."
 msgstr "Denne handling mangler betingelser eller handlinger på grund af tidligere slettede objekt(er)."
 
@@ -20695,7 +20605,7 @@ msgstr "Denne handling mangler betingelser eller handlinger på grund af tidlige
 msgid "This check cannot be removed, as it is used as a condition in %1$s discovery action."
 msgid_plural "This check cannot be removed, as it is used as a condition in %1$s discovery actions."
 msgstr[0] "Denne kontrol kan ikke fjernes, da den bruges som en betingelse i %1$s opdagelseshandling."
-msgstr[1] "Denne kontrol kan ikke fjernes, da den bruges som en betingelse i %1$s opdagelseshandling."
+msgstr[1] "Denne kontrol kan ikke fjernes, da den bruges som en betingelse i %1$s opdagelseshandlinger."
 
 #: include/func.inc.php:2566
 msgid "This day last week"
@@ -20738,7 +20648,7 @@ msgstr "Denne indstilling bør være aktiveret, fordi trendtabeller indeholder k
 
 #: widgets/itemhistory/views/column.edit.php:242
 msgid "This setting will display local time instead of the timestamp. \"Show timestamp\" must also be checked in the advanced configuration."
-msgstr "Denne indstilling viser lokal tid i stedet for tidsstemplet. \"Vis tidsstempel\" skal også være afkrydset i den avancerede konfiguration."
+msgstr "Denne kontrol kan ikke fjernes, da den bruges som en betingelse i %1$s opdagelseshandling."
 
 #: widgets/itemhistory/views/column.edit.php:241
 msgid "This setting will display log time instead of item's timestamp. \"Show timestamp\" must also be checked in the advanced configuration."
@@ -20799,7 +20709,7 @@ msgstr "Torsdag"
 
 #: app/views/administration.geomaps.edit.php:75
 msgid "Tile URL"
-msgstr "Flise URL"
+msgstr "Denne kontrol kan ikke fjernes, da den bruges som en betingelse i %1$s opdagelseshandling."
 
 #: app/views/administration.geomaps.edit.php:63
 msgid "Tile provider"
@@ -20984,10 +20894,6 @@ msgstr "I dag"
 msgid "Today so far"
 msgstr "I dag indtil videre"
 
-#: app/controllers/CControllerPopup.php:60
-msgid "Token edit"
-msgstr "Token redigering"
-
 #: include/views/js/monitoring.sysmaps.js.php:40
 #: include/views/js/monitoring.sysmaps.js.php:159
 #: include/views/js/monitoring.sysmaps.js.php:684
@@ -21016,10 +20922,6 @@ msgstr "Top N"
 #: widgets/tophosts/Widget.php:34
 msgid "Top hosts"
 msgstr "Top værter"
-
-#: widgets/topitems/Widget.php:32
-msgid "Top items"
-msgstr "Top datapunkter"
 
 #: widgets/toptriggers/Widget.php:29
 msgid "Top triggers"
@@ -21249,10 +21151,6 @@ msgstr[1] "Udløserne deaktiveret"
 msgid "Trigger displaying options"
 msgstr "Udløser visningsmuligheder"
 
-#: app/controllers/CControllerPopup.php:61
-msgid "Trigger edit"
-msgstr "Rediger udløser"
-
 #: app/controllers/CControllerTriggerEnable.php:67
 msgid "Trigger enabled"
 msgid_plural "Triggers enabled"
@@ -21392,10 +21290,6 @@ msgid_plural "Trigger prototypes deleted"
 msgstr[0] "Udløserprototype slettet"
 msgstr[1] "Udløserprototyper slettet"
 
-#: app/controllers/CControllerPopup.php:62
-msgid "Trigger prototype edit"
-msgstr "Udløserprototype slettet"
-
 #: app/controllers/CControllerTriggerMassupdate.php:219
 #: app/controllers/CControllerTriggerPrototypeDisable.php:76
 #: app/controllers/CControllerTriggerPrototypeEnable.php:76
@@ -21410,7 +21304,7 @@ msgstr[1] "Udløserprototyper opdateret"
 #: app/views/trigger.prototype.list.php:34 include/html.inc.php:510
 #: include/views/configuration.host.discovery.list.php:306 jsLoader.php:368
 msgid "Trigger prototypes"
-msgstr "Udløserprototyper"
+msgstr "Udløserprototyper opdateret"
 
 #: app/views/administration.user.edit.php:813 include/actions.inc.php:47
 msgid "Trigger severity"
@@ -21459,7 +21353,7 @@ msgstr[1] "Udløsere opdateret"
 #: include/views/js/monitoring.sysmaps.js.php:180 jsLoader.php:365
 #: widgets/trigover/partials/table.top.php:33
 msgid "Triggers"
-msgstr "Udløsere"
+msgstr "Udløser opdateret"
 
 #: include/items.inc.php:1534
 msgid "Trim"
@@ -21479,7 +21373,7 @@ msgstr "Tyrkisk (tr_TR)"
 
 #: jsLoader.php:262
 msgid "Two map elements should be selected"
-msgstr "Der skal vælges to kort elementer"
+msgstr "Der skal vælges to kortelementer"
 
 #: widgets/item/includes/WidgetForm.php:110
 msgid "Two or more fields cannot occupy same space."
@@ -21621,7 +21515,7 @@ msgstr "URL-åbningsbekræftelse"
 
 #: include/html.inc.php:102
 msgid "URL parameter cannot be array."
-msgstr "URL-parameter kan ikke være en matrix."
+msgstr "URL-parameter kan ikke være matrix."
 
 #: include/html.inc.php:107
 msgid "URL parameter name is empty."
@@ -21704,6 +21598,14 @@ msgstr "Kan ikke hente TimescaleDB-komprimeringsunderstøttelsesstatus."
 #: app/views/administration.housekeeping.edit.php:181
 msgid "Unable to retrieve TimescaleDB version."
 msgstr "Kan ikke hente TimescaleDB-versionen."
+
+#: app/views/administration.housekeeping.edit.php:173
+msgid "Unable to retrieve compression support status of TimescaleDB time-series database extension for PostgreSQL."
+msgstr ""
+
+#: app/views/administration.housekeeping.edit.php:178
+msgid "Unable to retrieve version of TimescaleDB time-series database extension for PostgreSQL."
+msgstr ""
 
 #: include/views/mfa.login.php:65
 #, c-format
@@ -21983,6 +21885,11 @@ msgstr "Ikke-understøttet %1$s databaseserverversion. Skal være mindst %2$s."
 msgid "Unsupported %1$s database server version. Must not be higher than %2$s."
 msgstr "Ikke-understøttet %1$s databaseserverversion. Må ikke være højere end %2$s."
 
+#: app/partials/administration.system.info.php:206
+#: app/views/administration.housekeeping.edit.php:169
+msgid "Unsupported TimescaleDB time-series database extension for PostgreSQL is used."
+msgstr ""
+
 #: app/views/administration.housekeeping.edit.php:190
 #, c-format
 msgid "Unsupported TimescaleDB version. Should be at least %1$s."
@@ -21999,12 +21906,12 @@ msgstr "Ikke-understøttet TimescaleDB-version. Bør ikke være højere end %1$s
 msgid "Unsupported charset or collation for table: %1$s."
 msgid_plural "Unsupported charset or collation for tables: %1$s."
 msgstr[0] "Ikke-understøttet tegnsæt eller sortering for tabel: %1$s."
-msgstr[1] "Ikke-understøttet tegnsæt eller sortering for tabel: %1$s."
+msgstr[1] "Ikke-understøttet tegnsæt eller sortering for tabeller: %1$s."
 
 #: include/classes/import/readers/CImportReaderFactory.php:79
 #, c-format
 msgid "Unsupported import file extension \"%1$s\"."
-msgstr "Ikke-understøttet tegnsæt eller sortering for tabel: \"%1$s\"."
+msgstr "Ikke-understøttet tegnsæt eller sortering for tabel: %1$s."
 
 #: include/classes/import/readers/CImportReaderFactory.php:51
 #, c-format
@@ -22366,7 +22273,7 @@ msgstr "Brugermappe med ID \"%1$s\" er ikke tilgængelig."
 
 #: app/views/administration.user.list.php:212
 msgid "User does not have user groups."
-msgstr "Brugeren har ikke nogen brugergrupper."
+msgstr "Brugeren har ikke brugergrupper."
 
 #: app/views/administration.user.list.php:233
 msgid "User does not have user role."
@@ -22416,7 +22323,7 @@ msgstr[1] "Brugergrupper slettet"
 
 #: app/views/administration.miscconfig.edit.php:65
 msgid "User group for database down message"
-msgstr "Brugergruppe til database nede meddelelse"
+msgstr "Brugergruppe slettet"
 
 #: app/views/administration.authentication.edit.php:476
 #: app/views/popup.ldap.edit.php:230
@@ -22426,7 +22333,7 @@ msgstr "Brugergruppekortlægning"
 
 #: app/views/popup.ldap.edit.php:200
 msgid "User group membership attribute"
-msgstr "Brugergruppe medlemskabs attribut"
+msgstr "Brugergruppemedlemskabsattribut"
 
 #: include/classes/api/services/CMap.php:784
 #: include/classes/api/services/CMap.php:1252
@@ -22541,7 +22448,7 @@ msgstr "Brugerrolle oprettet"
 msgid "User role deleted"
 msgid_plural "User roles deleted"
 msgstr[0] "Brugerroller slettet"
-msgstr[1] "Brugerroller slettet"
+msgstr[1] "Brugerrolle slettet"
 
 #: app/controllers/CControllerUserroleUpdate.php:179
 msgid "User role updated"
@@ -22663,10 +22570,6 @@ msgstr "Brugernavn attribut"
 msgid "Users"
 msgstr "Brugere"
 
-#: include/locales.inc.php:62
-msgid "Uzbek (uz_UZ)"
-msgstr ""
-
 #: include/classes/data/CItemData.php:1876
 msgid "VMware Distributed Virtual Switch, \"url\" - VMware service URL. Returns JSON"
 msgstr "VMware Distributed Virtual Switch, \"url\" - VMware service URL. Returnerer JSON"
@@ -22729,7 +22632,7 @@ msgstr "VMware datastore hypervisors liste, \"url\" - VMware service URL, \"data
 
 #: include/classes/data/CItemData.php:1813
 msgid "VMware datastore performance counter, \"url\" - VMware service URL, \"uuid\" - VMware datastore global unique identifier, \"path\" - performance counter path, \"instance\" - datastore perfcounter instance from vmware.hv.diskinfo.get"
-msgstr "VMware datastore ydeevnetæller, \"url\" - VMware service URL, \"uuid\" - VMware datastore global unik identifikator, \"sti\" - ydeevnetællersti, \"instans\" - datastore perfcounter instans fra vmware.hv.diskinfo.get"
+msgstr ""
 
 #: include/classes/data/CItemData.php:1820
 msgid "VMware datastore property, \"url\" - VMware service URL, \"uuid\" - VMware datastore global unique identifier, \"prop\" - property path"
@@ -22798,10 +22701,6 @@ msgstr "VMware hypervisor datastores liste, \"url\" - VMware service URL, \"uuid
 #: include/classes/data/CItemData.php:2156
 msgid "VMware hypervisor health state rollup sensor, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - gray; 1 - green; 2 - yellow; 3 - red"
 msgstr "VMware hypervisor sundhedstilstand rollup sensor, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unik identifikator. Returnerer 0 - grå; 1 - grøn; 2 - gul; 3 - rød"
-
-#: include/classes/data/CItemData.php:2237
-msgid "VMware hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
-msgstr "VMware hypervisor vedligeholdelsesstatus, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unik identifikator. Returnerer 0 - ikke i vedligeholdelse; 1 - i vedligeholdelse"
 
 #: include/classes/data/CItemData.php:2051
 msgid "VMware hypervisor model, \"url\" - VMware service URL, \"uuid\" - VMware hypervisor global unique identifier"
@@ -22939,10 +22838,6 @@ msgstr "Brug af gæstehukommelse for VMware virtuel maskine, \"url\" - VMware-tj
 msgid "VMware virtual machine host memory usage, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "Brug af VMware virtuel maskine værtshukommelse, \"url\" - VMware service URL, \"uuid\" - VMware virtuel maskine global unik identifikator"
 
-#: include/classes/data/CItemData.php:2482
-msgid "VMware virtual machine hypervisor maintenance status, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier. Returns 0 - not in maintenance; 1 - in maintenance"
-msgstr "VMware virtual machine hypervisor vedligeholdelsesstatus, \"url\" - VMware service URL, \"uuid\" - VMware virtuel maskine global unik identifikator. Returnerer 0 - ikke i vedligeholdelse; 1 - i vedligeholdelse"
-
 #: include/classes/data/CItemData.php:2331
 msgid "VMware virtual machine hypervisor name, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "VMware virtuel maskine hypervisor navn, \"url\" - VMware service URL, \"uuid\" - VMware virtuel maskine global unik identifikator"
@@ -22967,7 +22862,7 @@ msgstr "VMware virtual machine performance counter, \"url\" - VMware service URL
 msgid "VMware virtual machine power state, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "VMware virtuel maskine strømtilstand, \"url\" - VMware service URL, \"uuid\" - VMware virtuel maskine global unik identifikator"
 
-#: include/classes/data/CItemData.php:2498
+#: include/classes/data/CItemData.php:2490
 msgid "VMware virtual machine private memory size, \"url\" - VMware service URL, \"uuid\" - VMware virtual machine global unique identifier"
 msgstr "VMware virtuel maskine privat hukommelsesstørrelse, \"url\" - VMware service URL, \"uuid\" - VMware virtuel maskine global unik identifikator"
 
@@ -23409,6 +23304,11 @@ msgstr "Advarsel"
 msgid "Warning message"
 msgstr "Advarselsmeddelelse"
 
+#: app/partials/administration.system.info.php:243
+#: app/partials/administration.system.info.php:262
+msgid "Warning!"
+msgstr ""
+
 #: app/partials/administration.system.info.php:198
 msgid "Warning! Support for Oracle DB is deprecated since Zabbix 7.0 and will be removed in future versions."
 msgstr "Advarsel! Understøttelse af Oracle DB er forældet siden Zabbix 7.0 og vil blive fjernet i fremtidige versioner."
@@ -23476,19 +23376,19 @@ msgstr "Web scenarie tilføjet"
 msgid "Web scenario deleted"
 msgid_plural "Web scenarios deleted"
 msgstr[0] "Web scenarie slettet"
-msgstr[1] "Web scenarie slettet"
+msgstr[1] "Web scenarier slettet"
 
 #: httpconf.php:386
 msgid "Web scenario disabled"
 msgid_plural "Web scenarios disabled"
 msgstr[0] "Web scenarie deaktiveret"
-msgstr[1] "Web scenarie deaktiveret"
+msgstr[1] "Web scenarier deaktiveret"
 
 #: httpconf.php:385
 msgid "Web scenario enabled"
 msgid_plural "Web scenarios enabled"
 msgstr[0] "Web scenarie aktiveret"
-msgstr[1] "Web scenarie aktiveret"
+msgstr[1] "Web scenarier aktiveret"
 
 #: httpconf.php:194
 msgid "Web scenario updated"
@@ -23747,7 +23647,7 @@ msgstr "XPath"
 #: include/views/js/monitoring.sysmaps.js.php:302
 #: include/views/js/monitoring.sysmaps.js.php:447
 msgid "Y"
-msgstr "Y"
+msgstr ""
 
 #: include/views/configuration.graph.edit.php:357
 msgid "Y axis MAX value"
@@ -23938,6 +23838,10 @@ msgstr "Du kan ikke skifte skabeloner for det aktuelle valg."
 #: include/classes/api/services/CToken.php:436
 msgid "You do not have permission to perform this operation."
 msgstr "Du har ikke tilladelse til at udføre denne handling."
+
+#: index_sso.php:337
+msgid "You have been authorized via Single sign-on (SSO), but logging in to Zabbix failed."
+msgstr ""
 
 #: include/classes/core/ZBase.php:759 include/func.inc.php:1686
 msgid "You have no permissions to access this page."
@@ -24218,22 +24122,22 @@ msgstr "abs() - Absolut værdi"
 msgid "acos() - The arccosine of a value as an angle, expressed in radians"
 msgstr "acos() - Arccosinus for en værdi som en vinkel, udtrykt i radianer"
 
-#: include/classes/api/services/CDRule.php:773
+#: include/classes/api/services/CDRule.php:774
 #, c-format
 msgid "action \"%1$s\" uses this discovery check"
 msgstr "handling \"%1$s\" bruger denne opdagelseskontrol"
 
-#: include/classes/api/services/CDRule.php:980
+#: include/classes/api/services/CDRule.php:981
 #, c-format
 msgid "action \"%1$s\" uses this discovery rule"
 msgstr "handling \"%1$s\" bruger denne opdagelsesregel"
 
-#: include/classes/api/services/CHost.php:1632
+#: include/classes/api/services/CHost.php:1637
 #, c-format
 msgid "action \"%1$s\" uses this host"
 msgstr "handling \"%1$s\" bruger denne vært"
 
-#: include/classes/api/services/CHostGroup.php:768
+#: include/classes/api/services/CHostGroup.php:770
 #, c-format
 msgid "action \"%1$s\" uses this host group"
 msgstr "handling \"%1$s\" bruger denne værtsgruppe"
@@ -24243,7 +24147,7 @@ msgstr "handling \"%1$s\" bruger denne værtsgruppe"
 msgid "action \"%1$s\" uses this service"
 msgstr "handling \"%1$s\" bruger denne tjeneste"
 
-#: include/classes/api/services/CTemplate.php:806
+#: include/classes/api/services/CTemplate.php:810
 #, c-format
 msgid "action \"%1$s\" uses this template"
 msgstr "handling \"%1$s\" bruger denne skabelon"
@@ -25278,10 +25182,6 @@ msgstr "invalidt værts gruppe navn"
 msgid "invalid host name"
 msgstr "invalidt værts navn"
 
-#: include/classes/widgets/fields/CWidgetFieldMultiSelectHostInventory.php:48
-msgid "invalid inventory field"
-msgstr ""
-
 #: include/classes/validators/CHistFunctionValidator.php:82
 #: include/classes/validators/CMathFunctionValidator.php:86
 #, c-format
@@ -25599,16 +25499,11 @@ msgstr "mod() - Division rest"
 
 #: app/controllers/CControllerPopupTriggerExpr.php:851
 msgid "monodec() - Check for continuous item value decrease (1 - data is monotonic, 0 - otherwise), Mode (strict - require strict monotonicity)"
-msgstr "monodec() - Tjek for et kontinuerligt fald i datapunktværdien (1 - data er monotone, 0 - ellers), Mode (streng - kræver streng monotoni)"
+msgstr "monodec() - Tjek for et kontinuerligt fald i vareværdien (1 - data er monotone, 0 - ellers), Mode (streng - kræver streng monotoni)"
 
 #: app/controllers/CControllerPopupTriggerExpr.php:858
 msgid "monoinc() - Check for continuous item value increase (1 - data is monotonic, 0 - otherwise), Mode (strict - require strict monotonicity)"
 msgstr "monoinc() - Tjek for kontinuerlig datapunktsværdistigning (1 - data er monotone, 0 - ellers), Mode (streng - kræver streng monotoni)"
-
-#: widgets/hostcard/views/widget.view.php:157
-#: widgets/hostcard/views/widget.view.php:338
-msgid "more"
-msgstr "mere"
 
 #: include/func.inc.php:571
 msgctxt "millisecond short"
@@ -25886,7 +25781,7 @@ msgstr "eller"
 
 #: include/views/configuration.httpconf.edit.php:99
 msgid "other"
-msgstr ""
+msgstr "andre"
 
 #: include/forms.inc.php:1337 include/views/js/item.preprocessing.js.php:323
 msgid "output"
@@ -26350,7 +26245,7 @@ msgstr "udløser prototype med samme UUID findes allerede"
 
 #: include/classes/api/services/CTriggerGeneral.php:2307
 msgid "trigger with linkages cannot be moved to another template or host"
-msgstr "udløser med koblinger kan ikke flyttes til en anden skabelon eller vært"
+msgstr "trigger med koblinger kan ikke flyttes til en anden skabelon eller vært"
 
 #: include/classes/api/services/CTriggerGeneral.php:680
 msgid "trigger with the same UUID already exists"
@@ -26455,7 +26350,7 @@ msgstr "opdateringsintervallet \"%1$s\" er længere end perioden \"%2$s\""
 
 #: include/classes/validators/CApiInputValidator.php:596
 msgid "uppercase identifier expected"
-msgstr ""
+msgstr "id for store bogstaver forventes"
 
 #: app/partials/configuration.tags.tab.php:79
 #: app/partials/monitoring.host.filter.php:61
@@ -26613,7 +26508,7 @@ msgstr "værdien skal være tom"
 msgid "value must be empty or %1$s"
 msgid_plural "value must be empty or one of %1$s"
 msgstr[0] "værdien skal være tom eller %1$s"
-msgstr[1] "værdien skal være tom eller %1$s"
+msgstr[1] "værdien skal være tom eller en af ​​%1$s"
 
 #: include/classes/widgets/fields/CWidgetFieldTimePeriod.php:194
 #: widgets/gauge/includes/WidgetForm.php:133
@@ -26678,7 +26573,7 @@ msgstr ""
 
 #: app/controllers/CControllerPopupTriggerExpr.php:1200
 msgid "varsamp() - Sample variance"
-msgstr ""
+msgstr "varsamp() - Eksempelvarians"
 
 #: include/actions.inc.php:552 include/actions.inc.php:568
 msgid "via"

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -81,9 +81,6 @@ try {
 	$error = null;
 
 	if (!CSessionHelper::has('state') && !hasRequest('enter')) {
-		// [DM 해설] 내장 2단계 인증 화면의 진입 파일. 1단계(아이디/비밀번호)를 통과한 '확인 필요' 세션만 여기로 온다.
-		// [DM 해설] getConfirmData(): 이 사용자에게 적용된 MFA 방식(TOTP / Duo)과 화면에 필요한 값을 가져온다.
-		// [DM 해설] TOTP 면 app/views/mfa.login.php 로 6자리 코드 입력 화면을 보여 준다.
 		$data = CUser::getConfirmData($confirm_data);
 
 		if ($data['mfa']['type'] == MFA_TYPE_TOTP) {
@@ -110,8 +107,6 @@ try {
 			'username' => CSessionHelper::get('username')
 		];
 
-		// [DM 해설] 입력한 코드를 검증한다. 성공하면 세션이 '활성' 으로 바뀌고 로그인이 완료된다.
-		// [DM 해설] 외부 OTP 서버를 붙이는 커스텀을 만든다면 이 '1단계 통과 -> 확인 필요 세션 -> 2단계 검증 -> 활성' 구조를 본보기로 삼는다.
 		$confirm = CUser::confirm($confirm_data + $data);
 
 		if ($confirm) {
@@ -120,7 +115,7 @@ try {
 			CSessionHelper::unset(['state', 'username', 'confirmid']);
 
 			API::getWrapper()->auth = [
-				'type' => CJsonRpc::AUTH_TYPE_COOKIE,
+				'type' => CJsonRpc::AUTH_TYPE_FRONTEND,
 				'auth' => CWebUser::$data['sessionid']
 			];
 

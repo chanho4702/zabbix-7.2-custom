@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -14,8 +14,6 @@
 **/
 
 
-use Widgets\TrigOver\Includes\WidgetForm;
-
 /**
  * Trigger overview widget view.
  *
@@ -27,7 +25,7 @@ if ($data['error'] !== null) {
 	$table = (new CTableInfo())->setNoDataMessage($data['error']);
 }
 else {
-	$table = $data['layout'] == WidgetForm::LAYOUT_VERTICAL
+	$table = $data['style'] == STYLE_TOP
 		? (new CPartial('table.top', $data))->getOutput()
 		: (new CPartial('table.left', $data))->getOutput();
 }

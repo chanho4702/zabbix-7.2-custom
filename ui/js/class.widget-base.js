@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -385,7 +385,7 @@ class CWidgetBase {
 		}
 
 		for (const [type, value] of Object.entries(data)) {
-			ZABBIX.EventHub.publish(new CEventHubEvent({
+			ZABBIX.EventHub.publish({
 				data: value,
 				descriptor: {
 					context: 'dashboard',
@@ -397,7 +397,7 @@ class CWidgetBase {
 					reference: this._fields.reference,
 					type
 				}
-			}));
+			});
 
 			this.#broadcast_cache.set(type, value);
 		}
@@ -458,7 +458,7 @@ class CWidgetBase {
 			const {reference, type} = CWidgetBase.parseTypedReference(accessors.get(path).getTypedReference());
 
 			if (reference !== '') {
-				ZABBIX.EventHub.publish(new CEventHubEvent({
+				ZABBIX.EventHub.publish({
 					data: value,
 					descriptor: {
 						context: 'dashboard',
@@ -470,7 +470,7 @@ class CWidgetBase {
 						reference,
 						type
 					}
-				}));
+				});
 			}
 		}
 	}
@@ -532,8 +532,7 @@ class CWidgetBase {
 					if (this._state === WIDGET_STATE_ACTIVE) {
 						this._startUpdating();
 					}
-				},
-				accept_cached: true
+				}
 			});
 
 			this.#fields_referred_data_subscriptions.push(broadcast_subscription);
@@ -542,14 +541,14 @@ class CWidgetBase {
 		const broadcast_types = this.getBroadcastTypes();
 
 		if (broadcast_types.length > 0) {
-			for (const require_type of [CEventHubEvent.TYPE_SUBSCRIBE, CEventHubEvent.TYPE_UNSUBSCRIBE]) {
+			for (const event of [CEventHub.EVENT_SUBSCRIBE, CEventHub.EVENT_UNSUBSCRIBE]) {
 				const event_subscription = ZABBIX.EventHub.subscribe({
 					require: {
+						[CEventHub.EVENT]: event,
 						context: 'dashboard',
 						event_type: 'broadcast',
 						reference: this._fields.reference
 					},
-					require_type,
 					callback: ({descriptor}) => {
 						if (!('type' in descriptor) || !broadcast_types.includes(descriptor.type)) {
 							return;
@@ -579,7 +578,7 @@ class CWidgetBase {
 						this.#broadcast_cache.set(descriptor.type, data);
 
 						if (this.onFeedback({type: descriptor.type, value: data})) {
-							ZABBIX.EventHub.publish(new CEventHubEvent({
+							ZABBIX.EventHub.publish({
 								data,
 								descriptor: {
 									context: 'dashboard',
@@ -591,11 +590,10 @@ class CWidgetBase {
 									reference: this._fields.reference,
 									type: descriptor.type
 								}
-							}));
+							});
 						}
 					}
-				},
-				accept_cached: true
+				}
 			});
 
 			this.#fields_referred_data_subscriptions.push(feedback_subscription);
@@ -613,7 +611,9 @@ class CWidgetBase {
 			sender_unique_id: this._unique_id
 		});
 
-		ZABBIX.EventHub.unsubscribeAll(this.#fields_referred_data_subscriptions);
+		for (const subscription of this.#fields_referred_data_subscriptions) {
+			ZABBIX.EventHub.unsubscribe(subscription);
+		}
 
 		this.#fields_referred_data.clear();
 		this.#fields_referred_data_updated.clear();
@@ -868,8 +868,7 @@ class CWidgetBase {
 	 * @returns {boolean}
 	 */
 	isUserInteracting() {
-		return this._target
-			.querySelectorAll('[data-expanded="true"], [aria-expanded="true"][aria-haspopup="true"]').length > 0;
+		return isUserInteracting(this._target);
 	}
 
 	/**
@@ -1812,18 +1811,22 @@ class CWidgetBase {
 			},
 
 			focusin: () => {
-				this.fire(WIDGET_EVENT_ENTER);
+				this.fire(WIDGET_EVENT_ENTER, {is_explicit: true});
 			},
 
 			focusout: () => {
 				this.fire(WIDGET_EVENT_LEAVE);
 			},
 
-			enter: () => {
-				this.fire(WIDGET_EVENT_ENTER);
+			mousemove: () => {
+				this.fire(WIDGET_EVENT_ENTER, {is_explicit: true});
 			},
 
-			leave: () => {
+			mouseenter: () => {
+				this.fire(WIDGET_EVENT_ENTER, {is_explicit: false});
+			},
+
+			mouseleave: () => {
 				this.fire(WIDGET_EVENT_LEAVE);
 			}
 		};
@@ -1839,10 +1842,11 @@ class CWidgetBase {
 			this._button_edit.addEventListener('click', this._events.edit);
 		}
 
-		this._target.addEventListener('mousemove', this._events.enter);
-		this._target.addEventListener('mouseleave', this._events.leave);
 		this._header.addEventListener('focusin', this._events.focusin);
 		this._header.addEventListener('focusout', this._events.focusout);
+		this._target.addEventListener('mousemove', this._events.mousemove);
+		this._target.addEventListener('mouseenter', this._events.mouseenter);
+		this._target.addEventListener('mouseleave', this._events.mouseleave);
 	}
 
 	/**
@@ -1855,10 +1859,11 @@ class CWidgetBase {
 			this._button_edit.removeEventListener('click', this._events.edit);
 		}
 
-		this._target.removeEventListener('mousemove', this._events.enter);
-		this._target.removeEventListener('mouseleave', this._events.leave);
 		this._header.removeEventListener('focusin', this._events.focusin);
 		this._header.removeEventListener('focusout', this._events.focusout);
+		this._target.removeEventListener('mousemove', this._events.mousemove);
+		this._target.removeEventListener('mouseenter', this._events.mouseenter);
+		this._target.removeEventListener('mouseleave', this._events.mouseleave);
 	}
 
 	/**

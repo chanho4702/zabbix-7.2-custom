@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -243,7 +243,8 @@ class CElasticsearchHelper {
 		foreach ($options['filter'] as $field => $value) {
 			// Skip missing fields, textual fields (different mapping is needed for exact matching) and empty values.
 			if ($value === null || !array_key_exists($field, $schema['fields'])
-					|| $schema['fields'][$field]['type'] & (DB::FIELD_TYPE_CHAR | DB::FIELD_TYPE_TEXT)) {
+					|| $schema['fields'][$field]['type']
+						& (DB::FIELD_TYPE_CHAR | DB::FIELD_TYPE_TEXT | DB::FIELD_TYPE_NCLOB)) {
 				continue;
 			}
 
@@ -289,7 +290,8 @@ class CElasticsearchHelper {
 		foreach ($options['search'] as $field => $value) {
 			// Skip missing fields, non textual fields and empty values.
 			if ($value === null || !array_key_exists($field, $schema['fields'])
-					|| ($schema['fields'][$field]['type'] & (DB::FIELD_TYPE_CHAR | DB::FIELD_TYPE_TEXT)) == 0) {
+					|| ($schema['fields'][$field]['type']
+						& (DB::FIELD_TYPE_TEXT | DB::FIELD_TYPE_NCLOB | DB::FIELD_TYPE_CHAR)) == 0) {
 				continue;
 			}
 

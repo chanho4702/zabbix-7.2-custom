@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -107,13 +107,13 @@ $mediatype_form_grid = (new CFormGrid())
 		))->setId('smtp-security-field')
 	])
 	->addItem([
-		(new CLabel(_('SSL verify peer')))->setId('verify-peer-label'),
+		(new CLabel(_('SSL verify peer'), 'smtp_verify_peer'))->setId('verify-peer-label'),
 		(new CFormField(
 			(new CCheckBox('smtp_verify_peer'))->setChecked($data['smtp_verify_peer'])
 		))->setId('verify-peer-field')
 	])
 	->addItem([
-		(new CLabel(_('SSL verify host')))->setId('verify-host-label'),
+		(new CLabel(_('SSL verify host'), 'smtp_verify_host'))->setId('verify-host-label'),
 		(new CFormField(
 			(new CCheckBox('smtp_verify_host'))->setChecked($data['smtp_verify_host'])
 		))->setId('verify-host-field')
@@ -149,7 +149,7 @@ $parameters_exec_table = (new CTable())
 	->setId('exec_params_table')
 	->setHeader([
 		(new CColHeader(_('Value')))->setWidth('100%'),
-		''
+		_('Action')
 	])
 	->addStyle('width: 100%;')
 	->addItem(
@@ -223,7 +223,7 @@ $parameters_table = (new CTable())
 	->setHeader([
 		(new CColHeader(_('Name')))->setWidth('50%'),
 		(new CColHeader(_('Value')))->setWidth('50%'),
-		''
+		_('Action')
 	])
 	->addStyle('width: 100%;')
 	->addItem(
@@ -540,8 +540,7 @@ $output = [
 	'doc_url' => CDocHelper::getUrl(CDocHelper::ALERTS_MEDIATYPE_EDIT),
 	'body' => $form->toString(),
 	'buttons' => $buttons,
-	'script_inline' => getPagePostJs().$this->readJsFile('mediatype.edit.js.php'),
-	'dialogue_class' => 'modal-popup-static'
+	'script_inline' => getPagePostJs().$this->readJsFile('mediatype.edit.js.php')
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

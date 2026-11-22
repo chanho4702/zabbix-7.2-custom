@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -598,19 +598,24 @@ abstract class CTriggerGeneral extends CApiService {
 	 * @throws APIException
 	 */
 	private static function validateUuid(array $triggers, array $descriptions): void {
+		$triggers_validate_indexes = [];
+
 		foreach ($descriptions as $_triggers) {
 			foreach ($_triggers as $_trigger) {
 				$triggers[$_trigger['index']]['host_status'] = $_trigger['host']['status'];
+				$triggers_validate_indexes[] = $_trigger['index'];
 			}
 		}
 
-		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_ALLOW_UNEXPECTED, 'uniq' => [['uuid']], 'fields' => [
+		$api_input_rules = ['type' => API_OBJECTS, 'flags' => API_ALLOW_UNEXPECTED | API_PRESERVE_KEYS, 'uniq' => [['uuid']], 'fields' => [
 			'host_status' =>	['type' => API_ANY],
 			'uuid' =>			['type' => API_MULTIPLE, 'rules' => [
 									['if' => ['field' => 'host_status', 'in' => HOST_STATUS_TEMPLATE], 'type' => API_UUID],
 									['else' => true, 'type' => API_STRING_UTF8, 'in' => DB::getDefault('triggers', 'uuid'), 'unset' => true]
 			]]
 		]];
+
+		$triggers = array_intersect_key($triggers, array_flip($triggers_validate_indexes));
 
 		if (!CApiInputValidator::validate($api_input_rules, $triggers, '/', $error)) {
 			self::exception(ZBX_API_ERROR_PARAMETERS, $error);
@@ -757,8 +762,10 @@ abstract class CTriggerGeneral extends CApiService {
 
 		$triggerids = array_keys($result);
 
-		$this->addRelatedHostGroups($options, $result);
-		$this->addRelatedTemplateGroups($options, $result);
+		// adding groups
+		$this->addRelatedGroups($options, $result, 'selectGroups');
+		$this->addRelatedGroups($options, $result, 'selectHostGroups');
+		$this->addRelatedGroups($options, $result, 'selectTemplateGroups');
 
 		// adding hosts
 		if ($options['selectHosts'] !== null && $options['selectHosts'] != API_OUTPUT_COUNT) {
@@ -822,68 +829,60 @@ abstract class CTriggerGeneral extends CApiService {
 		return $result;
 	}
 
-	private function addRelatedHostGroups(array $options, array &$result): void {
-		if ($options['selectHostGroups'] === null || $options['selectHostGroups'] === API_OUTPUT_COUNT) {
+	/**
+	 * Adds related host or template groups requested by "select*" options to the resulting object set.
+	 *
+	 * @param array  $options [IN] Original input options.
+	 * @param array  $result  [IN/OUT] Result output.
+	 * @param string $option  [IN] Possible values:
+	 *                               - "selectGroups" (deprecated);
+	 *                               - "selectHostGroups";
+	 *                               - "selectTemplateGroups".
+	 */
+	private function addRelatedGroups(array $options, array &$result, string $option): void {
+		if ($options[$option] === null || $options[$option] === API_OUTPUT_COUNT) {
 			return;
 		}
 
-		$resource = DBselect(
+		$res = DBselect(
 			'SELECT f.triggerid,hg.groupid'.
-			' FROM functions f'.
-			' JOIN items i ON f.itemid=i.itemid'.
-			' JOIN hosts_groups hg ON i.hostid=hg.hostid'.
-			' JOIN hstgrp hgg ON hg.groupid=hgg.groupid'.
-				' AND '.dbConditionInt('hgg.type', [HOST_GROUP_TYPE_HOST_GROUP]).
-			' WHERE '.dbConditionId('f.triggerid', array_keys($result))
+			' FROM functions f,items i,hosts_groups hg'.
+			' WHERE '.dbConditionInt('f.triggerid', array_keys($result)).
+				' AND f.itemid=i.itemid'.
+				' AND i.hostid=hg.hostid'
 		);
-		$relation_map = new CRelationMap();
-
-		while ($relation = DBfetch($resource)) {
-			$relation_map->addRelation($relation['triggerid'], $relation['groupid']);
+		$relationMap = new CRelationMap();
+		while ($relation = DBfetch($res)) {
+			$relationMap->addRelation($relation['triggerid'], $relation['groupid']);
 		}
 
-		$related_ids = $relation_map->getRelatedIds();
-		$groups = $related_ids
-			? API::HostGroup()->get([
-				'output' => $options['selectHostGroups'],
-				'groupids' => $related_ids,
+		switch ($option) {
+			case 'selectGroups':
+				$output_tag = 'groups';
+				$entities = [API::HostGroup(), API::TemplateGroup()];
+				break;
+
+			case 'selectHostGroups':
+				$entities = [API::HostGroup()];
+				$output_tag = 'hostgroups';
+				break;
+
+			case 'selectTemplateGroups':
+				$entities = [API::TemplateGroup()];
+				$output_tag = 'templategroups';
+				break;
+		}
+
+		$groups = [];
+		foreach ($entities as $entity) {
+			$groups += $entity->get([
+				'output' => $options[$option],
+				'groupids' => $relationMap->getRelatedIds(),
 				'preservekeys' => true
-			])
-			: [];
-
-		$result = $relation_map->mapMany($result, $groups, 'hostgroups');
-	}
-
-	private function addRelatedTemplateGroups(array $options, array &$result): void {
-		if ($options['selectTemplateGroups'] === null || $options['selectTemplateGroups'] === API_OUTPUT_COUNT) {
-			return;
+			]);
 		}
 
-		$resource = DBselect(
-			'SELECT f.triggerid,hg.groupid'.
-			' FROM functions f'.
-			' JOIN items i ON f.itemid=i.itemid'.
-			' JOIN hosts_groups hg ON i.hostid=hg.hostid'.
-			' JOIN hstgrp hgg ON hg.groupid=hgg.groupid'.
-				' AND '.dbConditionInt('hgg.type', [HOST_GROUP_TYPE_TEMPLATE_GROUP]).
-			' WHERE '.dbConditionId('f.triggerid', array_keys($result))
-		);
-		$relation_map = new CRelationMap();
-
-		while ($relation = DBfetch($resource)) {
-			$relation_map->addRelation($relation['triggerid'], $relation['groupid']);
-		}
-
-		$related_ids = $relation_map->getRelatedIds();
-		$groups = $related_ids
-			? API::TemplateGroup()->get([
-				'output' => $options['selectTemplateGroups'],
-				'groupids' => $related_ids,
-				'preservekeys' => true
-			])
-			: [];
-
-		$result = $relation_map->mapMany($result, $groups, 'templategroups');
+		$result = $relationMap->mapMany($result, $groups, $output_tag);
 	}
 
 	/**

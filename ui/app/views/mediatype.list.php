@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,6 +20,7 @@
  */
 
 $this->includeJsFile('mediatype.list.js.php');
+$this->addJsFile('multilineinput.js');
 
 $html_page = (new CHtmlPage())
 	->setTitle(_('Media types'))
@@ -156,15 +157,11 @@ foreach ($data['mediatypes'] as $media_type) {
 		$action_count_total = (new CSpan($media_type['action_count_total']))->addClass(ZBX_STYLE_ENTITY_COUNT);
 
 		foreach ($media_type['actions'] as $action) {
-			$action_url = (new CUrl('zabbix.php'))
-				->setArgument('action', 'popup')
-				->setArgument('popup', 'action.edit')
-				->setArgument('actionid', $action['actionid'])
-				->setArgument('eventsource', $action['eventsource'])
-				->getUrl();
-
 			$actions[] = $action['is_editable']
-				? (new CLink($action['name'], $action_url))
+				? (new CLink($action['name']))
+					->addClass('js-action-edit')
+					->setAttribute('data-actionid', $action['actionid'])
+					->setAttribute('data-eventsource', $action['eventsource'])
 					->addClass(ZBX_STYLE_LINK_ALT)
 					->addClass(ZBX_STYLE_GREY)
 				: (new CSpan($action['name']))->addClass(ZBX_STYLE_GREY);
@@ -197,13 +194,9 @@ foreach ($data['mediatypes'] as $media_type) {
 		->setAttribute('data-mediatypeid', $media_type['mediatypeid'])
 		->addClass('js-test-edit');
 
-	$media_type_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'mediatype.edit')
-		->setArgument('mediatypeid', $media_type['mediatypeid'])
-		->getUrl();
-
-	$name = new CLink($media_type['name'], $media_type_url);
+	$name = (new CLink($media_type['name']))
+		->addClass('js-edit')
+		->setAttribute('data-mediatypeid', $media_type['mediatypeid']);
 
 	// append row
 	$media_type_table->addRow([

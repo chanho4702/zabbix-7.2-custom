@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -82,6 +82,7 @@ class CScript extends CApiService {
 			'searchWildcardsEnabled' =>	['type' => API_BOOLEAN, 'default' => false],
 			// output
 			'output' =>					['type' => API_OUTPUT, 'in' => implode(',', $script_fields), 'default' => API_OUTPUT_EXTEND],
+			'selectGroups' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL | API_DEPRECATED, 'in' => implode(',', $group_fields), 'default' => null],
 			'selectHostGroups' =>		['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $group_fields), 'default' => null],
 			'selectHosts' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $host_fields), 'default' => null],
 			'selectActions' =>			['type' => API_OUTPUT, 'flags' => API_ALLOW_NULL, 'in' => implode(',', $this->action_fields), 'default' => null],
@@ -509,9 +510,12 @@ class CScript extends CApiService {
 			if (($script['scope'] == ZBX_SCRIPT_SCOPE_HOST || $script['scope'] == ZBX_SCRIPT_SCOPE_EVENT)
 					&& $script['manualinput'] == ZBX_SCRIPT_MANUALINPUT_ENABLED) {
 				if ($script['manualinput_validator_type'] == ZBX_SCRIPT_MANUALINPUT_TYPE_STRING) {
-					$regular_expression = '/'.str_replace('/', '\/', $script['manualinput_validator']).'/';
+					if ($script['manualinput_default_value'] === '') {
+						continue;
+					}
 
-					if (!preg_match($regular_expression, $script['manualinput_default_value'])) {
+					if (!preg_match('/'.CRegexHelper::handleSlashEscaping($script['manualinput_validator']).'/',
+							$script['manualinput_default_value'])) {
 						self::exception(ZBX_API_ERROR_PARAMETERS,
 							_s('Invalid parameter "%1$s": %2$s.', '/'.($index + 1).'/manualinput_default_value',
 								_s('input does not match the provided pattern: %1$s', $script['manualinput_validator'])
@@ -1045,6 +1049,7 @@ class CScript extends CApiService {
 		]);
 
 		$scripts = $this->addRelatedGroupsAndHosts([
+			'selectGroups' => null,
 			'selectHostGroups' => null,
 			'selectHosts' => ['hostid']
 		], $scripts, $hostids);
@@ -1227,6 +1232,7 @@ class CScript extends CApiService {
 		]);
 
 		$scripts = $this->addRelatedGroupsAndHosts([
+			'selectGroups' => null,
 			'selectHostGroups' => null,
 			'selectHosts' => ['hostid']
 		], $scripts, $hostids);
@@ -1285,7 +1291,8 @@ class CScript extends CApiService {
 	protected function applyQueryOutputOptions($tableName, $tableAlias, array $options, array $sqlParts) {
 		$sqlParts = parent::applyQueryOutputOptions($tableName, $tableAlias, $options, $sqlParts);
 
-		if ($options['selectHostGroups'] !== null || $options['selectHosts'] !== null) {
+		if ($options['selectGroups'] !== null || $options['selectHostGroups'] !== null
+				|| $options['selectHosts'] !== null) {
 			$sqlParts = $this->addQuerySelect($this->fieldId('groupid'), $sqlParts);
 			$sqlParts = $this->addQuerySelect($this->fieldId('host_access'), $sqlParts);
 		}
@@ -1414,10 +1421,11 @@ class CScript extends CApiService {
 	 * @return array $result
 	 */
 	private function addRelatedGroupsAndHosts(array $options, array $result, ?array $hostids = null) {
+		$is_groups_select = $options['selectGroups'] !== null;
 		$is_hostgroups_select = $options['selectHostGroups'] !== null;
 		$is_hosts_select = $options['selectHosts'] !== null;
 
-		if (!$is_hostgroups_select && !$is_hosts_select) {
+		if (!$is_groups_select && !$is_hostgroups_select && !$is_hosts_select) {
 			return $result;
 		}
 
@@ -1447,9 +1455,15 @@ class CScript extends CApiService {
 			}
 		}
 
-		$select_groups = $options['selectHostGroups'] === API_OUTPUT_EXTEND
-			? API_OUTPUT_EXTEND
-			: (is_array($options['selectHostGroups']) ? $options['selectHostGroups'] : []);
+		if ($options['selectGroups'] === API_OUTPUT_EXTEND || $options['selectHostGroups'] === API_OUTPUT_EXTEND) {
+			$select_groups = API_OUTPUT_EXTEND;
+		}
+		else {
+			$select_groups = array_unique(array_merge(
+				is_array($options['selectGroups']) ? $options['selectGroups'] : [],
+				is_array($options['selectHostGroups']) ? $options['selectHostGroups'] : []
+			));
+		}
 
 		$select_groups = $this->outputExtend($select_groups, ['groupid', 'name']);
 
@@ -1528,6 +1542,12 @@ class CScript extends CApiService {
 				$script_groups = ($script['host_access'] == PERM_READ_WRITE)
 					? array_intersect_key($host_groups_with_write_access, $hstgrp_branch[$script['groupid']])
 					: array_intersect_key($host_groups, $hstgrp_branch[$script['groupid']]);
+			}
+
+			if ($is_groups_select) {
+				$script['groups'] = array_values($this->unsetExtraFields($script_groups,
+					['groupid', 'name', 'flags', 'uuid'], $options['selectGroups']
+				));
 			}
 
 			if ($is_hostgroups_select) {

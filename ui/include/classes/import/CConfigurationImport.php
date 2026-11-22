@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1862,17 +1862,19 @@ class CConfigurationImport {
 
 		$triggers_to_process_dependencies = [];
 
-		foreach ($this->getFormattedTriggers() as $trigger) {
-			$hostids = $this->extractHostids($trigger);
+		$triggers = $this->getFormattedTriggers();
 
-			if (!$hostids) {
-				continue;
-			}
+		$trigger_hostids = $this->getHostidsByTriggerIndex($triggers);
 
+		if (!$trigger_hostids) {
+			return;
+		}
+
+		foreach ($triggers as $i => $trigger) {
 			$triggerid = null;
 			$is_template_trigger = false;
 
-			foreach ($hostids as $hostid) {
+			foreach ($trigger_hostids[$i] as $hostid) {
 				if ($this->importedObjectContainer->isTemplateProcessed($hostid)) {
 					$is_template_trigger = true;
 				}
@@ -1930,7 +1932,39 @@ class CConfigurationImport {
 		$this->processTriggerDependencies($triggers_to_process_dependencies);
 	}
 
-	private function extractHostids(array $trigger): array {
+	private function getHostidsByTriggerIndex(array $triggers): array {
+		$host_trigger_indexes = [];
+
+		foreach ($triggers as $i => $trigger) {
+			$hosts = self::extractHosts($trigger);
+
+			if (!$hosts) {
+				return [];
+			}
+
+			foreach ($hosts as $host) {
+				$host_trigger_indexes[$host][] = $i;
+			}
+		}
+
+		$trigger_hostids = [];
+
+		foreach ($host_trigger_indexes as $host => $trigger_indexes) {
+			$hostid = $this->referencer->findTemplateidOrHostidByHost($host);
+
+			if ($hostid === null) {
+				return [];
+			}
+
+			foreach ($trigger_indexes as $i) {
+				$trigger_hostids[$i][] = $hostid;
+			}
+		}
+
+		return $trigger_hostids;
+	}
+
+	public static function extractHosts(array $trigger): array {
 		$expression_parser = new CExpressionParser(['usermacros' => true]);
 
 		if ($expression_parser->parse($trigger['expression']) != CParser::PARSE_SUCCESS) {
@@ -1947,18 +1981,7 @@ class CConfigurationImport {
 			$hosts = array_merge($hosts, $expression_parser->getResult()->getHosts());
 		}
 
-		$hostids = [];
-		foreach (array_unique($hosts) as $host) {
-			$hostid = $this->referencer->findTemplateidOrHostidByHost($host);
-
-			if ($hostid === null) {
-				return [];
-			}
-
-			$hostids[] = $hostid;
-		}
-
-		return $hostids;
+		return array_unique($hosts);
 	}
 
 	/**
@@ -2954,7 +2977,7 @@ class CConfigurationImport {
 			$resolve_entity_keys = [];
 			$itemid_to_item_key_by_hosts = [];
 
-			while ($db_items) {
+			for ($level = 0; $level < ZBX_DEPENDENT_ITEM_MAX_LEVELS; $level++) {
 				$missing_master_itemids = [];
 
 				foreach ($db_items as $itemid => $item) {
@@ -3007,6 +3030,12 @@ class CConfigurationImport {
 				else {
 					break;
 				}
+			}
+
+			if ($missing_master_itemids) {
+				throw new Exception(_s('Incorrect value for field "%1$s": %2$s.', 'master_itemid',
+					_('maximum number of dependency levels reached')
+				));
 			}
 
 			foreach ($resolve_entity_keys as $item) {
@@ -3067,6 +3096,12 @@ class CConfigurationImport {
 					else {
 						throw new Exception(_s('Incorrect value for field "%1$s": %2$s.', 'master_itemid',
 							_s('value "%1$s" not found', $master_key)
+						));
+					}
+
+					if ($level > ZBX_DEPENDENT_ITEM_MAX_LEVELS) {
+						throw new Exception(_s('Incorrect value for field "%1$s": %2$s.', 'master_itemid',
+							_('maximum number of dependency levels reached')
 						));
 					}
 				}

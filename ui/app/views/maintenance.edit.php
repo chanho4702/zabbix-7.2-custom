@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -33,7 +33,7 @@ $form->addItem((new CSubmitButton())->addClass(ZBX_STYLE_FORM_SUBMIT_HIDDEN));
 $timeperiods = (new CTable())
 	->setId('timeperiods')
 	->addStyle('min-width: '.ZBX_TEXTAREA_BIG_WIDTH.'px;')
-	->setHeader(new CRowHeader([_('Period type'), _('Schedule'), _('Period'), _('Actions')]))
+	->setHeader(new CRowHeader([_('Period type'), _('Schedule'), _('Period'), _('Action')]))
 	->addItem(
 		(new CTag('tfoot', true))
 			->addItem(
@@ -296,8 +296,7 @@ $output = [
 	'body' => $form->toString(),
 	'buttons' => $buttons,
 	'script_inline' => getPagePostJs().
-		$this->readJsFile('maintenance.edit.js.php'),
-	'dialogue_class' => 'modal-popup-large'
+		$this->readJsFile('maintenance.edit.js.php')
 ];
 
 if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {

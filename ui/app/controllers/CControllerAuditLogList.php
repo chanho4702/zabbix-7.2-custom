@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -84,7 +84,7 @@ class CControllerAuditLogList extends CController {
 		$non_existent_userids = [0];
 
 		$filter = [
-			'action' => $data['auditlog_actions'] ?: null
+			'action' => $data['auditlog_actions']
 		];
 
 		if ($data['resourcetype'] != -1) {

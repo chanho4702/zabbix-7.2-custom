@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1003,10 +1003,6 @@ class CMacrosResolverGeneral {
 							$value = date('H:i:s', $history[$itemid][0]['timestamp']);
 							break;
 
-						case 'ITEM.LOG.TIMESTAMP':
-							$value = $history[$itemid][0]['timestamp'];
-							break;
-
 						case 'ITEM.LOG.AGE':
 							$value = zbx_date2age($history[$itemid][0]['timestamp']);
 							break;
@@ -1208,14 +1204,9 @@ class CMacrosResolverGeneral {
 										)
 								)
 							]);
-						$macro_value = new CSpan([
-							(new CSpan())
-								->addClass('main-hint')
-								->setHint($hint_table),
-							(new CLinkAction($macro_value))
-								->addClass('hint-item')
-								->setAttribute('data-hintbox', '1')
-						]);
+						$macro_value = (new CLinkAction($macro_value))
+							->addClass(ZBX_STYLE_NO_INDENT)
+							->setHint($hint_table);
 					}
 
 					$macro_values[$function['triggerid']][$token['token']] = $macro_value;
@@ -1260,31 +1251,21 @@ class CMacrosResolverGeneral {
 					case 'ITEM.LOG.DATE':
 						$value = date('Y.m.d', $history[$function['itemid']][0]['timestamp']);
 						break;
-
 					case 'ITEM.LOG.TIME':
 						$value = date('H:i:s', $history[$function['itemid']][0]['timestamp']);
 						break;
-
-					case 'ITEM.LOG.TIMESTAMP':
-						$value = $history[$function['itemid']][0]['timestamp'];
-						break;
-
 					case 'ITEM.LOG.AGE':
 						$value = zbx_date2age($history[$function['itemid']][0]['timestamp']);
 						break;
-
 					case 'ITEM.LOG.SOURCE':
 						$value = $history[$function['itemid']][0]['source'];
 						break;
-
 					case 'ITEM.LOG.SEVERITY':
 						$value = get_item_logtype_description($history[$function['itemid']][0]['severity']);
 						break;
-
 					case 'ITEM.LOG.NSEVERITY':
 						$value = $history[$function['itemid']][0]['severity'];
 						break;
-
 					case 'ITEM.LOG.EVENTID':
 						$value = $history[$function['itemid']][0]['logeventid'];
 						break;
@@ -1932,7 +1913,7 @@ class CMacrosResolverGeneral {
 	 *
 	 * @return array
 	 */
-	protected static function getSupportedHostInventoryMacrosMap(): array {
+	public static function getSupportedHostInventoryMacrosMap(): array {
 		return [
 			'{INVENTORY.ALIAS}' => 'alias',
 			'{INVENTORY.ASSET.TAG}' => 'asset_tag',
@@ -2222,7 +2203,7 @@ class CMacrosResolverGeneral {
 		}
 
 		$db_interfaces = API::HostInterface()->get([
-			'output' => ['hostid', 'type', 'useip', 'ip', 'dns', 'port'],
+			'output' => ['hostid', 'type', 'useip', 'ip', 'dns'],
 			'hostids' => array_keys($hostids),
 			'filter' => ['main' => INTERFACE_PRIMARY]
 		]);
@@ -2246,9 +2227,7 @@ class CMacrosResolverGeneral {
 		}
 		unset($host_interface);
 
-		$interface_macros = ['IPADDRESS' => 'ip', 'HOST.IP' => 'ip', 'HOST.DNS' => 'dns', 'HOST.CONN' => 'conn',
-			'HOST.PORT' => 'port'
-		];
+		$interface_macros = ['IPADDRESS' => 'ip', 'HOST.IP' => 'ip', 'HOST.DNS' => 'dns', 'HOST.CONN' => 'conn'];
 
 		foreach ($macros as $triggerid => $macro_data) {
 			if (!array_key_exists($triggerid, $trigger_hosts_by_f_num)) {
@@ -2645,7 +2624,8 @@ class CMacrosResolverGeneral {
 							}
 							elseif ($data['context'] !== null && count($global_macros[$data['macro']]['regex'])) {
 								foreach ($global_macros[$data['macro']]['regex'] as $regex => $val) {
-									if (preg_match('/'.self::handleSlashEscaping($regex).'/', $data['context'])) {
+									if (preg_match(
+											'/'.CRegexHelper::handleSlashEscaping($regex).'/', $data['context'])) {
 										$data['value']['value'] = $val;
 										break;
 									}
@@ -2732,7 +2712,7 @@ class CMacrosResolverGeneral {
 				// Searching context coincidence, if regex array not empty.
 				elseif ($context !== null && count($host_macros[$hostid][$macro]['regex'])) {
 					foreach ($host_macros[$hostid][$macro]['regex'] as $regex => $val) {
-						if (preg_match('/'.self::handleSlashEscaping($regex).'/', $context) === 1) {
+						if (preg_match('/'.CRegexHelper::handleSlashEscaping($regex).'/', $context) === 1) {
 							return [
 								'value' => $val,
 								'value_default' => $value_default
@@ -2854,34 +2834,6 @@ class CMacrosResolverGeneral {
 		}
 
 		return $macro_values;
-	}
-
-	/**
-	 * Escape slashes in the regular expression based on preceding backslashes.
-	 *
-	 * @param string $regex
-	 *
-	 * @return string
-	 */
-	private static function handleSlashEscaping(string $regex): string {
-		$formatted_regex = '';
-		$backslash_count = 0;
-
-		for ($p = 0; isset($regex[$p]); $p++) {
-			if ($regex[$p] === '\\') {
-				$backslash_count++;
-			}
-			else {
-				if ($regex[$p] === '/' && $backslash_count % 2 == 0) {
-					$formatted_regex .= '\\';
-				}
-				$backslash_count = 0;
-			}
-
-			$formatted_regex .= $regex[$p];
-		}
-
-		return $formatted_regex;
 	}
 
 	/**

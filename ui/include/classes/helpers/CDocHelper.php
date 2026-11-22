@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -71,7 +71,7 @@ class CDocHelper {
 	const DATA_COLLECTION_HOST_PROTOTYPE_LIST =					'web_interface/frontend_sections/data_collection/hosts/discovery/host_prototypes';
 	const DATA_COLLECTION_HOST_TRIGGERS_LIST =					'web_interface/frontend_sections/data_collection/hosts/triggers';
 	const DATA_COLLECTION_HOST_TRIGGER_PROTOTYPE_LIST =			'web_interface/frontend_sections/data_collection/hosts/discovery/trigger_prototypes';
-	const DATA_COLLECTION_HOSTGROUPS_EDIT =						'config/hosts/host#creating-a-host-group';
+	const DATA_COLLECTION_HOSTGROUPS_EDIT =						'config/hosts/host_groups#configuration';
 	const DATA_COLLECTION_HOSTGROUPS_LIST =						'web_interface/frontend_sections/data_collection/hostgroups';
 	const DATA_COLLECTION_HTTPCONF_EDIT =						'web_monitoring#configuring-a-web-scenario';
 	const DATA_COLLECTION_ITEM_EDIT =							'config/items/item#configuration';
@@ -79,7 +79,7 @@ class CDocHelper {
 	const DATA_COLLECTION_MAINTENANCE_EDIT =					'maintenance#configuration';
 	const DATA_COLLECTION_MAINTENANCE_LIST =					'web_interface/frontend_sections/data_collection/maintenance';
 	const DATA_COLLECTION_PROTOTYPE_GRAPH_EDIT =				'discovery/low_level_discovery/graph_prototypes';
-	const DATA_COLLECTION_TEMPLATE_GROUPS_EDIT =				'config/templates/template#creating-a-template-group';
+	const DATA_COLLECTION_TEMPLATE_GROUPS_EDIT =				'config/templates/template_groups#configuration';
 	const DATA_COLLECTION_TEMPLATE_GROUPS_LIST =				'web_interface/frontend_sections/data_collection/templategroups';
 	const DATA_COLLECTION_TEMPLATE_GRAPH_LIST =					'web_interface/frontend_sections/data_collection/templates/graphs';
 	const DATA_COLLECTION_TEMPLATES_GRAPH_PROTOTYPE_LIST =		'web_interface/frontend_sections/data_collection/templates/discovery/graph_prototypes';
@@ -139,9 +139,9 @@ class CDocHelper {
 	const QUEUE_OVERVIEW =										'web_interface/frontend_sections/administration/queue#overview-by-item-type';
 	const QUEUE_OVERVIEW_PROXY =								'web_interface/frontend_sections/administration/queue#overview-by-proxy';
 	const REPORT_STATUS =										'web_interface/frontend_sections/reports/status_of_zabbix';
+	const REPORT2 =												'web_interface/frontend_sections/reports/availability';
 	const REPORT4 =												'web_interface/frontend_sections/reports/notifications';
 	const REPORTS_AUDITLOG_LIST =								'web_interface/frontend_sections/reports/audit_log';
-	const REPORTS_AVAILABILITYREPORT_LIST =						'web_interface/frontend_sections/reports/availability';
 	const REPORTS_SCHEDULEDREPORT_EDIT =						'config/reports#configuration';
 	const REPORTS_SCHEDULEDREPORT_LIST =						'web_interface/frontend_sections/reports/scheduled';
 	const REPORTS_TOPTRIGGERS =									'web_interface/frontend_sections/reports/triggers_top';

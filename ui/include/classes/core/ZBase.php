@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -164,7 +164,6 @@ class ZBase {
 	 *
 	 * @throws Exception
 	 */
-	// [DM 해설] 요청 1건의 전체 진행을 맡는 메소드. 아래 [DM 해설] 주석을 위에서부터 따라 읽으면 흐름이 보인다.
 	public function run($mode) {
 		$this->mode = $mode;
 
@@ -173,14 +172,11 @@ class ZBase {
 		$this->setMaintenanceMode();
 
 		ini_set('display_errors', 'Off');
-		// [DM 해설] PHP 의 Warning / Deprecated 를 zbx_err_handler() (include/func.inc.php) 로 보낸다.
-		// [DM 해설] 그래서 PHP 경고가 화면 상단의 빨간 메시지로 그대로 보인다. 모듈 코드에서 경고가 나면 사용자에게 오류처럼 보인다.
 		set_error_handler('zbx_err_handler');
 
 		switch ($mode) {
 			case self::EXEC_MODE_DEFAULT:
 				$file = basename($_SERVER['SCRIPT_NAME']);
-				// [DM 해설] 액션명 결정. zabbix.php 면 URL 의 action 파라미터, 그 외 옛 방식 페이지(hostinventories.php 등)는 파일명이 액션명이다.
 				$action_name = ($file === 'zabbix.php') ? getRequest('action', '') : $file;
 
 				if ($action_name === 'notifications.get') {
@@ -191,20 +187,15 @@ class ZBase {
 				$this->initVault();
 				$this->initDB();
 				$this->setServerAddress();
-				// [DM 해설] 로그인 세션 확인. 이후 CWebUser::$data 로 현재 사용자 정보를 읽을 수 있다.
 				$this->authenticateUser();
 
 				$this->initMessages();
 				$this->setLayoutModeByUrl();
-				// [DM 해설] 라우터와 사이드바 메뉴(menu.main)를 만들어 등록한다. (아래 initComponents() 참고)
-				// [DM 해설] 메뉴가 모듈보다 먼저 만들어지므로 모듈의 Module::init() 에서 메뉴를 고칠 수 있다.
 				$this->initComponents();
-				// [DM 해설] 활성화된 모듈을 DB 에서 읽어 로드하고 각 모듈의 Module::init() 을 호출한다. (아래 initModuleManager() 참고)
 				$this->initModuleManager();
 
 				/** @var CRouter $router */
 				$router = $this->component_registry->get('router');
-				// [DM 해설] 모듈 manifest.json 의 "actions" 를 코어 라우팅 표에 합친다. 5버전에서 routing.php 를 읽어 들이던 자리에 해당한다.
 				$router->addActions($this->module_manager->getActions());
 
 				$validator = new CNewValidator(['action' => $action_name], ['action' => 'fatal|required|string']);
@@ -218,12 +209,9 @@ class ZBase {
 					redirect('zabbix.php?action=system.warning');
 				}
 
-				// [DM 해설] 액션명으로 컨트롤러 클래스 / 레이아웃 / 뷰 이름을 결정한다. 등록되지 않은 액션이면 뒤에서 "Page not found" 가 된다.
 				$router->setAction($action_name);
 
 				if (CWebUser::isLoggedIn()) {
-					// [DM 해설] 현재 액션에 해당하는 사이드바 메뉴를 "선택됨" 으로 표시한다.
-					// [DM 해설] CMenuItem::setAction() / setAliases() 에 적은 액션명과 비교하므로, CSV 같은 부속 액션은 setAliases 에 넣어 둔다.
 					$this->component_registry->get('menu.main')
 						->setSelectedByAction($action_name, $_REQUEST,
 							CViewHelper::loadSidebarMode() != ZBX_SIDEBAR_VIEW_MODE_COMPACT
@@ -237,7 +225,6 @@ class ZBase {
 
 				CProfiler::getInstance()->start();
 
-				// [DM 해설] 컨트롤러 실행과 화면 출력. (아래 processRequest() 참고)
 				$this->processRequest($router);
 				break;
 
@@ -555,23 +542,9 @@ class ZBase {
 	 */
 	protected function authenticateUser(): void {
 		$session = new CEncryptedCookieSession();
-		$sessionid = $session->extractSessionId() ?: '';
 
-		API::getWrapper()->auth = [
-			'type' => CJsonRpc::AUTH_TYPE_COOKIE,
-			'auth' => $sessionid
-		];
-
-		// [DM 해설] 쿠키의 세션이 유효하지 않으면(로그인 전) 기본 사용자(roleid 0)로 둔다.
-		// [DM 해설] roleid 가 0 이면 아래 initModuleManager() 의 모듈 접근 검사를 통과하지 못해 모듈이 하나도 로드되지 않는다.
-		// [DM 해설] 즉 로그인 화면에서는 모듈의 init() / onBeforeAction() 이 실행되지 않는다. (실제로 확인함)
-		if (!CWebUser::checkAuthentication($sessionid)) {
+		if (!CWebUser::checkAuthentication($session->extractSessionId() ?: '')) {
 			CWebUser::setDefault();
-
-			API::getWrapper()->auth = [
-				'type' => CJsonRpc::AUTH_TYPE_COOKIE,
-				'auth' => CWebUser::$data['sessionid']
-			];
 		}
 
 		$this->initLocales(CWebUser::$data['lang']);
@@ -584,6 +557,12 @@ class ZBase {
 			CSessionHelper::unset(['saml_data']);
 			CSessionHelper::set('sessionid', CWebUser::$data['sessionid']);
 		}
+
+		// Set the authentication token for the API.
+		API::getWrapper()->auth = [
+			'type' => CJsonRpc::AUTH_TYPE_COOKIE,
+			'auth' => CWebUser::$data['sessionid']
+		];
 
 		if (CWebUser::isAutologinEnabled()) {
 			$session->lifetime = time() + SEC_PER_MONTH;
@@ -598,7 +577,6 @@ class ZBase {
 	 *
 	 * @param CRouter $router  CRouter class instance.
 	 */
-	// [DM 해설] 컨트롤러 객체를 만들어 실행하고, 결과를 뷰와 레이아웃으로 출력한다.
 	private function processRequest(CRouter $router): void {
 		$action_name = $router->getAction();
 		$action_class = $router->getController();
@@ -625,8 +603,6 @@ class ZBase {
 				}
 			}
 
-			// [DM 해설] 컨트롤러 객체 생성. 모듈 액션이면 클래스는 Modules\<namespace>\Actions\<class> 이고 오토로더가 파일을 찾아 읽는다.
-			// [DM 해설] "Class ... not found for action ..." 오류가 나면 manifest.json 의 class 값, 파일 위치, 네임스페이스 선언을 확인한다.
 			$action = new $action_class();
 
 			if (!is_subclass_of($action, CAction::class)) {
@@ -649,9 +625,6 @@ class ZBase {
 				}
 			}
 
-			// [DM 해설] 모든 활성 모듈의 views/ , partials/ 폴더를 뷰 검색 경로에 추가한다.
-			// [DM 해설] 모듈 폴더가 코어(app/views)보다 먼저 검색되므로, 코어와 같은 이름의 뷰 파일을 모듈에 두면 코어 화면을 덮어쓰게 된다.
-			// [DM 해설] 실수로 덮어쓰지 않도록 모듈의 뷰 파일명은 항상 'dmove.' 로 시작하게 짓는다.
 			foreach (array_reverse($modules) as $module) {
 				if ($module->getType() === CModule::TYPE_MODULE) {
 					CView::registerDirectory($this->root_dir.'/'.$module->getRelativePath().'/views');
@@ -663,10 +636,8 @@ class ZBase {
 				$this->module_manager->publishEvent($action, 'onTerminate');
 			});
 
-			// [DM 해설] 모든 모듈의 Module::onBeforeAction() 을 호출한다. 코어 화면을 포함한 모든 요청에서 불린다.
 			$this->module_manager->publishEvent($action, 'onBeforeAction');
 
-			// [DM 해설] 컨트롤러 실행. CController::run() 이 checkInput() -> checkPermissions() -> doAction() 순서로 부른다.
 			$action->run();
 
 			if (!($action instanceof CLegacyAction)) {
@@ -681,8 +652,6 @@ class ZBase {
 		}
 	}
 
-	// [DM 해설] 컨트롤러가 setResponse() 로 지정한 응답을 실제 출력으로 바꾼다.
-	// [DM 해설] CControllerResponseData 면 뷰를 실행해 레이아웃(layout.htmlpage / layout.csv / layout.json)에 끼워 내보낸다.
 	private function processResponseFinal(CRouter $router, CAction $action): void {
 		$response = $action->getResponse();
 
@@ -748,13 +717,11 @@ class ZBase {
 			}
 
 			if ($router->getView() !== null && $response->isViewEnabled()) {
-				// [DM 해설] 뷰 실행 준비. 컨트롤러가 넘긴 배열이 뷰 파일 안에서 $data 가 된다.
 				$this->view = new CView($router->getView(), $response->getData());
 
 				$module = $this->module_manager->getActionModule();
 
 				if ($module !== null) {
-					// [DM 해설] 모듈 화면이면 뷰의 정적 파일 기준 경로를 <모듈>/assets 로 잡는다. (뷰의 addJsFile / addCssFile 가 이 경로를 쓴다)
 					$this->view->setAssetsPath($module->getRelativePath().'/assets');
 				}
 
@@ -917,8 +884,6 @@ class ZBase {
 		$this->component_registry->register('router', new CRouter());
 
 		if (CWebUser::isLoggedIn()) {
-			// [DM 해설] 사이드바 메뉴를 만들어 'menu.main' 이라는 이름으로 등록한다.
-			// [DM 해설] 모듈에서는 APP::Component()->get('menu.main') 으로 꺼내 메뉴를 추가/삭제한다. (modules/dmove/Module.php)
 			$this->component_registry->register('menu.main', CMenuHelper::getMainMenu());
 			$this->component_registry->register('menu.user', CMenuHelper::getUserMenu());
 		}
@@ -927,8 +892,6 @@ class ZBase {
 	/**
 	 * Initialize module manager and load all enabled and allowed modules according to user role settings.
 	 */
-	// [DM 해설] DB 의 module 테이블에서 "활성" 상태인 모듈만 읽는다.
-	// [DM 해설] 그래서 모듈 폴더를 복사한 뒤 관리 > 일반 > 모듈 에서 [디렉토리 스캔] 후 활성화해야 동작한다.
 	private function initModuleManager(): void {
 		$this->module_manager = new CModuleManager($this->root_dir);
 
@@ -941,8 +904,6 @@ class ZBase {
 		$modules_missing = [];
 
 		foreach ($db_modules as $db_module) {
-			// [DM 해설] 로그인한 사용자의 역할에 이 모듈 접근 권한이 없으면 로드하지 않는다. (사용자 > 사용자 역할 에서 모듈별로 설정)
-			// [DM 해설] 특정 사용자에게만 메뉴가 안 보인다면 여기서 걸러진 것이다.
 			if (!CWebUser::checkAccess('modules.module.'.$db_module['moduleid'])) {
 				continue;
 			}
@@ -963,11 +924,9 @@ class ZBase {
 		}
 
 		foreach ($this->module_manager->getNamespaces() as $namespace => $paths) {
-			// [DM 해설] 모듈 네임스페이스(Modules\DMove)를 모듈 폴더에 연결한다. 이후 그 네임스페이스의 클래스는 파일을 자동으로 찾아 읽는다.
 			$this->autoloader->addNamespace($namespace, $paths);
 		}
 
-		// [DM 해설] 각 모듈의 Module.php 객체를 만들고 init() 을 호출한다. (CModuleManager::initModules())
 		$this->module_manager->initModules();
 
 		array_map('error', $this->module_manager->getErrors());

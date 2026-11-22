@@ -1,6 +1,6 @@
 <?php declare(strict_types=0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,16 +18,6 @@ require 'include/forms.inc.php';
 
 class CControllerItemPrototypeEdit extends CControllerItemPrototype {
 
-	/**
-	 * @var array
-	 */
-	private $host;
-
-	/**
-	 * @var array
-	 */
-	private $template;
-
 	protected function init() {
 		$this->disableCsrfValidation();
 	}
@@ -37,14 +27,14 @@ class CControllerItemPrototypeEdit extends CControllerItemPrototype {
 			'clone' => 'in 1'
 		] + static::getValidationFields();
 
-		$ret = $this->validateInput($fields);
+		$ret = $this->validateInput($fields) && $this->validateReferredObjects();
 
 		if ($ret) {
 			if ($this->hasInput('clone') && !$this->hasInput('itemid')) {
 				$ret = false;
 				error(_s('Incorrect value for "%1$s" field.', 'itemid'));
 			}
-			elseif (!$this->hasInput('parent_discoveryid')) {
+			elseif (!$this->hasInput('itemid') && !$this->hasInput('parent_discoveryid')) {
 				$ret = false;
 				error(_s('Incorrect value for "%1$s" field.', 'parent_discoveryid'));
 			}
@@ -61,40 +51,6 @@ class CControllerItemPrototypeEdit extends CControllerItemPrototype {
 		}
 
 		return $ret;
-	}
-
-	protected function checkPermissions(): bool {
-		if (!CWebUser::isLoggedIn() || !$this->validateReferredObjects()) {
-			return false;
-		}
-
-		if ($this->getInput('context') === 'host') {
-			$host = API::Host()->get([
-				'output' => ['hostid', 'name', 'monitored_by', 'proxyid', 'assigned_proxyid', 'flags', 'status'],
-				'selectInterfaces' => ['interfaceid', 'ip', 'port', 'dns', 'useip', 'details', 'type', 'main'],
-				'itemids' => [$this->getInput('itemid', $this->getInput('parent_discoveryid'))]
-			]);
-
-			if (!$host) {
-				return false;
-			}
-
-			$this->host = reset($host);
-		}
-		else {
-			$template = API::Template()->get([
-				'output' => ['templateid', 'name', 'flags'],
-				'itemids' => [$this->getInput('itemid', $this->getInput('parent_discoveryid'))]
-			]);
-
-			if (!$template) {
-				return false;
-			}
-
-			$this->template = reset($template);
-		}
-
-		return parent::checkPermissions();
 	}
 
 	public function doAction() {
@@ -155,7 +111,11 @@ class CControllerItemPrototypeEdit extends CControllerItemPrototype {
 	 * @return array
 	 */
 	protected function getHost(): array {
-		$host = $this->host;
+		[$host] = API::Host()->get([
+			'output' => ['hostid', 'name', 'monitored_by', 'proxyid', 'assigned_proxyid', 'flags', 'status'],
+			'selectInterfaces' => ['interfaceid', 'ip', 'port', 'dns', 'useip', 'details', 'type', 'main'],
+			'itemids' => [$this->getInput('itemid', $this->getInput('parent_discoveryid'))]
+		]);
 
 		if ($host['monitored_by'] == ZBX_MONITORED_BY_PROXY_GROUP) {
 			$host['proxyid'] = $host['assigned_proxyid'];
@@ -178,7 +138,10 @@ class CControllerItemPrototypeEdit extends CControllerItemPrototype {
 	 * @return array
 	 */
 	protected function getTemplate(): array {
-		$template = $this->template;
+		[$template] = API::Template()->get([
+			'output' => ['templateid', 'name', 'flags'],
+			'itemids' => [$this->getInput('itemid', $this->getInput('parent_discoveryid'))]
+		]);
 		$template += [
 			'hostid' => $template['templateid'],
 			'proxyid' => 0,

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -493,8 +493,6 @@
 				.on(CSortable.EVENT_SORT, this.recalculateSortOrder);
 
 			!this.graphs.readonly && this.rewriteNameLinks();
-
-			this.initPopupListeners();
 		},
 
 		loadItem(item) {
@@ -580,10 +578,6 @@
 					parameters['srctbl'] = 'items';
 				}
 
-				if (this.graphs.normal_only !== '') {
-					parameters['normal_only'] = '1';
-				}
-
 				if (!this.graphs.parent_discoveryid && this.graphs.hostid) {
 					parameters['hostid'] = this.graphs.hostid;
 				}
@@ -646,6 +640,48 @@
 			!view.graphs.readonly && view.rewriteNameLinks();
 		},
 
+		editHost(e, hostid) {
+			e.preventDefault();
+			const host_data = {hostid};
+
+			this.openHostPopup(host_data);
+		},
+
+		openHostPopup(host_data) {
+			const original_url = location.href;
+			const overlay = PopUp('popup.host.edit', host_data, {
+				dialogueid: 'host_edit',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit',
+				this.events.elementSuccess.bind(this, this.context, this.is_discovery), {once: true}
+			);
+			overlay.$dialogue[0].addEventListener('dialogue.close', () => {
+				history.replaceState({}, '', original_url);
+			}, {once: true});
+		},
+
+		editTemplate(e, templateid) {
+			e.preventDefault();
+			const template_data = {templateid};
+
+			this.openTemplatePopup(template_data);
+		},
+
+		openTemplatePopup(template_data) {
+			const overlay =  PopUp('template.edit', template_data, {
+				dialogueid: 'templates-form',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit',
+				this.events.elementSuccess.bind(this, this.context, this.is_discovery), {once: true}
+			);
+		},
+
 		refresh() {
 			const url = new Curl('');
 			const form = document.getElementsByName(this.form_name)[0];
@@ -654,25 +690,31 @@
 			post(url.getUrl(), fields);
 		},
 
-		initPopupListeners() {
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_SUBMIT
-				},
-				callback: ({data, event}) => {
-					if (data.submit.success.action === 'delete') {
-						const url = new URL(this.is_discovery ? 'host_discovery.php' : 'graphs.php', location.href);
+		events: {
+			elementSuccess(context, discovery, e) {
+				const data = e.detail;
+				let curl = null;
 
-						url.searchParams.set('context', this.context);
+				if ('success' in data) {
+					postMessageOk(data.success.title);
 
-						event.setRedirectUrl(url.href);
+					if ('messages' in data.success) {
+						postMessageDetails('success', data.success.messages);
 					}
-					else {
-						this.refresh();
+
+					if ('action' in data.success && data.success.action === 'delete') {
+						curl = discovery ? new Curl('host_discovery.php') : new Curl('graphs.php');
+						curl.setArgument('context', context);
 					}
 				}
-			});
+
+				if (curl === null) {
+					view.refresh();
+				}
+				else {
+					location.href = curl.getUrl();
+				}
+			}
 		}
 	};
 </script>

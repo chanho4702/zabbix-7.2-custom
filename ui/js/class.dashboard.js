@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -182,7 +182,7 @@ class CDashboard {
 
 	broadcast(data) {
 		for (const [type, value] of Object.entries(data)) {
-			ZABBIX.EventHub.publish(new CEventHubEvent({
+			ZABBIX.EventHub.publish({
 				data: value,
 				descriptor: {
 					context: 'dashboard',
@@ -193,7 +193,7 @@ class CDashboard {
 					reference: CDashboard.REFERENCE_DASHBOARD,
 					type
 				}
-			}));
+			});
 
 			this.#broadcast_cache.set(type, value);
 		}
@@ -391,13 +391,20 @@ class CDashboard {
 
 		curl.setArgument('action', 'dashboard.config.hash');
 
+		const data = {
+			dashboardid: this._data.dashboardid
+		};
+
+		if (this._data.templateid !== null
+				&& this.#broadcast_cache.get(CWidgetsData.DATA_TYPE_HOST_ID)
+					!== CWidgetsData.getDefault(CWidgetsData.DATA_TYPE_HOST_ID)) {
+			data.hostid = this.#broadcast_cache.get(CWidgetsData.DATA_TYPE_HOST_ID)[0];
+		}
+
 		return fetch(curl.getUrl(), {
 			method: 'POST',
 			headers: {'Content-Type': 'application/json'},
-			body: JSON.stringify({
-				templateid: this._data.templateid ?? undefined,
-				dashboardid: this._data.dashboardid
-			})
+			body: JSON.stringify(data)
 		})
 			.then(response => response.json())
 			.then(response => {
@@ -2214,7 +2221,7 @@ class CDashboard {
 					return;
 				}
 
-				ZABBIX.EventHub.publish(new CEventHubEvent({
+				ZABBIX.EventHub.publish({
 					data: CWidgetsData.getDefault(e.detail.type),
 					descriptor: {
 						context: 'dashboard',
@@ -2225,7 +2232,7 @@ class CDashboard {
 						reference: e.detail.reference,
 						type: e.detail.type
 					}
-				}));
+				});
 
 				console.log('Could not require referred data source', `${e.detail.reference}.${e.detail.type}`);
 			},
@@ -2490,7 +2497,7 @@ class CDashboard {
 					});
 
 					if (this.#broadcast_options[descriptor.type].rebroadcast) {
-						ZABBIX.EventHub.publish(new CEventHubEvent({
+						ZABBIX.EventHub.publish({
 							data,
 							descriptor: {
 								context: 'dashboard',
@@ -2501,7 +2508,7 @@ class CDashboard {
 								reference: CDashboard.REFERENCE_DASHBOARD,
 								type: descriptor.type
 							}
-						}));
+						});
 					}
 				}
 			}
@@ -2548,8 +2555,7 @@ class CDashboard {
 				event_type: 'feedback',
 				reference: CDashboard.REFERENCE_DASHBOARD
 			},
-			callback: this._events.feedback,
-			accept_cached: true
+			callback: this._events.feedback
 		});
 	}
 

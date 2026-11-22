@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -103,7 +103,6 @@ class CFilter extends CDiv {
 		$this->reset_url = new CUrl();
 	}
 
-	// [DM 해설] [초기화] 버튼이 이동할 주소. 이 주소에 filter_rst=1 이 붙어 요청되므로 컨트롤러는 그 값으로 필터를 지운다.
 	public function setResetUrl(CUrl $url): self {
 		$this->reset_url = (clone $url)
 			->setArgument('filter_rst', 1)
@@ -143,7 +142,6 @@ class CFilter extends CDiv {
 	 *
 	 * @return CFilter
 	 */
-	// [DM 해설] 필터 영역의 접힘/펼침 상태를 저장할 프로파일 키. '<키>.active' 로 저장된다.
 	public function setProfile($idx, $idx2 = 0) {
 		$this->idx = $idx;
 		$this->idx2 = $idx2;
@@ -189,8 +187,6 @@ class CFilter extends CDiv {
 	 *
 	 * @return CFilter
 	 */
-	// [DM 해설] 필터 본문. $columns 는 CFormList 배열이며 배열 1개가 화면의 1단(열)이 된다. [적용]/[초기화] 버튼은 자동으로 붙는다.
-	// [DM 해설] [적용] 을 누르면 입력값과 함께 filter_set=1 이 전송된다.
 	public function addFilterTab($header, $columns, $footer = null) {
 		$row = (new CDiv())->addClass(ZBX_STYLE_ROW);
 		$body = [];

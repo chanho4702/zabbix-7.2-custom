@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -71,9 +71,7 @@ $available_js = [
 	'component.z-bar-gauge.js' => '',
 	'component.z-vertical.js' => '',
 	'component.z-select.js' => '',
-	'component.z-sparkline.js' => '',
 	'class.event-hub.js' => '',
-	'class.event-hub.event.js' => '',
 	'class.base-component.js' => '',
 	'class.calendar.js' => '',
 	'class.cdate.js' => '',
@@ -116,12 +114,11 @@ $available_js = [
 	'class.navigationtree.js' => '',
 	'init.js' => '',
 	'class.tab-indicators.js' => '',
-	'class.popup-manager.js' => '',
-	'class.popup-manager.event.js' => '',
 	// templates
 	'sysmap.tpl.js' => 'templates/',
 	// page-specific scripts
 	'items.js' => 'pages/',
+	'report2.js' => 'pages/',
 	'report4.js' => 'pages/',
 	'setup.js' => 'pages/'
 ];
@@ -484,13 +481,9 @@ if (empty($_GET['files'])) {
 		'component.z-bar-gauge.js',
 		'component.z-vertical.js',
 		'component.z-select.js',
-		'component.z-sparkline.js',
 		'class.event-hub.js',
-		'class.event-hub.event.js',
 		'class.base-component.js',
-		'class.calendar.js',
 		'class.cdebug.js',
-		'class.form.fieldset.collapsible.js',
 		'class.overlaycollection.js',
 		'class.overlay.js',
 		'class.cdate.js',
@@ -511,18 +504,13 @@ if (empty($_GET['files'])) {
 		'menupopup.js',
 		'inputsecret.js',
 		'macrovalue.js',
-		'multilineinput.js',
 		'multiselect.js',
 		'class.cverticalaccordion.js',
 		'class.cviewswitcher.js',
 		'class.tab-indicators.js',
-		'class.tagfilteritem.js',
 		'hostinterfacemanager.js',
 		'hostmacrosmanager.js',
 		'textareaflexible.js',
-		'class.popup-manager.js',
-		'class.popup-manager.event.js',
-		'items.js',
 		'init.js'
 	];
 

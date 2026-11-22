@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -20,10 +20,14 @@
  */
 
 if ($data['action'] === 'problem.view') {
+	$this->addJsFile('class.calendar.js');
 	$this->addJsFile('gtlc.js');
 	$this->addJsFile('layout.mode.js');
 	$this->addJsFile('class.tabfilter.js');
 	$this->addJsFile('class.tabfilteritem.js');
+	$this->addJsFile('class.tagfilteritem.js');
+	$this->addJsFile('items.js');
+	$this->addJsFile('multilineinput.js');
 
 	$this->enableLayoutModes();
 	$web_layout_mode = $this->getLayoutMode();
@@ -69,8 +73,13 @@ if ($data['action'] === 'problem.view') {
 	$html_page
 		->addItem(new CPartial('monitoring.problem.view.html', array_intersect_key($data,
 			array_flip(['page', 'action', 'sort', 'sortorder', 'filter', 'tabfilter_idx'])
-		)))
-		->show();
+		)));
+
+	if ($data['user']['debug_mode'] == GROUP_DEBUG_MODE_ENABLED) {
+		$html_page->addItem((new CPre())->addClass(ZBX_STYLE_DEBUG_OUTPUT_TABLE_REFRESH));
+	}
+
+	$html_page->show();
 
 	(new CScriptTag('
 		view.init('.json_encode([

@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -154,8 +154,6 @@ class CProfile {
 	 *
 	 * @return mixed
 	 */
-	// [DM 해설] 사용자별 저장값 읽기(DB profiles 테이블). 저장된 값이 없으면 $default_value.
-	// [DM 해설] 필터 조건, 정렬 상태처럼 "사용자가 마지막에 쓴 값" 을 기억하는 데 쓴다.
 	public static function get($idx, $default_value = null, $idx2 = 0) {
 		// no user data available, just return the default value
 		if (!CWebUser::$data || $idx2 === null) {
@@ -199,7 +197,6 @@ class CProfile {
 	 *
 	 * @return mixed
 	 */
-	// [DM 해설] 배열로 저장한 값 읽기. 멀티셀렉트(호스트 그룹 여러 개 등) 필터에 쓴다.
 	public static function getArray($idx, $defaultValue = null) {
 		if (self::get($idx, null, 0) === null) {
 			return $defaultValue;
@@ -234,7 +231,6 @@ class CProfile {
 	 *
 	 * @param string $idx
 	 */
-	// [DM 해설] 저장값 삭제. 필터 [초기화] 에서 쓴다.
 	public static function deleteIdx($idx) {
 		if (self::$profiles === null) {
 			self::init();
@@ -263,8 +259,6 @@ class CProfile {
 	 * @param int		$type
 	 * @param int		$idx2
 	 */
-	// [DM 해설] 저장. $type 은 PROFILE_TYPE_STR(문자열) / PROFILE_TYPE_INT(정수) / PROFILE_TYPE_ID(ID).
-	// [DM 해설] 키($idx)는 화면마다 겹치지 않게 짓는다. 모듈은 'web.dmove.<화면>.' 로 시작한다.
 	public static function update($idx, $value, $type, $idx2 = 0) {
 		if (self::$profiles === null) {
 			self::init();
@@ -317,7 +311,6 @@ class CProfile {
 	 * @param array     $values
 	 * @param int       $type
 	 */
-	// [DM 해설] 배열 저장. getArray() 와 짝이다.
 	public static function updateArray($idx, array $values, $type) {
 		// save new values
 		$i = 0;

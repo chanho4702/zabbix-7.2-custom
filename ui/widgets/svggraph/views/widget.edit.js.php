@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -880,7 +880,7 @@ window.widget_svggraph_form = new class {
 			lefty_checkbox.checked = true;
 		}
 
-		for (const element of document.querySelectorAll('#lefty_scale, #lefty_min, #lefty_max, #lefty_units')) {
+		for (const element of document.querySelectorAll('#lefty_min, #lefty_max, #lefty_units')) {
 			element.disabled = !lefty_on;
 		}
 
@@ -896,7 +896,7 @@ window.widget_svggraph_form = new class {
 			righty_checkbox.checked = true;
 		}
 
-		for (const element of document.querySelectorAll('#righty_scale, #righty_min, #righty_max, #righty_units')) {
+		for (const element of document.querySelectorAll('#righty_min, #righty_max, #righty_units')) {
 			element.disabled = !righty_on;
 		}
 
@@ -953,44 +953,34 @@ window.widget_svggraph_form = new class {
 
 		if (fields.ds !== undefined) {
 			for (const [dataset_key, dataset] of Object.entries(fields.ds)) {
+				if (dataset.dataset_type != '<?= CWidgetFieldDataSet::DATASET_TYPE_SINGLE_ITEM ?>') {
+					continue;
+				}
+
 				const dataset_new = {
 					...dataset,
-					override_hostid: []
+					itemids: [],
+					color: []
 				};
 
-				if (dataset.dataset_type == '<?= CWidgetFieldDataSet::DATASET_TYPE_SINGLE_ITEM ?>') {
-					dataset_new.itemids = [];
-					dataset_new.color = [];
+				if (dataset.itemids !== undefined) {
+					for (const [item_index, itemid] of Object.entries(dataset.itemids)) {
+						if (itemid === '0') {
+							const resolved_itemid = this.#resolveWidget(dataset.references[item_index]);
 
-					if (dataset.itemids !== undefined) {
-						for (const [item_index, itemid] of dataset.itemids.entries()) {
-							if (itemid === '0') {
-								const resolved_itemid = this.#resolveTypedReference(dataset.references[item_index]);
-
-								if (resolved_itemid !== null) {
-									dataset_new.itemids.push(resolved_itemid);
-									dataset_new.color.push(dataset.color[item_index]);
-								}
-							}
-							else {
-								dataset_new.itemids.push(itemid);
+							if (resolved_itemid !== null) {
+								dataset_new.itemids.push(resolved_itemid);
 								dataset_new.color.push(dataset.color[item_index]);
 							}
 						}
-					}
-
-					delete dataset_new.references;
-				}
-
-				if (dataset.override_hostid !== undefined) {
-					const resolved_override_hostid = this.#resolveTypedReference(
-						dataset.override_hostid[CWidgetBase.FOREIGN_REFERENCE_KEY]
-					);
-
-					if (resolved_override_hostid !== null) {
-						dataset_new.override_hostid.push(resolved_override_hostid);
+						else {
+							dataset_new.itemids.push(itemid);
+							dataset_new.color.push(dataset.color[item_index]);
+						}
 					}
 				}
+
+				delete dataset_new.references;
 
 				fields.ds[dataset_key] = dataset_new;
 			}
@@ -1083,7 +1073,7 @@ window.widget_svggraph_form = new class {
 			});
 	}
 
-	#resolveTypedReference(typed_reference) {
+	#resolveWidget(typed_reference) {
 		const {reference, type} = CWidgetBase.parseTypedReference(typed_reference);
 
 		const data = ZABBIX.EventHub.getData({

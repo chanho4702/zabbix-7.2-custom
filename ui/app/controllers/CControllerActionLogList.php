@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -18,12 +18,9 @@
  * Controller for the "Action log" page and Action log CSV export.
  */
 
-// [DM 해설] "필터 + 목록 + CSV 내보내기" 화면의 코어 본보기. SW 인벤토리 모듈 컨트롤러는 이 구조를 따라 만들었다.
-// [DM 해설] 화면용 액션(actionlog.list)과 CSV 용 액션(actionlog.csv)이 이 컨트롤러 하나를 같이 쓴다.
 class CControllerActionLogList extends CController {
 
 	protected function init(): void {
-		// [DM 해설] 조회 전용 화면이라 CSRF 검사를 끈다.
 		$this->disableCsrfValidation();
 	}
 
@@ -41,7 +38,6 @@ class CControllerActionLogList extends CController {
 			'to' =>						'range_time'
 		];
 
-		// [DM 해설] 입력 검증. 실패하면 아래에서 오류 응답(CControllerResponseFatal)을 지정한다.
 		$ret = $this->validateInput($fields) && $this->validateTimeSelectorPeriod();
 
 		if (!$ret) {
@@ -52,12 +48,10 @@ class CControllerActionLogList extends CController {
 	}
 
 	protected function checkPermissions(): bool {
-		// [DM 해설] 사용자 역할에 이 화면 권한이 있을 때만 허용한다.
 		return $this->checkAccess(CRoleHelper::UI_REPORTS_ACTION_LOG);
 	}
 
 	protected function doAction(): void {
-		// [DM 해설] [적용] -> 필터를 프로파일에 저장, [초기화] -> 프로파일 삭제. 이후 조회는 항상 프로파일 값을 읽어서 한다.
 		if ($this->hasInput('filter_set')) {
 			$this->updateProfiles();
 		}
@@ -139,9 +133,7 @@ class CControllerActionLogList extends CController {
 				'output' => ['alertid', 'actionid', 'userid', 'clock', 'sendto', 'subject', 'message', 'status',
 					'retries', 'error', 'alerttype'
 				],
-				'filter' => [
-					'status' => $data['actionlog_statuses'] ?: null
-				],
+				'filter' => ['status' => $data['actionlog_statuses']],
 				'selectMediatypes' => ['mediatypeid', 'name', 'maxattempts'],
 				'userids' => $userids ?: null,
 				'actionids' => $actionids ?: null,
@@ -167,7 +159,6 @@ class CControllerActionLogList extends CController {
 
 		$data['alerts'] = array_slice($data['alerts'], 0, CSettingsHelper::get(CSettingsHelper::SEARCH_LIMIT) + 1);
 
-		// [DM 해설] 페이징. $data['alerts'] 가 현재 페이지 분량으로 잘린다.
 		$data['paging'] = CPagerHelper::paginate($data['page'], $data['alerts'], ZBX_SORT_DOWN,
 			(new CUrl('zabbix.php'))->setArgument('action', $this->getAction())
 		);
@@ -188,11 +179,9 @@ class CControllerActionLogList extends CController {
 			]);
 		}
 
-		// [DM 해설] 뷰로 넘길 데이터를 응답으로 지정한다. 뷰에서는 $data['키'] 로 읽는다.
 		$response = new CControllerResponseData($data);
 		$response->setTitle(_('Action log'));
 
-		// [DM 해설] CSV 액션으로 불렸을 때만 다운로드 파일명을 지정한다.
 		if ($data['action'] === 'actionlog.csv') {
 			$response->setFileName('zbx_actionlog_export.csv');
 		}

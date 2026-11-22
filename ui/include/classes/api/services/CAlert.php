@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -119,6 +119,10 @@ class CAlert extends CApiService {
 		}
 
 		if ($db_alerts) {
+			if (self::dbDistinct($sql_parts)) {
+				$db_alerts = $this->addNclobFieldValues($options, $db_alerts);
+			}
+
 			$db_alerts = $this->addRelatedObjects($options, $db_alerts);
 			$db_alerts = $this->unsetExtraFields($db_alerts, ['alertid', 'userid', 'mediatypeid'], $options['output']);
 
@@ -352,6 +356,8 @@ class CAlert extends CApiService {
 	}
 
 	protected function applyQueryOutputOptions($table_name, $table_alias, array $options, array $sql_parts): array {
+		self::unsetNclobFieldsFromOutput($options, $sql_parts);
+
 		$sql_parts = parent::applyQueryOutputOptions($table_name, $table_alias, $options, $sql_parts);
 
 		if (!$options['countOutput']) {
@@ -440,8 +446,6 @@ class CAlert extends CApiService {
 			'filter' => ['mediatypeid' => $relation_map->getRelatedIds()],
 			'preservekeys' => true
 		]);
-
-		$mediatypes = $this->unsetExtraFields($mediatypes, ['mediatypeid'], $options['selectMediatypes']);
 
 		$result = $relation_map->mapMany($result, $mediatypes, 'mediatypes');
 	}

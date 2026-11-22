@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -42,7 +42,7 @@ class WidgetView extends CControllerDashboardWidgetView {
 
 		// Editing template dashboard?
 		if ($this->isTemplateDashboard() && !$this->fields_values['override_hostid']) {
-			$data['error'] = _('No data found');
+			$data['error'] = _('No data.');
 		}
 		else {
 			$data['triggers'] = $this->getTriggers();

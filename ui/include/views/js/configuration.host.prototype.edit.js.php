@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -40,7 +40,12 @@
 			this.initMacrosTab();
 			this.initInventoryTab();
 			this.initEncryptionTab();
-			this.#initPopupListeners();
+
+			this.form.addEventListener('click', (e) => {
+				if (e.target.classList.contains('js-edit-linked-template')) {
+					this.openTemplatePopup({templateid: e.target.dataset.templateid});
+				}
+			});
 		}
 
 		initHostTab() {
@@ -101,13 +106,23 @@
 		}
 
 		initMacrosTab() {
+			const show_inherited_macros_element = document.getElementById('show_inherited_macros');
+			const container = $('#macros_container .table-forms-td-right');
+
 			this.macros_manager = new HostMacrosManager({
-				container: $('#macros_container .table-forms-td-right'),
+				container,
 				readonly: this.readonly,
 				parent_hostid: this.parent_hostid
 			});
 
-			const show_inherited_macros_element = document.getElementById('show_inherited_macros');
+			container
+				.bind('loader.start', () => show_inherited_macros_element.querySelectorAll('input')
+					.forEach(radio_input => radio_input.setAttribute('readonly', 'readonly'))
+				)
+				.bind('loader.stop', () => show_inherited_macros_element.querySelectorAll('input')
+					.forEach(radio_input => radio_input.removeAttribute('readonly'))
+				);
+
 			this.show_inherited_macros = show_inherited_macros_element.querySelector('input:checked').value == 1;
 
 			this.macros_manager.initMacroTable(this.show_inherited_macros);
@@ -181,48 +196,6 @@
 			jQuery('input[name=tls_connect]').trigger('change');
 		}
 
-		#initPopupListeners() {
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_OPEN,
-					action: 'host.edit'
-				},
-				callback: ({data, event}) => {
-					event.preventDefault();
-
-					const standalone_url_params = objectToSearchParams({
-						action: CPopupManager.STANDALONE_ACTION,
-						popup: 'host.edit',
-						...data.action_parameters
-					}).toString();
-
-					const standalone_url = new URL(`zabbix.php?${standalone_url_params}`, location.href);
-
-					location.href = standalone_url.href;
-				}
-			});
-
-			ZABBIX.EventHub.subscribe({
-				require: {
-					context: CPopupManager.EVENT_CONTEXT,
-					event: CPopupManagerEvent.EVENT_SUBMIT
-				},
-				callback: ({data, event}) => {
-					if (data.submit.success.action === 'delete') {
-						const url = new URL('host_discovery.php', location.href);
-
-						url.searchParams.set('context', 'template');
-
-						event.setRedirectUrl(url.href);
-					}
-					else {
-						this.refresh();
-					}
-				}
-			});
-		}
-
 		addGroupPrototypeRow(groupPrototype) {
 			const addButton = jQuery('#group_prototype_add');
 
@@ -276,12 +249,57 @@
 			return templateids;
 		}
 
+		editHost(e, hostid) {
+			return;
+		}
+
+		editTemplate(e, templateid) {
+			e.preventDefault();
+			const template_data = {templateid};
+
+			this.openTemplatePopup(template_data);
+		}
+
+		openTemplatePopup(template_data) {
+			const overlay = PopUp('template.edit', template_data, {
+				dialogueid: 'templates-form',
+				dialogue_class: 'modal-popup-large',
+				prevent_navigation: true
+			});
+
+			overlay.$dialogue[0].addEventListener('dialogue.submit', (e) => this.templateSubmit(e));
+		}
+
 		refresh() {
 			const url = new Curl('');
 			const form = document.getElementsByName(this.form_name)[0];
 			const fields = getFormFields(form);
 
 			post(url.getUrl(), fields);
+		}
+
+		templateSubmit(e) {
+			let curl = null;
+
+			if ('success' in e.detail) {
+				postMessageOk(e.detail.success.title);
+
+				if ('messages' in e.detail.success) {
+					postMessageDetails('success', e.detail.success.messages);
+				}
+
+				if ('action' in e.detail.success && e.detail.success.action === 'delete') {
+					curl = new Curl('host_discovery.php');
+					curl.setArgument('context', 'template');
+				}
+			}
+
+			if (curl) {
+				location.href = curl.getUrl();
+			}
+			else {
+				view.refresh();
+			}
 		}
 	}
 </script>
@@ -322,9 +340,7 @@
 		}
 
 		initInherit() {
-			const form = document.getElementById('host-prototype-form');
-			const host_interface_row_tmpl = form.querySelector('#host-interface-row-tmpl').innerHTML;
-
+			const host_interface_row_tmpl = document.getElementById('host-interface-row-tmpl').innerHTML;
 			const hostInterfaceManagerInherit = new HostInterfaceManager(this._data.inherited_interfaces,
 				host_interface_row_tmpl
 			);
@@ -334,9 +350,7 @@
 		}
 
 		initCustom() {
-			const form = document.getElementById('host-prototype-form');
-			const host_interface_row_tmpl = form.querySelector('#host-interface-row-tmpl').innerHTML;
-
+			const host_interface_row_tmpl = document.getElementById('host-interface-row-tmpl').innerHTML;
 			// This is in global space, as Add functions uses it.
 			window.hostInterfaceManager = new HostInterfaceManager(this._data.custom_interfaces,
 				host_interface_row_tmpl

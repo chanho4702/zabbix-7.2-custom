@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -34,10 +34,10 @@ catch (Exception $e) {
 // VAR	TYPE	OPTIONAL	FLAGS	VALIDATION	EXCEPTION
 $fields = [
 	'default_lang' =>			[T_ZBX_STR, O_OPT, null,	null,				null],
-	'type' =>					[T_ZBX_STR, O_OPT, null,	IN('"'.ZBX_DB_MYSQL.'","'.ZBX_DB_POSTGRESQL.'"'), null],
+	'type' =>					[T_ZBX_STR, O_OPT, null,	IN('"'.ZBX_DB_MYSQL.'","'.ZBX_DB_POSTGRESQL.'","'.ZBX_DB_ORACLE.'"'), null],
 	'server' =>					[T_ZBX_STR, O_OPT, null,	null,				null],
 	'port' =>					[T_ZBX_INT, O_OPT, null,	BETWEEN(0, 65535),	null, _('Database port')],
-	'database' =>				[T_ZBX_STR, O_OPT, null,	NOT_EMPTY,			null, _('Database name')],
+	'database' =>				[T_ZBX_STR, O_OPT, null,	NOT_EMPTY,			'(isset({type}) && {type} !== "'.ZBX_DB_ORACLE.'")', _('Database name')],
 	'user' =>					[T_ZBX_STR, O_OPT, null,	null,				null],
 	'password' =>				[T_ZBX_STR, O_OPT, null,	null, 				null],
 	'schema' =>					[T_ZBX_STR, O_OPT, null,	null, 				null],
@@ -129,15 +129,6 @@ if ($default_timezone !== ZBX_DEFAULT_TIMEZONE && !CTimezoneHelper::isSupported(
 	$default_timezone = ZBX_DEFAULT_TIMEZONE;
 }
 
-$tz_offsets = array_column(
-	(new DateTimeZone($default_timezone !== ZBX_DEFAULT_TIMEZONE
-		? $default_timezone
-		: CTimezoneHelper::getSystemTimezone()
-	))->getTransitions(0, ZBX_MAX_DATE),
-	'offset',
-	'ts'
-);
-
 CSessionHelper::set('default_timezone', $default_timezone);
 
 // Set default theme.
@@ -171,10 +162,6 @@ $page_header = (new CHtmlPageHeader(_('Installation'), substr($default_lang, 0, 
 $page_header
 	->setTheme($default_theme)
 	->addCssFile('assets/styles/'.$page_header->getTheme().'.css')
-	->addJavaScript('
-		const PHP_ZBX_FULL_DATE_TIME = "'.DATE_TIME_FORMAT_SECONDS.'";
-		const PHP_TZ_OFFSETS = '.json_encode($tz_offsets).';
-	')
 	->addJsFile((new CUrl('js/browsers.js'))->getUrl())
 	->addJsFile((new CUrl('jsLoader.php'))
 		->setArgument('ver', ZABBIX_VERSION)

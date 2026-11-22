@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -60,7 +60,7 @@ class CLegacyAction extends CAction {
 		if ($user_type < USER_TYPE_ZABBIX_USER) {
 			$denied = ['chart.php', 'chart2.php', 'chart3.php', 'chart4.php', 'chart6.php', 'chart7.php', 'history.php',
 				'hostinventories.php', 'hostinventoriesoverview.php', 'httpdetails.php', 'image.php', 'imgstore.php',
-				'jsrpc.php', 'map.php', 'tr_events.php', 'sysmap.php', 'sysmaps.php'
+				'jsrpc.php', 'map.php', 'tr_events.php', 'sysmap.php', 'sysmaps.php', 'report2.php'
 			];
 		}
 
@@ -83,7 +83,8 @@ class CLegacyAction extends CAction {
 				CRoleHelper::UI_MONITORING_MAPS => ['image.php', 'map.php', 'sysmap.php', 'sysmaps.php'],
 				CRoleHelper::UI_MONITORING_PROBLEMS => ['tr_events.php'],
 				CRoleHelper::UI_INVENTORY_HOSTS => ['hostinventories.php'],
-				CRoleHelper::UI_INVENTORY_OVERVIEW => ['hostinventoriesoverview.php']
+				CRoleHelper::UI_INVENTORY_OVERVIEW => ['hostinventoriesoverview.php'],
+				CRoleHelper::UI_REPORTS_AVAILABILITY_REPORT => ['report2.php']
 			];
 		}
 

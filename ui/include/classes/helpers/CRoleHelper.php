@@ -1,6 +1,6 @@
 <?php declare(strict_types = 0);
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -26,8 +26,6 @@ class CRoleHelper {
 	public const UI_MONITORING_MAPS = 'ui.monitoring.maps';
 	public const UI_MONITORING_DISCOVERY = 'ui.monitoring.discovery';
 	public const UI_INVENTORY_OVERVIEW = 'ui.inventory.overview';
-	// [DM 해설] 사용자 역할의 화면 권한 이름. 컨트롤러 checkPermissions() 에서 $this->checkAccess(CRoleHelper::UI_...) 로 쓴다.
-	// [DM 해설] SW 인벤토리 모듈은 이 "인벤토리 > 호스트" 권한이 있는 역할에게만 화면을 허용한다.
 	public const UI_INVENTORY_HOSTS = 'ui.inventory.hosts';
 	public const UI_REPORTS_SYSTEM_INFO = 'ui.reports.system_info';
 	public const UI_REPORTS_AVAILABILITY_REPORT = 'ui.reports.availability_report';

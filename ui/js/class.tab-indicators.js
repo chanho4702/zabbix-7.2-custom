@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -402,7 +402,7 @@ class HostPrototypeMacrosTabIndicatorItem extends TabIndicatorItem {
 	}
 
 	getValue() {
-		let macros = [...document.forms['host-prototype-form'].querySelectorAll('#tbl_macros .form_row')];
+		let macros = [...document.forms['hostPrototypeForm'].querySelectorAll('#tbl_macros .form_row')];
 
 		return macros
 			.filter((row) => {
@@ -1359,7 +1359,6 @@ class SharingTabIndicatorItem extends TabIndicatorItem {
 class GraphAxesTabIndicatorItem extends TabIndicatorItem {
 
 	static SVG_GRAPH_AXIS_UNITS_AUTO = 0;
-	static SVG_GRAPH_AXIS_SCALE_LINEAR = 0;
 
 	constructor() {
 		super(TAB_INDICATOR_TYPE_MARK);
@@ -1374,12 +1373,6 @@ class GraphAxesTabIndicatorItem extends TabIndicatorItem {
 
 		for (const input of document.querySelectorAll('#lefty_min, #lefty_max, #righty_min, #righty_max')) {
 			if (!input.disabled && input.value !== '') {
-				return true;
-			}
-		}
-
-		for (const input of document.querySelectorAll('#lefty_scale, #righty_scale')) {
-			if (!input.disabled && input.value != GraphAxesTabIndicatorItem.SVG_GRAPH_AXIS_SCALE_LINEAR) {
 				return true;
 			}
 		}

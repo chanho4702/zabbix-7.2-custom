@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -59,7 +59,6 @@ function getLocales(): array {
 		'sv_SE' => ['name' => _('Swedish (sv_SE)'),	'display' => false],
 		'tr_TR' => ['name' => _('Turkish (tr_TR)'),	'display' => true],
 		'uk_UA' => ['name' => _('Ukrainian (uk_UA)'),	'display' => true],
-		'uz_UZ' => ['name' => _('Uzbek (uz_UZ)'),	'display' => true],
 		'vi_VN' => ['name' => _('Vietnamese (vi_VN)'),	'display' => true]
 	];
 }
@@ -67,11 +66,11 @@ function getLocales(): array {
 /**
  * Get support URL for specified language.
  *
- * @param string|null $language  ISO639-1 code or null for English support URL.
+ * @param string $language  ISO639-1 code.
  *
- * @return string
+ * @return string  Fallback to English support URL.
  */
-function getSupportUrl(?string $language = null): string {
+function getSupportUrl(string $language): string {
 	$urls = [
 		'cs' => 'https://www.zabbix.com/cz/support',
 		'fr' => 'https://www.zabbix.com/fr/support',
@@ -87,11 +86,11 @@ function getSupportUrl(?string $language = null): string {
 /**
  * Get integrations URL for specified language.
  *
- * @param string|null $language  ISO639-1 code or null for English integrations URL.
+ * @param string $language  ISO639-1 code.
  *
- * @return string
+ * @return string  Fallback to English integrations URL.
  */
-function getIntegrationsUrl(?string $language = null): string {
+function getIntegrationsUrl(string $language): string {
 	$urls = [
 		'cs' => 'https://www.zabbix.com/cz/integrations',
 		'fr' => 'https://www.zabbix.com/fr/integrations',
@@ -206,7 +205,6 @@ function zbx_locale_variants_win($language) {
 		'sv_se' => ['Swedish_Sweden.1252', 'swedish'],
 		'tr_tr' => ['Turkish_Turkey.1254', 'turkish'],
 		'uk_ua' => ['Ukrainian_Ukraine.1251', 'ukrainian'],
-		'uz_uz' => ['Uzbek_Uzbekistan.1252', 'uzbek'],
 		'vi_vn' => ['Vietnamese_Viet Nam.1258', 'vietnamese']
 	];
 

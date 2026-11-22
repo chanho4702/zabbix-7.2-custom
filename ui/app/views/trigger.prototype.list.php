@@ -1,6 +1,6 @@
 <?php
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -19,6 +19,8 @@
  * @var array $data
  */
 
+$this->addJsFile('items.js');
+$this->addJsFile('multilineinput.js');
 $this->includeJsFile('trigger.prototype.list.js.php');
 
 if ($data['uncheck']) {
@@ -33,7 +35,8 @@ $html_page = (new CHtmlPage())
 	))
 	->setControls(
 		(new CTag('nav', true,
-			(new CList())->addItem((new CButton('create_trigger', _('Create trigger prototype')))->setId('js-create'))
+			(new CList())
+				->addItem((new CButton('create_trigger',_('Create trigger prototype')))->setId('js-create'))
 		))->setAttribute('aria-label', _('Content controls'))
 	)
 	->setNavigation(getHostNavigation('triggers', $this->data['hostid'], $this->data['parent_discoveryid']));
@@ -81,14 +84,9 @@ foreach ($data['triggers'] as $trigger) {
 		ZBX_FLAG_DISCOVERY_PROTOTYPE, $data['allowed_ui_conf_templates']
 	);
 
-	$trigger_url = (new CUrl('zabbix.php'))
-		->setArgument('action', 'popup')
-		->setArgument('popup', 'trigger.prototype.edit')
-		->setArgument('parent_discoveryid', $data['parent_discoveryid'])
-		->setArgument('triggerid', $triggerid)
-		->setArgument('context', $data['context']);
-
-	$description[] = new CLink($trigger['description'], $trigger_url);
+	$description[] = (new CLink($trigger['description']))
+		->addClass('js-trigger-prototype-edit')
+		->setAttribute('data-triggerid', $triggerid);
 
 	if ($trigger['dependencies']) {
 		$description[] = [BR(), bold(_('Depends on').':')];
@@ -101,29 +99,19 @@ foreach ($data['triggers'] as $trigger) {
 				implode(', ', array_column($dep_trigger['hosts'], 'name')).NAME_DELIMITER.$dep_trigger['description'];
 
 			if ($dep_trigger['flags'] == ZBX_FLAG_DISCOVERY_PROTOTYPE) {
-				$dep_trigger_prototype_url = (new CUrl('zabbix.php'))
-					->setArgument('action', 'popup')
-					->setArgument('popup', 'trigger.prototype.edit')
-					->setArgument('triggerid', $dep_trigger['triggerid'])
-					->setArgument('context', $data['context'])
-					->setArgument('parent_discoveryid', $data['parent_discoveryid'])
-					->getUrl();
-
-				$trigger_dependencies[] = (new CLink($dep_trigger_description, $dep_trigger_prototype_url))
+				$trigger_dependencies[] = (new CLink($dep_trigger_description))
 					->addClass(triggerIndicatorStyle($dep_trigger['status']))
-					->addClass(ZBX_STYLE_LINK_ALT);
+					->addClass('js-trigger-prototype-edit')
+					->addClass(ZBX_STYLE_LINK_ALT)
+					->setAttribute('data-triggerid', $dep_trigger['triggerid']);
 			}
 			elseif ($dep_trigger['flags'] == ZBX_FLAG_DISCOVERY_NORMAL) {
-				$dep_trigger_url = (new CUrl('zabbix.php'))
-					->setArgument('action', 'popup')
-					->setArgument('popup', 'trigger.edit')
-					->setArgument('triggerid', $dep_trigger['triggerid'])
-					->setArgument('context', $data['context'])
-					->getUrl();
-
-				$trigger_dependencies[] = (new CLink($dep_trigger_description, $dep_trigger_url))
+				$trigger_dependencies[] = (new CLink($dep_trigger_description))
+					->setAttribute('data-triggerid', $dep_trigger['triggerid'])
+					->setAttribute('data-context', $data['context'])
 					->addClass(triggerIndicatorStyle($dep_trigger['status']))
-					->addClass(ZBX_STYLE_LINK_ALT);
+					->addClass(ZBX_STYLE_LINK_ALT)
+					->addClass('js-trigger-edit');
 			}
 
 			$trigger_dependencies[] = BR();
@@ -172,7 +160,7 @@ foreach ($data['triggers'] as $trigger) {
 		(new CDiv($expression))->addClass(ZBX_STYLE_WORDBREAK),
 		$status,
 		$discover,
-		$data['tags'][$triggerid]
+		(new CDiv($data['tags'][$triggerid]))->addClass(ZBX_STYLE_TAGS_WRAPPER)
 	]);
 }
 
@@ -207,7 +195,7 @@ $trigger_form->addItem([
 					->setId('js-massdelete-trigger')
 			]
 		],
-		'trigger_prototypes_'.$this->data['parent_discoveryid']
+		$this->data['parent_discoveryid']
 	)
 ]);
 

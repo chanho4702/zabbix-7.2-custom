@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 2001-2025 Zabbix SIA
+** Copyright (C) 2001-2026 Zabbix SIA
 **
 ** This program is free software: you can redistribute it and/or modify it under the terms of
 ** the GNU Affero General Public License as published by the Free Software Foundation, version 3.
@@ -1161,9 +1161,12 @@ SVGMapShape.prototype.update = function(options) {
 		];
 
 	mapping.forEach(function(map) {
-		const color = `#${options[map.key].toString().trim()}`;
-
-		attributes[map.value] = isColorHex(color) ? color : 'none';
+		if (typeof options[map.key] !== 'undefined' && /[0-9A-F]{6}/g.test(options[map.key].trim())) {
+			attributes[map.value] = '#' + options[map.key];
+		}
+		else {
+			attributes[map.value] = 'none';
+		}
 	}, this);
 
 	if (typeof options['border_width'] !== 'undefined') {
@@ -1292,12 +1295,10 @@ SVGMapShape.prototype.update = function(options) {
 				break;
 		}
 
-		const font_color = `#${options['font_color'].toString().trim()}`;
-
 		element.add('textarea', {
 			'x': x,
 			'y': y,
-			fill: isColorHex(font_color) ? font_color : '#000000',
+			fill: '#' + (/[0-9A-F]{6}/g.test(options['font_color'].trim()) ? options['font_color'] : '000000'),
 			'font-family': SVGMap.FONTS[parseInt(options.font)],
 			'font-size': parseInt(options['font_size']) + 'px',
 			'anchor': anchor,
