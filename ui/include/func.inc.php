@@ -56,6 +56,7 @@ function isRequestMethod($method) {
  *
  * @return bool
  */
+// [DM 해설] 옛 방식 페이지(xxx.php)용. 검증 없이 $_REQUEST 를 본다. MVC 컨트롤러에서는 $this->hasInput() 을 쓴다.
 function hasRequest($name) {
 	return isset($_REQUEST[$name]);
 }
@@ -68,6 +69,7 @@ function hasRequest($name) {
  *
  * @return mixed
  */
+// [DM 해설] 옛 방식 페이지용. MVC 컨트롤러에서는 $this->getInput() 을 쓴다. (5버전 커스텀 컨트롤러는 이것을 썼다)
 function getRequest($name, $def = null) {
 	return isset($_REQUEST[$name]) ? $_REQUEST[$name] : $def;
 }
@@ -1257,6 +1259,8 @@ function zbx_cleanHashes(&$value) {
 	return $value;
 }
 
+// [DM 해설] 2차원 배열을 CSV 문자열로 바꾼다. 값 안의 큰따옴표는 두 번 써서 이스케이프한다.
+// [DM 해설] 모듈의 내보내기는 이 함수를 쓰지 않고 includes/export/CsvWriter.php 를 쓴다.
 function zbx_toCSV($values) {
 	$csv = '';
 	$glue = '","';
@@ -1330,6 +1334,8 @@ function zbx_subarray_push(&$mainArray, $sIndex, $element = null, $key = null) {
  *
  * @return CColHeader
  */
+// [DM 해설] 클릭하면 정렬되는 테이블 헤더를 만든다. 링크에 sort=<컬럼>&sortorder=<ASC|DESC> 를 붙인다.
+// [DM 해설] 컨트롤러는 그 두 값을 받아 데이터를 정렬해서 넘겨야 한다. 이 함수가 정렬을 해 주지는 않는다.
 function make_sorting_header($obj, $tabfield, $sortField, $sortOrder, $link = null) {
 	$sortorder = ($sortField == $tabfield && $sortOrder == ZBX_SORT_UP) ? ZBX_SORT_DOWN : ZBX_SORT_UP;
 
@@ -1642,6 +1648,7 @@ function detect_page_type($default = PAGE_TYPE_HTML) {
  *
  * @return CTag
  */
+// [DM 해설] 안내/경고/오류 상자를 만든다. $class 는 ZBX_STYLE_MSG_GOOD / ZBX_STYLE_MSG_BAD / ZBX_STYLE_MSG_WARNING.
 function makeMessageBox(string $class, array $messages, ?string $title = null, bool $show_close_box = true,
 		bool $show_details = false): CTag {
 
@@ -2255,6 +2262,8 @@ function getUserGraphTheme() {
  *
  * @return bool
  */
+// [DM 해설] PHP 오류 처리기. Warning / Deprecated 등을 화면 상단 오류 메시지로 쌓는다.
+// [DM 해설] PHP 8 로 오면서 "정의 안 된 변수/배열 키" 가 Notice 에서 Warning 으로 올라가 여기로 들어온다.
 function zbx_err_handler($errno, $errstr, $errfile, $errline) {
 	// Suppress errors when calling with error control operator @function_name().
 	if ((error_reporting()

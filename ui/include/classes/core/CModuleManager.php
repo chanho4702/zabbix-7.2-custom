@@ -83,6 +83,8 @@ final class CModuleManager {
 	 *
 	 * @return array|null  Either manifest data or null if manifest file had errors or IDs didn't match.
 	 */
+	// [DM 해설] 모듈 1개를 등록한다. manifest.json 을 읽어 검사하고(loadManifest), 문제가 있으면 null 을 돌려준다.
+	// [DM 해설] null 이면 화면에 "Cannot load module at: ..." 오류가 표시된다.
 	public function addModule(string $relative_path, ?string $moduleid = null, ?string $id = null,
 			?array $config = null): ?array {
 
@@ -109,6 +111,7 @@ final class CModuleManager {
 		return $manifest;
 	}
 
+	// [DM 해설] 등록된 모듈들의 Module.php 를 실행 가능한 객체로 만든다. 다른 모듈과 충돌하는 모듈은 제외된다.
 	public function initModules(): void {
 		[
 			'conflicts' => $this->errors,
@@ -124,6 +127,8 @@ final class CModuleManager {
 			$module_class = $base_classname;
 
 			try {
+				// [DM 해설] Module.php 가 있으면 <네임스페이스>\Module 클래스를 쓴다. 없으면 기본 CModule 을 쓴다(메뉴 없이 액션만 등록되는 모듈).
+				// [DM 해설] 클래스 이름이나 namespace 선언이 틀리면 바로 아래의 "Wrong Module.php class name" 오류가 난다.
 				if (is_file($this->root_path.'/'.$relative_path.'/'.$classname.'.php')) {
 					$module_class = implode('\\', [$manifest['namespace'], $classname]);
 
@@ -140,6 +145,8 @@ final class CModuleManager {
 				$instance = new $module_class($manifest, $this->moduleids[$relative_path], $relative_path);
 
 				if ($instance instanceof $base_classname) {
+					// [DM 해설] Module::init() 호출 지점. 모듈이 사이드바 메뉴를 추가하는 코드가 여기서 실행된다.
+					// [DM 해설] init() 안에서 예외가 나면 아래 catch 에서 잡혀 "... thrown by module located at ..." 메시지로 표시된다.
 					$instance->init();
 
 					$this->modules[$instance->getId()] = $instance;
@@ -241,6 +248,7 @@ final class CModuleManager {
 	/**
 	 * Get actions of all initialized modules.
 	 */
+	// [DM 해설] 모든 모듈의 manifest.json "actions" 를 라우터가 쓰는 형식으로 바꾼다.
 	public function getActions(): array {
 		$actions = [];
 
@@ -248,9 +256,12 @@ final class CModuleManager {
 		foreach ($this->modules as $module) {
 			foreach ($module->getActions() as $name => $data) {
 				$actions[$name] = [
+					// [DM 해설] 컨트롤러 클래스 이름 = <모듈 네임스페이스>\Actions\<manifest 의 class>.
+					// [DM 해설] class 에 "Reports/Uptime/UptimeList" 처럼 / 가 있으면 \ 로 바뀐다 -> 파일 actions/reports/uptime/UptimeList.php, namespace Modules\DMove\Actions\Reports\Uptime;
 					'class' => implode('\\', [$module->getNamespace(), 'Actions',
 						str_replace('/', '\\', $data['class'])
 					]),
+					// [DM 해설] manifest 에 layout 을 생략하면 일반 화면(layout.htmlpage)이다. CSV 는 layout.csv, JSON 응답은 layout.json 을 적는다.
 					'layout' => array_key_exists('layout', $data) ? $data['layout'] : 'layout.htmlpage',
 					'view' => array_key_exists('view', $data) ? $data['view'] : null
 				];
@@ -260,6 +271,7 @@ final class CModuleManager {
 		return $actions;
 	}
 
+	// [DM 해설] 모듈 manifest.json 의 "assets" (css, js 파일 목록). include/page_header.php 가 이 목록으로 <link>, <script> 를 만든다.
 	public function getAssets(): array {
 		$assets = [];
 
@@ -287,6 +299,8 @@ final class CModuleManager {
 	 *
 	 * @return array  Lists of conflicts and conflicting modules.
 	 */
+	// [DM 해설] 모듈끼리 id, 네임스페이스, 액션명이 겹치는지 검사한다. 겹치면 양쪽 모듈 모두 로드되지 않는다.
+	// [DM 해설] 그래서 새 액션명을 정할 때 다른 모듈, 코어와 겹치지 않는지 확인한다. (modules/dmove/template/README.md "액션 이름 정하기")
 	public function checkConflicts(): array {
 		$ids = [];
 		$namespaces = [];
@@ -346,6 +360,7 @@ final class CModuleManager {
 	 * @param CAction $action  Action responsible for the current request.
 	 * @param string  $event   Event to publish.
 	 */
+	// [DM 해설] 모든 모듈의 onBeforeAction / onTerminate 를 차례로 호출한다.
 	public function publishEvent(CAction $action, string $event): void {
 		$action_module = $this->getActionModule();
 
@@ -367,6 +382,8 @@ final class CModuleManager {
 	 *
 	 * @return array|null  Either manifest data or null if manifest file had errors.
 	 */
+	// [DM 해설] manifest.json 읽기와 검사. 하나라도 틀리면 null 을 돌려주고 모듈이 로드되지 않는다.
+	// [DM 해설] manifest.json 은 JSON 이라 주석을 쓸 수 없고, 쉼표 하나만 틀려도 여기서 실패한다.
 	private function loadManifest(string $relative_path): ?array {
 		$relative_path_parts = explode('/', $relative_path, 2);
 
@@ -393,6 +410,7 @@ final class CModuleManager {
 		}
 
 		// Check required keys in manifest.
+		// [DM 해설] manifest.json 필수 키 5개. 하나라도 없으면 모듈을 읽지 않는다.
 		if (array_diff_key(array_flip(['manifest_version', 'id', 'name', 'namespace', 'version']), $manifest)) {
 			return null;
 		}
@@ -412,6 +430,8 @@ final class CModuleManager {
 			return null;
 		}
 
+		// [DM 해설] 최종 네임스페이스 = ucfirst('modules') + '\' + manifest 의 namespace  ->  Modules\DMove
+		// [DM 해설] PHP 파일의 namespace 선언은 이 값으로 시작해야 한다.
 		$manifest['namespace'] = ucfirst($relative_path_parts[0]).'\\'.$manifest['namespace'];
 
 		// Check module type.

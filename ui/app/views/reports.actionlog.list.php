@@ -34,6 +34,7 @@ foreach ($data['statuses'] as $value => $label) {
 	];
 }
 
+// [DM 해설] 필터 영역 조립 본보기. setResetUrl / setProfile / addVar('action') / addFilterTab 순서로 쓴다.
 $filter = (new CFilter())
 	->setResetUrl((new CUrl('zabbix.php'))->setArgument('action', $data['action']))
 	->setProfile($data['timeline']['profileIdx'])
@@ -106,6 +107,7 @@ $filter = (new CFilter())
 			)
 	]);
 
+// [DM 해설] 목록 테이블. setHeader() 로 컬럼 제목, addRow() 로 행, setPageNavigation() 으로 페이지 이동을 붙인다.
 $actionlog_list = (new CTableInfo())
 	->setHeader([
 		_('Time'),
@@ -174,6 +176,7 @@ foreach ($data['alerts'] as $alert) {
 	]);
 }
 
+// [DM 해설] 페이지 조립. setTitle(제목) -> setControls(제목 오른쪽 버튼) -> addItem(필터, 테이블) -> show() 로 출력.
 (new CHtmlPage())
 	->setTitle(_('Action log'))
 	->setDocUrl(CDocHelper::getUrl(CDocHelper::ADMINISTRATION_ACTIONLOG_LIST))
@@ -181,6 +184,7 @@ foreach ($data['alerts'] as $alert) {
 		(new CTag('nav', true,
 			(new CList())
 				->addItem(
+					// [DM 해설] CSV 내보내기 버튼. 누르면 CSV 용 액션으로 이동하고, 브라우저가 파일로 내려받는다.
 					(new CRedirectButton(_('Export to CSV'), (new CUrl())->setArgument('action', 'actionlog.csv')))
 						->setId('export_csv')
 				)

@@ -48,6 +48,9 @@ class CRouter {
 		'action.operation.check'					=> [CControllerActionOperationCheck::class,							'layout.json',			null],
 		'action.operation.condition.check'			=> [CControllerActionOperationConditionCheck::class,				'layout.json',			null],
 		'action.update'								=> [CControllerActionUpdate::class,									'layout.json',			null],
+		// [DM 해설] 코어 라우팅 표. 형식은 '액션명' => [컨트롤러 클래스, 레이아웃, 뷰] 로 5버전 커스텀 폴더의 routing.php 와 같은 모양이다.
+		// [DM 해설] 아래 두 줄처럼 같은 컨트롤러를 화면용(layout.htmlpage)과 CSV 용(layout.csv) 액션으로 따로 등록한다.
+		// [DM 해설] 모듈 액션은 이 표를 고치지 않고 manifest.json 에 적는다. (addActions() 로 합쳐진다)
 		'actionlog.csv'								=> [CControllerActionLogList::class,								'layout.csv',			'reports.actionlog.list.csv'],
 		'actionlog.list'							=> [CControllerActionLogList::class,								'layout.htmlpage',		'reports.actionlog.list'],
 		'audit.settings.edit'						=> [CControllerAuditSettingsEdit::class,							'layout.htmlpage',		'administration.audit.settings.edit'],
@@ -437,6 +440,7 @@ class CRouter {
 	 * @param string $actions['action_name']['layout']  Optional layout of the 'action_name' action.
 	 * @param string $actions['action_name']['view']    Optional view of the 'action_name' action.
 	 */
+	// [DM 해설] 모듈의 액션을 라우팅 표에 추가한다. ZBase::run() 에서 호출된다.
 	public function addActions(array $actions): void {
 		foreach ($actions as $action => $route) {
 			if (is_array($route) && array_key_exists('class', $route)) {
@@ -454,6 +458,7 @@ class CRouter {
 	 *
 	 * @param string $action  Action name.
 	 */
+	// [DM 해설] 액션명으로 컨트롤러 / 레이아웃 / 뷰를 찾아 둔다. 표에 없는 액션이면 컨트롤러가 null 이 되어 "Page not found" 가 된다.
 	public function setAction(string $action): void {
 		$this->action = $action;
 

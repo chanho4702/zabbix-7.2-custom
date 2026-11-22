@@ -17,6 +17,8 @@
 require_once dirname(__FILE__).'/classes/core/APP.php';
 
 try {
+	// [DM 해설] 프론트엔드 시작. APP 는 ZBase(include/classes/core/ZBase.php) 를 상속한 클래스다.
+	// [DM 해설] run() 안에서 설정 읽기 -> DB 연결 -> 로그인 확인 -> 메뉴 생성 -> 모듈 로드 -> 컨트롤러 실행이 순서대로 일어난다.
 	APP::getInstance()->run(APP::EXEC_MODE_DEFAULT);
 }
 catch (DBException $e) {
