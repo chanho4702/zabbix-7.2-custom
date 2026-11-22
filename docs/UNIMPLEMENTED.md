@@ -36,6 +36,7 @@
 | [ ] | 3 | `src/menu.inc.php` 의 원본과의 차이(`diff`) | 메뉴 전체 | 메뉴 위치(Box 사용현황 포함), 메뉴별 권한, 사이드바 하단 링크 |
 | [ ] | 3 | `src/blue-theme.css` 의 원본과의 차이(`diff`) | 화면 꾸밈 | 커스텀 CSS, 로고 |
 | [ ] | 3 | `index.php`, `include/views/general.login.php` 의 원본과의 차이 + `grep -rn -i "otp\|mypass"` 결과 | 로그인 | OTP / mypass 구조 확인 후 7.0 기본 MFA 대체 여부 판단 |
+| [ ] | 2 | 윈도우 패치 화면 컨트롤러 (`windows` 액션) + 쓰는 트레잇 전체 | 윈도우즈 패치 현황 | HotFix ID 필터를 어떻게 걸렀는지(목록 값 읽는 방식, 속도), 수집월 기본값. 소스를 보고 판단하기로 함 (2026-11-23) |
 | [ ] | 3 | `windowsall`, `popup.windows.all`, `hostesxi` 컨트롤러 | 윈도우 전체, ESXi | 필요 여부부터 판단 |
 
 ---
