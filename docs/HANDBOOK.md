@@ -443,7 +443,7 @@ $timeline = getTimeSelectorPeriod($options);   // $timeline['from_ts'], ['to_ts'
 |---|---|---|
 | 아이템의 지금 값 | `API::Item()->get(['output' => ['lastvalue', 'lastclock'], 'filter' => ['key_' => ...]])`. `lastclock` 이 0 이면 아직 수집 안 됨 | `HostBoxList::getRows()` |
 | 기간 안의 원래 값(글자, 숫자) | `API::History()->get(['history' => 아이템의 value_type, ...])` | `WinPatchService::getLatestValue()` |
-| 기간의 시간별 평균/최대 (며칠~몇 달) | `trends` 표 집계 SQL. PostgreSQL 과 MySQL 양쪽에서 돌게 쓴다 | `ServerUsageService::getUsage()` |
+| 기간의 시간별 평균/최대 (며칠~몇 달) | `trends` 표 집계 SQL. 고객 DB 는 PostgreSQL 이다. (쿼리는 MySQL 문법과도 맞게 써 두었다) | `ServerUsageService::getUsage()` |
 | 트리거 / 장애 건수 | `API::Trigger()->get(['tags' => ...])`, `API::Event()->get(['countOutput' => true, 'groupBy' => ['objectid']])` | `DailyCheckList::getCheckResult()`, `PeakEventList::getRows()` |
 | Zabbix 밖의 표(ITSM 등) | `DBselect()` + `zbx_dbstr()`. 표 이름은 설정에서 읽고 검증한다 | `includes/ItsmRepository.php` |
 

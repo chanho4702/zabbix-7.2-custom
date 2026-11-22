@@ -153,7 +153,7 @@ git diff vendor/zabbix-7.2.15 -- ui/modules/dmove > dmove-module.patch
 이 모듈은 공식 컨테이너 이미지(Zabbix 7.2.15, PHP 8.4, PostgreSQL)에서 다음을 확인했다.
 메뉴 표시와 선택 상태, 목록 표시, 텍스트/Agent 필터, 정렬, 필터 초기화, CSV 다운로드,
 ITSM 미연동 경고, ITSM 행과 Zabbix 호스트 매칭(대소문자 무시), HTML 이스케이프, PHP 경고 없음.
-고객 서버는 DB(MySQL 여부)와 PHP 버전이 다를 수 있으므로 반영 후 같은 항목을 다시 확인한다.
+고객 서버도 PostgreSQL 이다. Zabbix 정확한 버전(7.0.x)과 PHP 버전은 다를 수 있으므로 반영 후 같은 항목을 다시 확인한다.
 
 ### 4.5 서버에서 문법 검사
 
