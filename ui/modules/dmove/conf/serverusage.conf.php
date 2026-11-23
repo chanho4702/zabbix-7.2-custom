@@ -4,17 +4,30 @@
  *
  * 읽는 곳: includes/ServerUsageService.php, actions/reports/serverusage/ServerUsageController.php
  *
- * ┌─────────────────────────────────────────────────────────────────────────┐
- * │ TODO(고객환경) ★ 고객 서버에 올린 뒤 cpu_item_keys 를 채운다 ★          │
- * │                                                                         │
- * │ 이 저장소는 공개 저장소라서 실제 아이템 키는 비워 두었다.               │
- * │ 비어 있으면 화면에 "설정이 필요합니다" 안내가 나오고 목록은 비어 있다.  │
- * │                                                                         │
- * │ 넣을 값: 5버전 키 클래스(...Key.php)의 serverCpuUsage() 가 돌려주는     │
- * │          키 3개 (리눅스, 유닉스, 윈도우)                                │
- * │ 7버전 서버에서 확인: 데이터 수집 > 호스트 > (서버 종류별로 하나씩)      │
- * │          > 아이템 에서 CPU 사용률 아이템의 "키"                         │
- * └─────────────────────────────────────────────────────────────────────────┘
+ * ── 이 파일이 하는 일 ──
+ *   "어느 아이템을 사용률로 볼지", "몇 % 부터 저사용/고사용인지", "업무시간이 몇 시부터 몇 시인지"를 정한다.
+ *   실행되는 코드는 없다. "return [ ... ];" 로 배열 하나를 돌려주기만 한다.
+ *   ServerUsageService 가 만들어질 때마다 require 로 다시 읽으므로, 값을 고치면 다음 화면 조회부터 반영된다.
+ *
+ * ── 이 설정을 쓰는 화면 ──
+ *   저사용 서버 사용현황 (lowserver.list)    cpu_item_keys, thresholds 의 low_*, 업무시간 설정, max_period_days
+ *   고사용 서버 사용현황 (highserver.list)   cpu_item_keys, thresholds 의 high_*, 업무시간 설정, max_period_days
+ *   일일점검의 Top 10 창 (dailycheck.top)    cpu_item_keys, memory_item_keys
+ *
+ * ── 값이 쓰이는 흐름 ──
+ *   1) 대상 호스트에서 cpu_item_keys(또는 memory_item_keys)에 맞는 아이템을 찾는다.
+ *   2) 그 아이템의 시간별 요약 값(평균, 최대)을 DB 에서 읽어 호스트별 평균과 Peak 를 구한다.
+ *      소수 형식 아이템의 요약(trends)과 정수 형식 아이템의 요약(trends_uint)을 모두 읽는다.
+ *   3) 저사용/고사용 화면은 thresholds 의 기준에 맞는 호스트만 남긴다.
+ *
+ * ── 값의 출처 (2026-11-23 채움) ──
+ *   cpu_item_keys    : 5버전 키 클래스(...Key.php)의 serverCpuUsage() 가 돌려주던 키 3개 (리눅스, 유닉스, 윈도우)
+ *   memory_item_keys : 같은 클래스의 serverMemoryUsage() 키 + 5버전 "CPU/Mem 사용률 추출" 화면이 읽던 키
+ *   thresholds       : 5버전 화면의 [기준설정] 창 기본값
+ *
+ *   TODO(고객환경): 유닉스 CPU 키는 5버전 소스에서 끝까지 확인하지 못해 앞부분만 적었다. (아래 prefix 설명)
+ *   7버전 서버에서 확인: 데이터 수집 > 호스트 > (서버 종류별로 하나씩) > 아이템 에서 CPU / 메모리 사용률 아이템의 "키"
+ *   키가 하나도 맞지 않으면 목록이 비어 나온다. 키를 모두 지우면 화면에 "설정이 필요합니다" 안내가 나온다.
  */
 
 return [
@@ -24,14 +37,41 @@ return [
 	 *   exact  : 키가 정확히 같은 아이템
 	 *   prefix : 키가 이 글자로 "시작"하는 아이템. 키 뒷부분이 서버마다 다르거나 너무 길 때 쓴다.
 	 *
-	 * 값은 0~100 사이의 숫자(실수)여야 한다. 숫자(부호 없는 정수) 형식의 아이템은 집계되지 않는다.
+	 * 값은 0~100 사이의 숫자여야 한다. 소수(실수) 형식과 정수 형식의 아이템 모두 집계된다.
 	 */
 	'cpu_item_keys' => [
 		'exact' => [
-			// 예) 'system.cpu.util',
+			// 리눅스 (5버전 키 클래스 serverCpuUsage() 의 linux)
+			'100-system.cpu.util[all,idle,avg1]',
+			// 윈도우 (serverCpuUsage() 의 windows)
+			'system.cpu.util'
 		],
 		'prefix' => [
-			// 예) 'system.run[cat /경로/스크립트결과파일',
+			/*
+			 * 유닉스 (serverCpuUsage() 의 unix). 키 뒷부분(awk 명령)은 5버전 소스에서 끝까지 확인하지 못해서
+			 * 확실한 앞부분만 적고 "이 글자로 시작하는 키"로 찾는다.
+			 * TODO(고객환경): 7버전 서버의 유닉스 호스트에서 실제 키를 확인한다.
+			 */
+			'system.run[cat /zabbix/script/res_vmstat.log'
+		]
+	],
+
+	/*
+	 * 메모리 사용률(%) 아이템의 키. 형식은 cpu_item_keys 와 같다.
+	 * 일일점검 화면의 [Memory 사용률 Top 10] 창에서만 쓴다. 비어 있으면 그 창에 "설정이 필요합니다" 안내가 나온다.
+	 *
+	 * 넣을 값: 5버전 키 클래스(...Key.php)의 serverMemoryUsage() 가 돌려주는 키 (유닉스, 윈도우 등)
+	 */
+	'memory_item_keys' => [
+		'exact' => [
+			// 윈도우 (5버전 키 클래스 serverMemoryUsage() 의 windows. linux 줄은 5버전에서 주석 처리돼 있었다)
+			'vm.memory.size[pused]',
+			// 유닉스 (serverMemoryUsage() 의 unix)
+			'system.run[/zabbix/shells/MEM_COMP.sh]',
+			// 5버전 "CPU/Mem 사용률 추출" 화면이 메모리 값으로 읽던 키 (monitoring.perf.view.php)
+			'system.run[/zabbix/script/MEMORY_USAGE.sh]'
+		],
+		'prefix' => [
 		]
 	],
 

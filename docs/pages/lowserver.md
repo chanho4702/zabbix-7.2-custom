@@ -62,7 +62,7 @@
 - 제목 오른쪽: [CSV 내보내기] [Excel 내보내기]. 지금 필터와 정렬 그대로 **전체 행**(페이지로 자르기 전)을 파일로 받는다. 숫자 열은 Excel 에서 숫자로 들어간다.
 - `cpu_item_keys` 가 비어 있으면 노란 상자: "설정이 필요합니다: conf/serverusage.conf.php". 표는 비어 있다.
 - 기간이 잘못되면 빨간 상자: "시작일이 종료일보다 늦을 수 없습니다." 또는 "※최대 1년까지 기간 지정이 가능합니다." 이때는 조회하지 않는다.
-- 5버전의 [기준설정] 버튼은 없다(7장).
+- 5버전의 [기준설정] 버튼은 없다(7장). 5버전 화면에서는 이 버튼이 "수집기준 설정" 창을 열고, 저사용 평균/Peak, 고사용 평균/Peak 네 값(1~99)을 바꿀 수 있었다.
 
 ### 스케치
 
@@ -126,7 +126,7 @@ return $avg <= $thresholds['low_avg'] && $peak <= $thresholds['low_peak'];
    8. 액션 이름이 `.export` 로 끝나면(`ExportTrait::isExportRequest()`) `setExportResponse()` 로 파일 응답을 만들고 끝낸다.
    9. 아니면 `CPagerHelper::paginate()` 로 현재 페이지 몫만 자르고, 뷰에 넘길 `$data` 를 만든다(`config_missing` = 키 설정이 비었는가, `criteria` = 기준 문구 등).
 6. **`ServerUsageController::getRows()`**
-   1. `API::Host()->get(HostFilter::toApiOptions(...) + ['output' => [hostid, host, name, description], 'selectInterfaces' => [ip, main, type], 'preservekeys' => true])`
+   1. `$host_options = HostFilter::toApiOptions(...)` 를 먼저 구한 뒤 `API::Host()->get($host_options + ['output' => [hostid, host, name, description], 'selectInterfaces' => [ip, main, type], 'preservekeys' => true])`
       - 그룹을 고르면 `getSubGroups()` 로 하위 그룹까지 넣는다. 아무것도 안 고르면 조건이 없어서 볼 수 있는 전체 호스트가 나온다.
       - 호스트 상태(사용/중지)는 거르지 않는다(5버전도 거르지 않았다).
    2. `ServerUsageService::getUsage(호스트ID들, 시작, 끝, 시간)` → `[hostid => ['avg' => .., 'peak' => ..]]`
@@ -154,7 +154,7 @@ Zabbix 서버는 숫자 아이템의 값을 받으면 원래 값은 `history` �
 
 - `clock` = 그 시간의 시작 시각(UTC 기준 유닉스 초). 위 값은 한국 시각 2026-01-05(월) 14:00.
 - `value_avg` = 그 한 시간 값들의 평균, `value_max` = 그 한 시간 중 가장 큰 값.
-- 실수(float) 아이템은 `trends`, 부호 없는 정수 아이템은 `trends_uint` 에 들어간다. 이 화면은 `trends` 만 읽으므로 **CPU 아이템은 실수형이어야 한다**.
+- 실수(float) 아이템은 `trends`, 부호 없는 정수 아이템은 `trends_uint` 에 들어간다. 이 화면은 두 표를 합쳐(UNION ALL) 읽으므로 CPU 아이템이 어느 형식이어도 집계된다 (2026-11-23 수정).
 
 #### (3) "그날의 몇 시, 무슨 요일" 을 SQL 로 구하기
 
@@ -294,8 +294,8 @@ GROUP BY d.itemid                                                        -- ④ 
 | 업무시간 요일 | 월~금만 (`weekend in (1,2,3,4,5)`) | 같음 (`business_days`, 설정으로 바꿀 수 있음) | 5버전과 같게 |
 | 업무외시간 요일 | 요일 구분 없음 | 같음 | 5버전과 같게 |
 | 업무시간 Peak | 업무일 하루 전체의 최대 | 기본은 같음. `business_peak_whole_day=false` 로 업무시간 안의 최대로 바꿀 수 있음 | 숫자를 맞추되 고칠 길을 열어 둠 |
-| 판정 | `avg > 기준 || max > 기준` 이면 제외 = "평균 이하 그리고 Peak 이하" 만 남김 | 같음 (`<=` 그리고 `<=`) | |
-| 기준 문구 | 화면에는 "30% **미만** / Peak 70% **미만**" 이라고 썼지만 코드는 "이하" 였다 | "이하" 로 코드와 맞춤 | 문구 오류 수정 |
+| 판정 | `avg > 기준 || max > 기준` 이면 제외 = "평균 이하 그리고 Peak 이하" 만 남김 | 같음 (`<=` 그리고 `<=`) | 2026-11-23 에 화면 문구만 보고 `<` 로 바꿨다가 같은 날 5버전 코드대로 되돌렸다 |
+| 기준 문구 | 화면과 [기준설정] 창에는 "30% **미만** / Peak 70% **미만**" 이라고 썼지만 코드는 "이하" 였다 | "이하" 로 코드와 맞춤 | 문구를 5버전 화면처럼 "미만"으로 둘지는 고객 확인 필요 |
 | 기준 값 | 사용자 프로파일(`web.report.server.cpulow`, `peaklow`)에서 읽고 없으면 기본값. [기준설정] 버튼으로 사용자마다 바꿈 | `conf/serverusage.conf.php` 의 값을 모든 사용자가 같이 씀 | [기준설정] 화면 소스를 확인하지 못함 (7장) |
 | 데이터 없는 서버 | 표에서 뺌 (`no-trend delete`) | 같음 | 5버전과 같게. 8장에 개선 제안 |
 | CPU 아이템 찾기 | 키 목록을 `LIKE ... OR ...` 로 이어 붙인 SQL | `item.get` 의 `filter`(정확히 같음) / `search`+`startSearch`(~로 시작) | 요청값 직접 SQL 제거, 권한 적용 |
@@ -325,7 +325,9 @@ GROUP BY d.itemid                                                        -- ④ 
 | `business_peak_whole_day` | `true` | 업무시간 Peak 를 하루 전체 최대로 (5버전과 같게) | `false` 면 업무시간 안의 최대 |
 | `max_period_days` | 366 | 조회할 수 있는 최대 기간(일) | |
 
-넣을 키는 5버전 키 클래스(`...Key.php`)의 `serverCpuUsage()` 가 돌려주는 3개(리눅스, 유닉스, 윈도우)다. 공개 저장소라 실제 값은 넣지 않았다. 7버전 서버에서는 데이터 수집 > 호스트 > (서버 종류별 하나씩) > 아이템에서 CPU 사용률 아이템의 키를 확인한다. 값은 0~100 실수여야 한다.
+넣을 키는 5버전 키 클래스(`...Key.php`)의 `serverCpuUsage()` 가 돌려주는 3개(리눅스, 유닉스, 윈도우)다. 공개 저장소라 실제 값은 넣지 않았다. 7버전 서버에서는 데이터 수집 > 호스트 > (서버 종류별 하나씩) > 아이템에서 CPU 사용률 아이템의 키를 확인한다. 값은 0~100 숫자여야 한다 (실수, 정수 모두 가능).
+
+같은 파일의 `memory_item_keys` (형식은 `cpu_item_keys` 와 같다)는 이 화면이 아니라 일일점검의 [Memory 사용률 Top 10] 팝업이 쓴다. 넣을 키는 키 클래스의 `serverMemoryUsage()` 다. → [dailycheck.md](dailycheck.md)
 
 ITSM 설명은 `conf/itsm.conf.php` 를 따른다(비어 있으면 Zabbix 호스트 설명만 나온다).
 
@@ -335,7 +337,8 @@ ITSM 설명은 `conf/itsm.conf.php` 를 따른다(비어 있으면 Zabbix 호스
 |---|---|---|---|
 | TODO(고객환경) | CPU 아이템 키 3종 | 키 클래스(`...Key.php`)의 `serverCpuUsage()` | `conf/serverusage.conf.php` 의 `cpu_item_keys` (CUSTOMER_ENV_CHECKLIST 1-3) |
 | 가정 | 저사용 평균 기준 30% (5버전 컨트롤러의 기본값이 30 인지 20 인지 글자를 확정하지 못함) | 저사용 컨트롤러(`CControllerLowserver.php`)의 `$cpulow` 기본값 | `conf/serverusage.conf.php` 의 `low_avg` (UNIMPLEMENTED 3장, CHECKLIST 2-3) |
-| 없음 | [기준설정] 버튼. 화면에서 기준을 바꾸게 할지, 바꾼다면 사용자별인지 전체 공통인지 | `popup.lowserver` 컨트롤러 | 지금은 설정 파일 (UNIMPLEMENTED 2장, CHECKLIST 3-5) |
+| 없음 | [기준설정] 버튼. 5버전 화면에서 창의 입력 항목(저사용 평균/Peak "미만", 고사용 평균/Peak "이상", 1~99)은 확인했다. 화면에서 기준을 바꾸게 할지, 바꾼다면 사용자별인지 전체 공통인지는 미정 | `popup.lowserver` 컨트롤러와 뷰 (받지 못함) | 지금은 설정 파일 (UNIMPLEMENTED 2장, CHECKLIST 3-5) |
+| 확인 필요 | 기준 문구를 "이하"(실제 동작)로 둘지 "미만"(5버전 화면 문구)으로 둘지. 판정 자체는 5버전 코드대로 이하다 | - | `lang/ko.php` 의 저사용 기준 문구 |
 | 합의만 필요 | 업무시간 Peak = 업무일 하루 전체 최대 (5버전과 같게 둠, 확인 끝) | - | `business_peak_whole_day` (UNIMPLEMENTED 3장) |
 | 가정 | 5버전 `popup.batch`(배치 팝업)는 요약표가 없어져서 필요 없다고 봄 | `popup.batch` 컨트롤러 | 없음 |
 | 가정 | 시간대 = 로그인한 사용자의 시간대(보통 서버 기본 시간대) | - | 관리 > 일반 > GUI 기본 시간대 (CHECKLIST 6-4) |
@@ -350,6 +353,7 @@ ITSM 설명은 `conf/itsm.conf.php` 를 따른다(비어 있으면 Zabbix 호스
 - 요청값을 이어 붙인 SQL 제거, 입력 검증(`checkInput()`), 날짜 형식 검사.
 - 기간 오류를 화면에 표시, 설정 누락 안내.
 - 기준 문구를 코드 동작("이하")과 맞춤.
+- 정수형 CPU 아이템(`trends_uint`)도 집계, 평균 CPU 정렬을 숫자 비교로, 내림차순 페이징 수정 (2026-11-23).
 - Excel 내보내기, 다국어(`Lang::t()` + `lang/ko.php`).
 
 ### 남은 개선 제안

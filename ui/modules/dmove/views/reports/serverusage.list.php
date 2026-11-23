@@ -7,6 +7,50 @@
  *
  * 뷰는 어느 화면인지 구분하지 않는다. 제목, 액션 이름, 기준 안내문을 모두 $data 로 받는다.
  *
+ * ── 이 파일이 하는 일 ──
+ *   컨트롤러가 조회해서 넘긴 값($data)으로 필터와 표를 조립해서 화면에 출력한다.
+ *   여기서는 DB 나 API 를 읽지 않는다.
+ *
+ *   화면 : zabbix.php?action=lowserver.list    (저사용 서버)
+ *          zabbix.php?action=highserver.list   (고사용 서버)
+ *
+ * ── 화면 구성 ──
+ *   제목 오른쪽 : [CSV 내보내기] [Excel 내보내기]
+ *   필터 왼쪽   : 호스트 그룹, 호스트 (선택창)
+ *   필터 오른쪽 : 시작일, 종료일, 시간대(업무시간 / 업무 외 시간 / 전체 시간)
+ *   경고 상자   : 아이템 키 설정(conf/serverusage.conf.php)이 비어 있을 때만 나온다
+ *   오류 상자   : 기간이 잘못되었을 때만 나온다
+ *   기준 안내문 : 표 위 오른쪽의 빨간 글씨. 어떤 기준으로 서버를 골랐는지 알려 준다
+ *   표          : 호스트(정렬 가능), IP, Description, 평균 사용률(정렬 가능), Peak
+ *
+ * ── 받는 값 ($data) ──
+ *   action          이 화면의 액션 이름. 'lowserver.list' 또는 'highserver.list'
+ *   export_action   내보내기 액션 이름. 'lowserver.export' 또는 'highserver.export'
+ *   title           화면 제목
+ *   columns         열 정의. ['name' => 제목, 'ip' => 제목, 'description' => 제목,
+ *                             'avg' => ['label' => 제목, 'type' => 'number'], 'peak' => [...]]
+ *   filter_profile  필터 접힘/펼침 상태를 저장할 프로파일 키 (화면마다 다르다)
+ *   active_tab      필터가 펼쳐져 있는지 (지난번 상태)
+ *   host_filter     호스트 그룹/호스트 선택창에 표시할 값. HostFilter::toViewData() 의 결과
+ *   filter          ['from' => '2026-10-01', 'to' => '2026-10-31', 'hours' => 시간대 값]
+ *   business_hours  업무시간. [시작 시, 끝 시]. 예) [9, 18]
+ *   criteria        기준 안내문 글자
+ *   period_error    기간 오류 문구. 오류가 없으면 ''
+ *   config_missing  true 면 아이템 키 설정이 비어 있다 (경고 상자를 띄운다)
+ *   sort            현재 정렬 열. 'name' 또는 'avg'
+ *   sortorder       현재 정렬 방향. 'ASC' 또는 'DESC'
+ *   paging          페이지 번호 줄
+ *   rows            [['hostid' => .., 'name' => .., 'ip' => .., 'description' => .., 'avg' => 12.34, 'peak' => 56.78], ...]
+ *
+ * ── 관련 파일 ──
+ *   actions/reports/serverusage/ServerUsageController.php   두 화면의 공통 컨트롤러
+ *   actions/reports/lowserver/LowServerList.php             저사용 화면의 차이(제목, 기준)
+ *   actions/reports/highserver/HighServerList.php           고사용 화면의 차이(제목, 기준)
+ *   includes/ServerUsageService.php                         평균/Peak 집계, 시간대 상수(HOURS_...)
+ *   includes/filter/HostFilter.php                          호스트 그룹/호스트 선택 필터 (여러 화면 공용)
+ *   conf/serverusage.conf.php                               아이템 키, 업무시간, 기준 값 설정
+ *   assets/css/dmove.css                                    dm-criteria 클래스
+ *
  * @var CView $this
  * @var array $data
  */
@@ -19,6 +63,7 @@ use Modules\DMove\Includes\ServerUsageService;
 // ── 1) 필터 영역 ────────────────────────────────────────────────────────────
 
 // 시간대 선택. 업무시간은 설정(conf/serverusage.conf.php)의 값을 문구에 넣어 보여 준다. 예) 09시~18시
+// [$a, $b] = 배열 : 배열의 첫째, 둘째 값을 변수 두 개에 한 번에 담는다. 예) [9, 18] -> 9, 18
 [$business_from, $business_till] = $data['business_hours'];
 // sprintf('%02d', 9) = '09' : 두 자리로 맞추고 빈 자리는 0 으로 채운다.
 $business_from = sprintf('%02d', $business_from);
@@ -26,6 +71,10 @@ $business_till = sprintf('%02d', $business_till);
 
 /*
  * 라디오 버튼 묶음. makeVertical() 을 부르면 세로로 한 줄에 하나씩 놓인다. (5버전 화면과 같은 배치)
+ *   CRadioButtonList(입력 이름, 현재 선택된 값) : 여러 개 중 하나만 고르는 버튼 묶음.
+ *   addValue(라벨, 값)                          : 항목 하나를 넣는다. 값은 ServerUsageService 의 HOURS_... 상수다.
+ *   Lang::t('... %1$s ... %2$s', A, B)          : 번역한 문구의 %1$s 자리에 A, %2$s 자리에 B 를 넣는다.
+ *   업무 외 시간은 "끝 시 ~ 시작 시" 라서 인자 순서가 반대다. 예) 18:00 ~ 09:00
  */
 $hours_radio = (new CRadioButtonList('filter_hours', $data['filter']['hours']))
 	->addValue(Lang::t('Business hours usage (%1$s:00 ~ %2$s:00)', $business_from, $business_till),
@@ -45,6 +94,9 @@ $filter_right = (new CFormList())
 	/*
 	 * 날짜 입력 + 달력 버튼.
 	 *   setDateFormat(ZBX_DATE) : 날짜만(YYYY-MM-DD) 받는다.
+	 *   CDateSelector(입력 이름, 현재 값) : 날짜 입력창 + 달력 버튼.
+	 *   CLabel(글자, 입력 이름)           : 라벨. 라벨을 누르면 그 입력창으로 커서가 간다.
+	 *   setPlaceholder                    : 비어 있을 때 흐리게 보이는 안내 글자.
 	 */
 	->addRow(new CLabel(Lang::t('Start'), 'filter_from'),
 		(new CDateSelector('filter_from', $data['filter']['from']))
@@ -59,16 +111,21 @@ $filter_right = (new CFormList())
 	->addRow('', Lang::t('* The period can be up to 1 year.'))
 	->addRow(Lang::t('Hours'), $hours_radio);
 
+// CFilter: 화면 위쪽의 접었다 펼 수 있는 필터 상자. [적용] / [초기화] 버튼은 CFilter 가 만들어 준다.
 $filter = (new CFilter())
+	// [초기화] 버튼이 이동할 주소. CFilter 가 filter_rst=1 을 붙여 준다.
 	->setResetUrl((new CUrl('zabbix.php'))->setArgument('action', $data['action']))
+	// 필터 접힘/펼침 상태를 저장할 프로파일 키. 두 화면이 뷰를 같이 쓰므로 컨트롤러가 화면별 키를 넘겨 준다.
 	->setProfile($data['filter_profile'])
 	->setActiveTab($data['active_tab'])
+	// [적용] 을 눌렀을 때 같은 액션으로 돌아오도록 숨은 값으로 넣는다.
 	->addVar('action', $data['action'])
 	// CFormList 를 2개 넣으면 필터가 좌/우 2단으로 배치된다.
 	->addFilterTab(_('Filter'), [$filter_left, $filter_right]);
 
 // ── 2) 표 ───────────────────────────────────────────────────────────────────
 
+// 정렬 헤더가 만들 링크의 기준 주소. 예) zabbix.php?action=lowserver.list
 $view_url = (new CUrl('zabbix.php'))
 	->setArgument('action', $data['action'])
 	->getUrl();
@@ -80,6 +137,8 @@ foreach ($data['columns'] as $key => $column) {
 	$labels[$key] = is_array($column) ? $column['label'] : $column;
 }
 
+// make_sorting_header(제목, 정렬 키, 현재 정렬 키, 현재 방향, 이 화면 주소): 코어 함수. 누르면 정렬되는 제목 칸을 만든다.
+// 호스트와 평균 열만 정렬할 수 있다. (컨트롤러의 SORT_FIELDS 와 같아야 한다)
 $table = (new CTableInfo())
 	->setHeader([
 		make_sorting_header($labels['name'], 'name', $data['sort'], $data['sortorder'], $view_url),

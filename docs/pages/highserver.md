@@ -112,10 +112,10 @@ return $avg >= $thresholds['high_avg'] && $peak >= $thresholds['high_peak'];
 
 | 항목 | 5버전 | 7버전 | 왜 |
 |---|---|---|---|
-| 판정 조건 | 컨트롤러 소스를 확인하지 못함. 화면 안내문 "고사용 기준: 평균사용률 50% 이상 / Peak 70..." (뒷부분은 확인 못 함) | "평균 ≥ 50 **그리고** Peak ≥ 70" 으로 가정 | 안내문과 저사용 화면의 방식(두 조건을 함께 만족)을 근거로 함 |
+| 판정 조건 | 컨트롤러 소스를 확인하지 못함. 5버전 화면의 [기준설정] 창에서 "고사용 평균 CPU 사용률 50 % 이상", "고사용 Peak기준 70 % 이상" 은 확인했다 (2026-11-23) | "평균 ≥ 50 **그리고** Peak ≥ 70" | 기준값과 "이상"은 확인됨. 두 조건이 그리고인지 또는인지는 여전히 가정 |
 | 표 구성 | 규칙 파일 `highserver.json`: 호스트(정렬), IP, description, 평균CPU사용율(%)(정렬), Peak(%) | 같은 5열. 호스트/평균 정렬 | 5버전과 같게 |
-| 기준 값 | 저사용과 같은 방식(프로파일 + [기준설정])이었을 것으로 보이나 확인 못 함 | `conf/serverusage.conf.php` 의 `high_avg`, `high_peak` | |
-| `popup.agent` | 5버전 액션 목록에서 이 화면과 같은 줄에 있었다. 무엇을 띄우는지 확인 못 함 | 옮기지 않음 | 소스 없음 |
+| 기준 값 | 저사용과 같은 [기준설정] 창 하나에서 저사용 2개, 고사용 2개 값(1~99)을 함께 바꿨다. 저장 위치는 미확인 | `conf/serverusage.conf.php` 의 `high_avg`, `high_peak` | `popup.lowserver` 컨트롤러를 받지 못함 |
+| `popup.agent` | 5버전 액션 목록에서 이 화면 근처에 있었지만 이 화면 것이 아니다. SW 인벤토리의 Agent 미설치/예외 입력 창이다 (2026-11-23 확인) | 옮기지 않음 | → [swinventory.md](swinventory.md) 7장 |
 | 5버전에서 확인된 화면 예 | 표의 행이 모두 평균 50% 이상, Peak 85% 이상이었다 | - | "그리고" 가정과 어긋나지 않는다. 다만 "또는" 을 배제하는 근거는 아니다 |
 
 ## 6. 설정
@@ -130,16 +130,16 @@ return $avg >= $thresholds['high_avg'] && $peak >= $thresholds['high_peak'];
 | `thresholds.high_avg` | 50 | 고사용 평균 기준(%). 이 값 **이상** |
 | `thresholds.high_peak` | 70 | 고사용 Peak 기준(%). 이 값 **이상** |
 | `business_hours`, `business_days`, `business_peak_whole_day`, `max_period_days` | `[9,18]`, 월~금, `true`, 366 | 저사용과 같은 뜻 |
+| `memory_item_keys` | `[]` | 이 화면은 쓰지 않는다. 일일점검의 [Memory 사용률 Top 10] 팝업용 |
 
 ## 7. 비어 있는 부분과 가정
 
 | 구분 | 내용 | 확인할 5버전 파일 | 고칠 곳 |
 |---|---|---|---|
-| 가정 | 평균 50% 이상 **그리고** Peak 70% 이상. "그리고/또는", Peak 기준의 방향과 값 | `controllers/CControllerHighserver.php` | `actions/reports/highserver/HighServerList.php` 의 `matches()` 한 줄, 값은 `conf/serverusage.conf.php` (UNIMPLEMENTED 3장, CHECKLIST 2-1) |
+| 가정 | 평균 50% 이상 **그리고** Peak 70% 이상. 기준값과 방향(이상)은 5버전 화면에서 확인. "그리고/또는"은 미확인 | `controllers/CControllerHighserver.php` | `actions/reports/highserver/HighServerList.php` 의 `matches()` 한 줄, 값은 `conf/serverusage.conf.php` (UNIMPLEMENTED 3장, CHECKLIST 2-1) |
 | TODO(고객환경) | CPU 아이템 키 3종 | 키 클래스(`...Key.php`)의 `serverCpuUsage()` | `conf/serverusage.conf.php` (CHECKLIST 1-3) |
-| 없음 | [기준설정] 버튼 | `popup.lowserver` 컨트롤러 (고사용 쪽 팝업이 따로 있는지도 확인) | 지금은 설정 파일 (UNIMPLEMENTED 2장, CHECKLIST 3-5) |
+| 없음 | [기준설정] 버튼. 저사용과 같은 창 하나를 쓴다 (고사용 전용 팝업은 없다) | `popup.lowserver` 컨트롤러와 뷰 | 지금은 설정 파일 (UNIMPLEMENTED 2장, CHECKLIST 3-5) |
 | 합의만 필요 | 업무시간 Peak = 업무일 하루 전체 최대 | - | `business_peak_whole_day` |
-| 확인 필요 | `popup.agent` 의 용도 | `routing.php` 에서 `popup.agent` 컨트롤러 | 필요하면 새 팝업 |
 
 `CControllerHighserver.php` 는 보고서 숫자에 직접 영향을 주므로 UNIMPLEMENTED 7장 우선순위 2번이다.
 
