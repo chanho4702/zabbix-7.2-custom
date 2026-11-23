@@ -5,17 +5,23 @@
 | 항목 | 내용 |
 |---|---|
 | 메뉴 위치 | 보고서 > CPU/Memory 전체 사용률 추출 (`Module.php` 의 `REPORT_MENUS`, 윈도우즈 패치 현황 다음) |
-| 주소 | `zabbix.php?action=usageexport.list` |
-| 상태 | **껍데기**. 필터만 있고 추출 기능이 없다. 화면에 "데이터 조회가 아직 구현되지 않았습니다." 안내가 뜬다 |
-| 5버전 액션 | `perf.analysis.view` (화면 제목 "CPU/Mem 사용률 추출") |
-| 내보내기 | 이 화면의 목적이 내보내기지만 **아직 없음**. `manifest.json` 에 `usageexport.export` 액션이 없고, 뷰의 버튼 코드는 주석 처리되어 있다 |
-| 권한 | 로그인한 사용자 중 게스트가 아닌 사람(`getUserType() >= USER_TYPE_ZABBIX_USER` 이고 `!CWebUser::isGuest()`). 5버전과 같게 둠 |
+| 주소 | 화면 `zabbix.php?action=usageexport.list`, 내보내기 `zabbix.php?action=usageexport.export` |
+| 상태 | **완성** (2026-11-23 구현). 설정값이 필요하다: `conf/serverusage.conf.php` 의 `cpu_item_keys`, `memory_item_keys` (6장). 비어 있으면 "설정이 필요합니다" 안내가 나온다 |
+| 5버전 액션 | `perf.analysis.view` (화면 제목 "CPU/Mem 사용률 추출"). 컨트롤러 `CControllerPerf.php` / `CControllerPerfAnalysis.php`, 뷰 `monitoring.perf.view.php`. 이 액션은 5버전 `routing.php` 에 없어서 다른 곳에 등록된 것으로 보인다 (위치 미확인) |
+| 내보내기 | CSV 만. 열은 `HOST`, `ITEM`, `CLOCK`, `VALUE` (5버전과 같다). 수집 값 한 건이 한 줄이다 |
+| 권한 | 로그인한 사용자 중 게스트가 아닌 사람(`getUserType() >= USER_TYPE_ZABBIX_USER` 이고 `!CWebUser::isGuest()`). 파일에는 사용자가 볼 수 있는 호스트의 값만 나온다. 5버전은 검사가 없었다 |
 
 ## 2. 이 화면은 무엇을 하나
 
-선택한 서버들의 CPU 사용률과 메모리 사용률 원자료를 파일로 한꺼번에 받는 화면이다. 화면에 표는 없다.
+선택한 서버들의 CPU 사용률과 메모리 사용률 **수집 값 원본**을 CSV 파일로 한꺼번에 받는 화면이다.
+평균이나 최대로 줄이지 않는다. 3분마다 수집하는 아이템이면 3분마다 한 줄이 나온다.
 운영/용량 담당자가 받은 파일을 엑셀에서 가공해 월간 보고서, 증설 검토 자료를 만드는 데 쓴다.
 "업무시간(09~18시)만" 또는 "전체 시간"을 고를 수 있고, CPU 와 메모리 중 하나만 받을 수도 있다.
+
+쓰는 순서:
+
+1. 필터와 기간을 고르고 [적용] 을 누른다. 대상 아이템 수, 예상 줄 수, 미리보기 표가 나온다.
+2. [CSV 내보내기] 를 누른다. 화면에 보이는 조건 그대로 파일이 내려온다.
 
 ## 3. 화면 구성
 
@@ -27,28 +33,41 @@
 | 호스트 | 선택창(멀티셀렉트) + [선택] 팝업 | 비어 있음(전체) | 저장 (`...filter.hostids`) |
 | 항목 | 버튼 모양 라디오 3개: `CPU Util & Mem Util` / `CPU Util only` / `Mem Util only` (값 0/1/2) | `CPU Util & Mem Util`(0) | 저장 (`...filter.items`) |
 | 시간 | 버튼 모양 라디오 2개: 업무시간 (09:00 ~ 18:00) / 전체사용현황 (값 0/1) | 업무시간(0) | 저장 (`...filter.time`) |
+| 기간 | 코어의 시간 선택기 (최신 1시간, 어제, 지난달 ... 또는 날짜 직접 입력). 필터 탭 옆의 탭이다 | 코어 기본(최신 1시간) | 저장 (`...filter.from`, `...filter.to`) |
 
-필터 아래에 빨간 안내문 2줄이 있다(5버전 문구를 그대로 옮김).
+필터와 기간은 함께 적용된다. 필터 아래에 빨간 안내문 2줄이 있다(5버전 문구를 그대로 옮김).
 
 - `※실시간 Data 출력은 전일 ~ 3개월 기간 출력이 가능합니다.`
 - `※다량의 Data export시 1분 이상 소요될 수 있습니다.`
 
-(영어 화면에서는 `lang/ko.php` 의 영어 원문이 보인다.) 기간(날짜) 입력은 없다. 5버전 화면에도 없었다.
+### 안내 줄 (필터 아래)
 
-### 표의 열
+상태에 따라 아래 넷 중 하나가 나온다.
 
-없다. 결과는 파일로만 받는 화면이다.
+| 상태 | 표시 | [CSV 내보내기] 버튼 |
+|---|---|---|
+| 아이템 키 설정이 비어 있음 | 노란 상자 "설정이 필요합니다: conf/serverusage.conf.php" | 없음 |
+| 기간이 최대 기간(93일)을 넘음 | 노란 상자 "기간은 최대 93일까지 고를 수 있습니다. 기간을 줄여 주세요." | 없음 |
+| 대상 아이템이 없음 | 노란 상자 "선택한 호스트에 CPU/Memory 아이템이 없습니다." | 없음 |
+| 예상 줄 수가 한도(1000만)를 넘음 | 노란 상자 "예상 줄 수가 약 N줄로 한도(10,000,000줄)를 넘습니다. ..." | 없음 |
+| 내보낼 수 있음 | "대상 아이템 N개, 예상 줄 수 약 M줄. [CSV 내보내기] 를 누르면 내려받습니다." | 있음 |
+
+### 미리보기 표
+
+내보낼 수 있을 때만 나온다. 파일에 들어갈 내용의 **앞에서 100줄**이다. 열은 CSV 와 같다: `HOST`, `ITEM`, `CLOCK`, `VALUE`.
+그 기간에 수집 값이 없으면(예: 이력 보관 기간이 지난 날짜) 표가 "데이터 없음"으로 나와서 파일을 받기 전에 알 수 있다.
+5버전에는 없던 것이다.
 
 ### 버튼
 
-- [적용] [리셋]: 필터 저장/초기화만 한다.
-- 내보내기 버튼: 아직 없다. 뷰에 `ExportButtons::create('usageexport.export', [ExportFormat::CSV])` 가 주석으로 들어 있다.
+- [적용] [리셋]: 필터 저장/초기화. [적용] 만으로는 파일이 내려오지 않는다.
+- [CSV 내보내기] (오른쪽 위): 파일을 내려받는다. 파일 이름 예: `usage_cpumem_working_20261123_101530.csv` (`cpumem` / `cpu` / `mem` + `working` / `all` + 날짜시각).
 
 ### 텍스트 스케치
 
 ```
-CPU/Memory 전체 사용률 추출                         (내보내기 버튼 자리 - 아직 없음)
-┌ 필터 ──────────────────────────────────────────────────────────────┐
+CPU/Memory 전체 사용률 추출                                        [CSV 내보내기]
+┌ 필터 ─────────────────────────────────────┐  [최신 1 시간] (시간 선택기 탭)
 │ 호스트 그룹 [검색 문자열을 입력      ] [선택]                      │
 │ 호스트      [검색 문자열을 입력      ] [선택]                      │
 │ 항목        [CPU Util & Mem Util|CPU Util only|Mem Util only]      │
@@ -57,113 +76,162 @@ CPU/Memory 전체 사용률 추출                         (내보내기 버튼 
 │             ※다량의 Data export시 ... (빨간 글자)                  │
 │ [적용] [리셋]                                                      │
 └────────────────────────────────────────────────────────────────────┘
-(노란 안내) 데이터 조회가 아직 구현되지 않았습니다.
+대상 아이템 4개, 예상 줄 수 약 1,916줄. [CSV 내보내기] 를 누르면 내려받습니다.
+미리보기: 앞에서 100줄만 표시합니다. 전체는 파일로 내려받으세요.
+HOST     ITEM              CLOCK                 VALUE
+web-01   CPU utilization   2026-11-22 09:00:00   12.5
+web-01   CPU utilization   2026-11-22 09:03:00   13.1
 ```
 
 ## 4. 어떻게 만들었나 (동작 순서)
 
-1. **CSRF 검사 끄기** - `UsageExportList::init()` 에서 `disableCsrfValidation()`.
-2. **입력 검증** - `UsageExportList::checkInput()`
-   ```php
-   'filter_items' => 'in '.implode(',', [self::ITEMS_CPU_MEM, self::ITEMS_CPU, self::ITEMS_MEM]),
-   'filter_time' => 'in '.implode(',', [self::TIME_BUSINESS, self::TIME_ALL])
-   ```
-   항목은 0, 1, 2, 시간은 0, 1 만 받는다. 여기에 `HostFilter::INPUT_FIELDS` 를 더한다. `page` 는 없다(표가 없으므로).
-3. **권한** - `UsageExportList::checkPermissions()`: `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()` (게스트 계정 제외).
-4. **필터 저장/초기화** - `doAction()` 1번 블록. `HostFilter::save()`, 항목/시간은 `CProfile::update(..., PROFILE_TYPE_INT)`. [리셋]은 `HostFilter::reset()` 과 `CProfile::deleteIdx()`.
-5. **뷰로 넘기기** - `HostFilter::load()` / `toViewData()`, 라디오 선택지(`items_options`, `time_options`), `'data_ready' => false`. **데이터를 만드는 함수 자체가 아직 없다.**
-6. **화면** - `views/reports/usageexport.list.php`. `HostFilter::addRows()` 로 두 줄, `CRadioButtonList(...)->setModern(true)` 로 라디오, 라벨 없는 줄(`addRow('', [...])`)에 `ZBX_STYLE_RED` 안내문 2줄. `data_ready` 가 `false` 면 노란 안내 상자.
+화면(`usageexport.list`)과 내보내기(`usageexport.export`)가 같은 컨트롤러 `UsageExportList.php` 를 쓴다.
+
+1. **CSRF 검사 끄기** - `UsageExportList::init()` 에서 `disableCsrfValidation()`. 조회만 하는 화면이다.
+2. **입력 검증** - `checkInput()`
+   - `from`, `to` : `range_time` (시간 선택기가 보내는 기간. 예: `now-1d`, `2026-11-01 00:00:00`). `validateTimeSelectorPeriod()` 가 시작 < 종료 등을 더 검사한다.
+   - `filter_items` : 0, 1, 2 만. `filter_time` : 0, 1 만. `format` : `csv` 만.
+   - 여기에 `HostFilter::INPUT_FIELDS` 를 더한다.
+3. **권한** - `checkPermissions()`: `getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest()`.
+4. **기간 읽기** - `doAction()` 1번 블록. `updateTimeSelectorPeriod()` 로 저장하고 `getTimeSelectorPeriod()` 로 읽는다. 결과의 `from_ts` / `to_ts` 가 유닉스 초다.
+5. **필터 저장/읽기** - `HostFilter::save()` / `load()`, 항목/시간은 `CProfile`. 내보내기도 저장된 값을 읽으므로 화면과 같은 조건으로 파일이 만들어진다.
+6. **계획 만들기** - `UsageExportService::buildPlan()`. 값은 아직 읽지 않는다.
+   1. 호스트: `$host_options = HostFilter::toApiOptions($host_filter)` 를 먼저 구한 뒤 `API::Host()->get($host_options + [...])`. 사용자가 볼 수 있는 호스트만 나온다. (조건을 먼저 변수에 담는 이유: `../HANDBOOK.md` 2.3 의 주의)
+   2. 아이템: 고른 항목마다 `ServerUsageService::findItems()` 로 찾는다. 키는 `conf/serverusage.conf.php` 의 `cpu_item_keys` / `memory_item_keys` 다. 그 뒤 `item.get` 으로 이름과 값 형식을 읽고, 소수(0)와 정수(3) 형식만 남긴다.
+   3. 예상 줄 수 = `기간(초) / 180 x 아이템 수`. 한도(1000만)를 넘으면 `too_large` 가 `true` 다. (5버전과 같은 계산)
+7. **내보낼 수 없는 이유 찾기** - `findProblem()`. 기간 초과 → 대상 없음 → 줄 수 초과 순서로 본다.
+8. **화면일 때** - `UsageExportService::preview()` 로 앞에서 100줄을 읽어 뷰(`views/reports/usageexport.list.php`)로 넘긴다.
+9. **내보내기일 때**
+   - 내보낼 수 없으면 화면(`usageexport.list`)으로 되돌린다. 화면에 이유가 나온다.
+   - 내보낼 수 있으면 계획을 레이아웃 `views/export/layout.stream.php` 로 넘긴다. (`manifest.json` 의 `usageexport.export` 가 `"layout": "export/layout.stream"`)
+10. **CSV 흘려보내기** - `layout.stream.php` → `UsageExportService::stream()`
+    - 레이아웃이 열려 있는 출력 버퍼를 모두 닫고(`ob_end_clean()`), 실행 시간 제한을 풀고, 다운로드 헤더를 보낸다. 끝나면 `exit` 한다.
+      코어는 뷰의 출력을 메모리에 모았다가 한꺼번에 내보내기 때문에, 그대로 두면 파일 전체가 메모리에 쌓인다.
+    - `stream()` 은 BOM 과 제목 줄을 쓰고, 값 형식별 표(`history` = 소수, `history_uint` = 정수)에서 아이템을 묶어 나눠 조회한다.
+    - 한 번에 읽는 양: `itemsPerQuery()`. 한 번에 약 20만 줄이 되게 아이템 수를 정한다. 예) 3개월이면 4개씩, 하루면 416개씩.
+    - 쿼리: `historySql()`. `SELECT itemid,clock,value FROM history WHERE itemid IN (...) AND clock>=시작 AND clock<=끝 [업무시간 조건] ORDER BY itemid,clock`.
+    - 업무시간 조건: `hoursCondition()`. `((clock + 시간대차이) % 86400)` 이 9시 이상 18시 미만. 시간대는 로그인한 사용자의 것이다.
+    - 한 줄 만들기: `csvLine()`. 모든 값을 큰따옴표로 감싸고, 수식으로 실행될 수 있는 값(`=`, `+`, `-`, `@`, 탭, CR 로 시작) 앞에 `'` 를 붙인다.
+    - 5000줄마다 `flush()` 로 브라우저에 밀어 보낸다.
+
+이력을 API(`history.get`)가 아니라 DB 에서 직접 읽는 이유: API 는 결과를 한꺼번에 배열로 돌려줘서 수백만 줄을 감당할 수 없다. 대신 호스트와 아이템은 API 로 골라 권한을 지킨다.
 
 ## 5. 5버전과 비교
 
+5버전 소스에서 확인한 구조 (2026-11-23).
+
+- **컨트롤러 2개는 필터만 다룬다.** `CControllerPerf.php`, `CControllerPerfAnalysis.php` 는 필터 값(그룹, 호스트, 항목, 시간, 기간)을 저장하고 뷰로 넘기기만 한다. 데이터 조회 코드는 없다. 권한 검사는 항상 통과였다.
+- **실제 일은 뷰 `monitoring.perf.view.php` 가 한다.** 순서는 아래와 같다.
+  1. 필터에 **기간 선택(타임 셀렉터)** 이 있다. 주소에 기간과 항목, 시간이 모두 있을 때만 추출을 시작한다.
+  2. 메모리 제한을 6144M 로 올리고 실행 시간 제한을 없앤다.
+  3. 값은 Zabbix 표준 표가 아니라 **따로 만들어 둔 복사 표**에서 읽는다. 항목 선택에 따라 표가 다르다 (CPU+메모리용, CPU 용, 메모리용 3개 + 아이템 목록 표 1개). 이 표들을 채우는 배치는 받지 못했다.
+  4. 먼저 대상 아이템 수를 세고, **예상 줄 수 = (기간 초 / 180) x 아이템 수** 를 구한다 (3분 주기로 수집한다고 본 계산). 1000만 줄을 넘으면 추출하지 않고 안내 창(`popup.perf.analysis`)만 띄운다.
+  5. 넘지 않으면 SQL 을 만들어 **서버의 셸 스크립트**에 넘긴다. 스크립트가 CSV 파일을 서버의 내보내기 폴더에 만든다. (스크립트 내용은 받지 못함. 파일을 여러 개로 나누는 일도 여기서 하는 것으로 보인다)
+  6. 내보내기 폴더에서 이번에 만든 파일 이름을 모으고, 예전 파일은 지운다.
+  7. 브라우저 스크립트가 숨은 iframe 으로 파일을 하나씩 내려받는다.
+- **CSV 열**: `HOST`, `ITEM`, `CLOCK`(`YYYY-MM-DD HH24:MI:SS`), `VALUE`. 수집 값 한 건이 한 줄이다.
+- **조건**: 호스트를 골랐으면 호스트 기준, 그룹만 골랐으면 그룹 기준, 둘 다 없으면 전체. 업무시간은 DB 서버 시간으로 9시 이상 18시 미만이고 요일은 따지지 않는다.
+
 | 주제 | 5버전 | 7버전 | 왜 |
 |---|---|---|---|
-| 필터 | 호스트 그룹, 호스트, 항목(3개), 시간(2개), 빨간 안내 2줄 | 같다 | 그대로 옮김 |
-| 결과 | 화면 표 없이 CSV 만. 한 번 실행에 `export_<날짜시각><순번>.csv` 파일이 여러 개(확인된 것은 3개) 내려왔다 | 없음 | 미구현 |
-| 기간 | 화면에 날짜 입력이 없고 안내문에 "전일 ~ 3개월"만 있다. 실제 기간을 정하는 방법은 확인 필요 | 없음 | 5버전 컨트롤러 확인 필요 |
-| 파일 여러 개 | 한 번에 여러 파일 | 브라우저는 요청 한 번에 파일 하나만 받으므로 같은 방식은 어렵다. 버튼을 파일 수만큼 두거나(권장) 한 파일에 합친다(컨트롤러 머리말) | 7버전 모듈의 내보내기 구조 |
-| 집계 방식 | 확인 필요 (history 인지 trends 인지, 시간/일 단위인지) | 없음. trends 우선 검토로 적어 둠 | 데이터 양 |
+| 필터 | 호스트 그룹, 호스트, 항목(3개), 시간(2개), 빨간 안내 2줄 + 기간 선택(타임 셀렉터) | 같음 | |
+| CSV 열, 한 줄의 뜻 | `HOST, ITEM, CLOCK, VALUE`. 수집 값 한 건이 한 줄 | 같음 | 고객이 받던 파일과 같은 모양으로 (2026-11-23 결정) |
+| 내려받는 방법 | [적용] 을 누르면 바로 파일을 만든다 | [적용] 으로 조건을 정하고 [CSV 내보내기] 를 눌러 받는다 | 받기 전에 예상 줄 수와 미리보기를 보여 준다. 다른 화면의 내보내기와 같은 방식 |
+| 파일 수 | 한 번에 여러 개 | 하나 | 5버전의 나누는 기준이 서버 스크립트에 있어 확인하지 못했다 |
+| 값의 출처 | 따로 만든 복사 표 (채우는 배치는 미확인) | Zabbix 표준 이력 표 `history`, `history_uint` | DB 에 표를 추가하지 않는다. 배치가 필요 없다 |
+| 파일 만들기 | 서버 셸 스크립트 + 내보내기 폴더 + iframe 내려받기 | DB 에서 읽는 대로 브라우저로 흘려보낸다 | 웹에서 셸을 실행하지 않고, 서버에 임시 파일을 남기지 않는다 |
+| 줄 수 제한 | 예상 1000만 줄 초과 시 안내 창 | 예상 1000만 줄 초과 시 화면에 안내, 버튼 없음. 계산식도 같다 | |
+| 최대 기간 | 안내문에 "전일 ~ 3개월". 코드로 막지는 않았다 | 93일을 넘으면 내보내지 않는다 | 안내문과 맞춤 |
+| 메모리 | 제한을 6144M 로 올림 | 올리지 않는다. 나눠 읽고 바로 내보낸다 | |
+| 업무시간 | DB 서버 시간 9~18시, 요일 무관 | 로그인한 사용자 시간대 9~18시, 요일 무관 | 사용자가 보는 시각과 맞춘다. 서버와 사용자의 시간대가 같으면 결과가 같다 |
+| 화면의 표 | 없음 | 미리보기 100줄 | 받기 전에 값이 있는지 확인 |
+| 권한 | 항상 통과 | 로그인한 사용자, 게스트 제외. 볼 수 있는 호스트의 값만 | |
 
 ## 6. 설정
 
-지금은 없음.
-구현하면 아이템 키 설정이 필요하다. CPU 키는 저사용/고사용 화면의 `conf/serverusage.conf.php` 의 `cpu_item_keys` 를 같이 쓸 수 있다. 메모리 사용률 키 설정은 아직 어디에도 없다(5버전 키 클래스 `...Key.php` 의 `serverMemoryUsage()` 에 있다고 정리되어 있다). 업무시간/업무일도 같은 파일의 `business_hours`, `business_days` 를 쓰는 것이 자연스럽다.
+| 파일 | 값 | 뜻 | 기본값 |
+|---|---|---|---|
+| `conf/serverusage.conf.php` | `cpu_item_keys` | CPU 사용률 아이템의 키 (저사용/고사용, CPU Top 10 과 공용) | 비어 있음 |
+| `conf/serverusage.conf.php` | `memory_item_keys` | 메모리 사용률 아이템의 키 (Memory Top 10 과 공용) | 비어 있음 |
+| `conf/usageexport.conf.php` | `max_period_days` | 한 번에 내보낼 수 있는 최대 기간(일) | 93 |
+| `conf/usageexport.conf.php` | `assumed_interval` | 줄 수를 어림할 때 쓰는 수집 간격(초) | 180 |
+| `conf/usageexport.conf.php` | `max_rows` | 어림한 줄 수의 한도 | 10,000,000 |
+| `conf/usageexport.conf.php` | `business_hours` | 업무시간 [시작 시, 끝 시]. 끝 시는 포함하지 않는다 | [9, 18] |
+
+- 고른 항목에 필요한 키 설정이 비어 있으면 화면에 "설정이 필요합니다" 안내가 나온다. 예) `CPU Util only` 는 `cpu_item_keys` 만 있으면 된다.
+- 5버전은 이 화면의 아이템 키를 뷰 안에 직접 적어 두었고, 키 클래스(`...Key.php`)의 `serverCpuUsage()` / `serverMemoryUsage()` 값과 **일부 다르다**. 고객 서버에서 실제로 어느 키를 수집하는지 확인해서 넣는다 (값은 저장소에 넣지 않는다).
 
 ## 7. 비어 있는 부분과 가정
 
-| 자리 | 내용 | 확인할 5버전 파일 |
-|---|---|---|
-| `TODO(고객환경)` 추출 기능 전체 | 데이터 조회, 파일 만들기 | `perf.analysis.view` 액션의 컨트롤러와 뷰 |
-| 기간을 정하는 방법 | 화면에 날짜 입력이 없다. "전일 ~ 3개월"의 뜻(어제 하루인지, 어제까지 3개월인지) | 위와 같다 |
-| CSV 의 열 구성 | 호스트별/시간별/일별 중 어떤 행인지, 평균/최대 중 무엇인지 | 위와 같다 |
-| 파일이 여러 개로 나뉘는 기준 | 항목별인지, 행 수 제한인지 | 위와 같다 |
-| 메모리 아이템 키 | OS 별로 다를 수 있다 | 키 클래스의 `serverMemoryUsage()` |
-| `TODO(고객환경)` 내보내기 버튼 | 구현 후 뷰의 주석을 푼다 | - |
-| `TODO(고객환경)` `data_ready` | 구현하면 `true` | - |
-
-`UNIMPLEMENTED.md` 1장, `CUSTOMER_ENV_CHECKLIST.md` 3-3 과 같은 내용이다.
+| 구분 | 내용 | 확인할 것 | 고칠 곳 |
+|---|---|---|---|
+| **이력 보관 기간** | 이력 표에는 아이템마다 정한 "이력 보관 기간" 만큼만 값이 있다. 3개월치를 받으려면 CPU/메모리 아이템의 이력 보관 기간이 3개월 이상이어야 한다. 보관 기간보다 오래된 날짜를 고르면 그 구간은 파일에 나오지 않는다 | 데이터 수집 > 호스트 > 아이템 > 이력 보관 기간 (`../CUSTOMER_ENV_CHECKLIST.md` 1-9) | 아이템(또는 템플릿)의 이력 보관 기간을 늘린다. DB 용량이 늘어난다 |
+| 가정 | 파일을 하나로 내려보낸다 | 5버전이 파일을 나누던 기준. `export_csv.sh` (받지 못함) | `UsageExportService::stream()` |
+| 가정 | `ITEM` 열 = 아이템 이름 | 5버전 복사 표의 `item` 열이 이름인지 키인지 (미확인) | `UsageExportService::buildPlan()` 의 `'name'` |
+| 가정 | 예상 줄 수는 수집 간격을 180초로 보고 계산한다 (5버전과 같음) | 고객 서버의 실제 수집 간격 | `conf/usageexport.conf.php` 의 `assumed_interval` |
+| 가정 | 업무시간은 사용자 시간대 기준 | 5버전은 DB 서버 시간. 둘이 다른 환경인지 | `UsageExportService::hoursCondition()` |
+| 미확인 | 5버전 줄 수 초과 안내 창(`popup.perf.analysis`)의 문구 | 그 컨트롤러와 뷰 (받지 못함) | `lang/ko.php` |
+| 아이템 키 | CPU, 메모리 | 고객 서버의 실제 아이템 | `conf/serverusage.conf.php` |
 
 ## 8. 개선점
 
 ### 이미 반영한 개선
 
-- 5버전 필터 구성 그대로의 틀, 사용자별 필터 저장, 호스트 그룹 선택 시 하위 그룹 포함.
-- 입력 검증(라디오 값 목록).
-- 구현 방향(공용 내보내기 부품, trends 우선, 파일 하나씩)을 컨트롤러 머리말에 정리.
+- 추가 표, 배치, 서버 셸 스크립트 없이 Zabbix 표준 이력 표에서 바로 내려받는다.
+- 전체를 메모리에 올리지 않고 나눠 읽어 흘려보낸다. 메모리 제한을 올릴 필요가 없다.
+- 받기 전에 대상 아이템 수, 예상 줄 수, 미리보기 100줄을 보여 준다.
+- 내보낼 수 없을 때(기간 초과, 줄 수 초과, 대상 없음, 설정 없음) 이유를 화면에 보여 준다.
+- 사용자가 볼 수 있는 호스트의 값만 내보낸다. 게스트 차단.
+- CSV 수식 인젝션 방지(값 앞에 `'`).
+- 입력 검증, 사용자별 필터 저장, 호스트 그룹 선택 시 하위 그룹 포함.
 
 ### 남은 개선 제안
 
 | 제안 | 효과 | 5버전과 결과가 달라지나 (고객 합의) |
 |---|---|---|
+| trends(1시간 평균/최대) 내보내기를 선택지로 추가 | 이력 보관 기간과 관계없이 긴 기간을 받을 수 있다. 줄 수가 약 1/20 | 열이 달라진다(평균, 최대). 기존 파일은 그대로 두고 추가하는 것이라 합의만 하면 된다 |
 | 정기 보고는 7.0 "예약 보고서"(대시보드를 PDF 로 정기 메일 발송) 검토. 웹 서비스(`zabbix_web_service`) 설치가 필요하다 | 사람이 매번 내려받지 않아도 된다 | 결과물이 CSV 가 아니라 대시보드 PDF 로 바뀐다. 합의 필요 |
-| 기간 입력 추가(기본: 어제 하루, 최대 3개월) | 무엇을 받는지 화면에서 분명해진다 | 5버전이 고정 기간이었다면 기본값을 같게 두면 된다. 합의 필요 |
-| 파일 하나 + "항목" 열로 CPU/메모리 구분, 또는 항목별 버튼 | 브라우저 제약 안에서 5버전의 "여러 파일"을 대신 | 파일 개수와 이름이 달라진다. 합의 필요 |
-| Excel 형식도 제공 | 엑셀에서 숫자 열이 바로 숫자로 들어간다(`'type' => 'number'`) | 형식 추가 |
-| 업무시간의 업무일(월~금) 적용, Peak 계산 방식은 저사용/고사용과 같은 `business_peak_whole_day` 를 따름 | 화면 간 숫자가 일치 | 5버전 추출 파일이 주말을 포함했다면 달라진다. 확인 후 합의 |
-| 데이터 없는(수집 끊긴) 서버를 파일에 따로 표시 | 조용히 빠지는 서버가 없어진다 | 행이 늘어난다. 합의 권장 |
-
-### 7.0 데이터로 새로 만든다면 (설계 초안, **확정 아님**)
-
-5버전 소스를 볼 수 없을 때 쓰는 초안이다. 저사용/고사용 서버 화면과 같은 집계(trends)를 써서 화면 간 숫자가 맞게 한다. 기간, 열 구성, 파일 나눔은 고객과 정한 뒤 확정한다.
-
-**쓸 데이터**
-
-| 데이터 | 7.0 에서 | 비고 |
-|---|---|---|
-| CPU 사용률 | `conf/serverusage.conf.php` 의 `cpu_item_keys` 로 찾은 아이템 | 저사용/고사용과 공용. `ServerUsageService` 의 아이템 찾기 방식 재사용 |
-| 메모리 사용률 | 새 설정(예: 같은 파일에 `mem_item_keys` 추가)으로 찾은 아이템 | 키 값은 고객환경에서 확인. 0~100 실수 아이템이어야 한다 |
-| 시간별 값 | `trends` 표 (1시간 단위 최소/평균/최대) | 많은 양을 DB 에서 집계하려면 `ServerUsageService::getUsage()` 처럼 직접 SQL. 행을 그대로 내보내는 경우라면 `trend.get` API 도 가능하나 양이 많으면 PHP 메모리에 주의 |
-| 호스트, IP, Description | `host.get` + `HostHelper::mainIp()` + `ItsmRepository::fetchDescriptions()` | 공용 부품 |
-
-**단계**
-
-1. `manifest.json` 에 `usageexport.export` 액션을 추가하고(`"layout": "export/layout.file"`), 컨트롤러에 `use ExportTrait;`, `checkInput()` 에 `+ self::exportInputFields()` 를 더한다. 뷰의 버튼 주석을 푼다.
-2. 기간: 필터에 시작/끝 날짜를 추가(기본 어제, 최대 92일)하거나, 합의한 고정 기간을 쓴다. 날짜는 사용자 시간대의 00:00:00 ~ 23:59:59 로 바꾼다.
-3. 호스트: `API::Host()->get(HostFilter::toApiOptions($host_filter) + [...])` 로 권한 안의 호스트만 고른다.
-4. 아이템: 항목 선택이 0 이면 CPU+메모리, 1 이면 CPU, 2 면 메모리 아이템만 찾는다(키 목록으로 `item.get` 한 번).
-5. 집계: 아이템별, 날짜별로 하루 평균(시간별 평균의 평균)과 하루 최대(시간별 최대의 최대). "업무시간"이면 업무일의 09시대~17시대 값만 쓴다.
-   예) 어느 날 09~17시의 시간별 평균이 20, 30, 40, 50, 60, 50, 40, 30, 20 이면 하루 평균 = 340 / 9 = 37.8, 시간별 최대 중 가장 큰 값이 Peak.
-6. 행 형식 (안): 호스트 | IP | Description | 날짜 | 항목(CPU/Memory) | 평균(%) | 최대(%). 숫자 열은 `['label' => ..., 'type' => 'number']`.
-7. `setExportResponse(Lang::t('CPU/Memory usage export'), 'usage_export', $columns, $rows)` 로 파일을 만든다. 파일 이름 예: `usage_export_20261121_142721.csv`.
-8. 호스트가 많고 기간이 길면 오래 걸린다(1시간 1행 x 아이템 수 x 날짜 수). 기간 상한을 두고, PHP 실행 시간 제한을 넘는지 고객 규모로 재 본다.
+| 업무시간에 업무일(월~금) 적용 | 저사용/고사용 화면과 기준이 같아진다 | 5버전은 요일을 따지지 않았다. 달라진다. 합의 필요 |
+| 데이터 없는(수집 끊긴) 서버를 화면에 따로 표시 | 조용히 빠지는 서버가 없어진다 | 파일은 같다. 화면 안내만 추가 |
+| 예상 줄 수를 아이템의 실제 수집 간격으로 계산 | 어림이 정확해진다 | 한도에 걸리는 조건이 달라질 수 있다 |
 
 ## 9. 확인 방법
 
 ### 테스트 환경 (http://127.0.0.1:18970, `Admin` / `zabbix`, `dev/compose.yaml`)
 
-1. 보고서 > CPU/Memory 전체 사용률 추출을 연다.
-   - 기대: 필터 4줄과 빨간 안내 2줄, 노란 "구현 안 됨" 안내. 표와 내보내기 버튼은 없다. 빨간 PHP 경고 없음.
-2. 항목 `CPU Util only`, 시간 `전체사용현황`, 호스트 하나를 고르고 [적용] -> 다른 메뉴에 갔다 돌아온다.
-   - 기대: 선택이 유지된다. [리셋]을 누르면 `CPU Util & Mem Util`, 업무시간, 빈 선택창으로 돌아온다.
-3. 주소에 `&filter_items=9&filter_set=1` 처럼 없는 값을 붙여 연다.
-   - 기대: 입력 오류 화면(검증이 막는다).
-4. 구현 후: Zabbix server 호스트의 CPU 사용률 아이템 키를 설정에 넣고 어제 하루를 내려받아, 저사용 서버 화면(같은 기간, 같은 시간 선택)의 평균/Peak 와 비교한다. 같은 집계를 쓰므로 일치해야 한다.
+2026-11-23 에 아래 순서로 확인했다.
 
-### 고객환경에서 5버전과 비교 (구현 후)
+1. 준비
+   - 호스트 그룹 하나에 호스트 2대를 만든다.
+   - 호스트마다 트래퍼 아이템 2개: CPU 용(값 형식 소수), 메모리 용(값 형식 정수). 키는 시험용 이름으로 한다.
+   - `conf/serverusage.conf.php` 의 `cpu_item_keys` / `memory_item_keys` 의 `exact` 에 그 시험용 키를 잠깐 넣는다. (커밋하지 않는다)
+   - `history` / `history_uint` 표에 아이템마다 하루치 8건을 넣는다: 03:00, 03:03, 10:00, 10:03, 15:00, 15:03, 20:00, 20:03.
+2. 화면: 그 그룹, 항목 `CPU Util & Mem Util`, 시간 `전체사용현황`, 기간을 그날 00:00:00 ~ 23:59:59 로 고르고 [적용].
+   - 기대: "대상 아이템 4개, 예상 줄 수 약 1,916줄", [CSV 내보내기] 버튼, 미리보기 표 32줄.
+3. [CSV 내보내기].
+   - 기대: 파일 이름 `usage_cpumem_all_날짜시각.csv`, 제목 줄 1 + 데이터 32줄. 아이템 이름의 큰따옴표가 `""` 로 들어간다.
+4. 항목 `CPU Util only`, 시간 `업무시간` 으로 [적용] 후 내보내기.
+   - 기대: 데이터 8줄. 시각이 10:00, 10:03, 15:00, 15:03 뿐이다 (03시대, 20시대는 빠진다).
+5. 항목 `Mem Util only`, 시간 `전체사용현황`.
+   - 기대: 데이터 16줄 (정수형 아이템도 나온다).
+6. 기간을 120일(`now-120d` ~ `now`)로 고른다.
+   - 기대: "기간은 최대 93일까지 고를 수 있습니다." 안내, 버튼 없음. 이 상태에서 내보내기 주소를 직접 열면 화면으로 되돌아온다.
+7. `conf/usageexport.conf.php` 의 `max_rows` 를 잠깐 100 으로 낮춘다.
+   - 기대: "예상 줄 수가 약 3,840줄로 한도(100줄)를 넘습니다." 안내, 버튼 없음. (설정 변경이 반영되기까지 몇 초 걸릴 수 있다) 확인 후 되돌린다.
+8. 호스트 그룹을 고른 상태에서 저사용 서버, 윈도우즈 패치 현황, 서버 시간 확인, Peak 이벤트 분석도 연다.
+   - 기대: 오류 없이 열린다. (호스트 그룹 필터에서 API 가 잘못 호출되던 버그를 같은 날 고쳤다. `../HANDBOOK.md` 2.3)
+9. 끝나면 설정 파일을 되돌리고 시험 호스트와 넣은 이력 값을 지운다.
 
-1. 같은 호스트 그룹, 같은 항목/시간으로 5버전과 7버전에서 파일을 받는다.
-2. 5버전 파일의 열 구성, 행 단위(시간/일), 기간을 먼저 확인하고 7버전을 맞춘다.
-3. 같은 호스트, 같은 날짜의 평균/최대가 소수점 수준에서 같은지 본다. 업무시간 값만 다르면 업무일(주말 포함 여부)과 Peak 계산 방식 차이다.
+브라우저에서 버튼을 직접 눌러 파일이 저장되는지는 확인하지 않았다. 내보내기 주소를 호출해 응답 헤더(`Content-Type: text/csv`, `Content-Disposition: attachment`)와 내용을 확인했다.
+
+### 고객환경에서 5버전과 비교
+
+1. 먼저 CPU/메모리 아이템의 이력 보관 기간을 확인한다 (7장). 받으려는 기간보다 짧으면 그 구간은 비어 나온다.
+2. 같은 호스트(한두 대), 같은 항목/시간, 같은 하루로 5버전과 7버전에서 파일을 받는다.
+3. 줄 수와 같은 시각의 값이 같은지 본다.
+   - `ITEM` 열의 글자가 다르면: 5버전이 아이템 이름이 아니라 다른 값을 썼을 수 있다 (7장 가정).
+   - 업무시간 줄 수만 다르면: 서버와 사용자의 시간대 차이를 본다.
+   - 7버전 줄 수가 적으면: 이력 보관 기간, 아이템 키 설정에서 빠진 키가 없는지 본다.
 
 ## 10. 파일 목록
 
@@ -171,17 +239,20 @@ CPU/Memory 전체 사용률 추출                         (내보내기 버튼 
 
 | 파일 | 역할 |
 |---|---|
-| `ui/modules/dmove/actions/reports/usageexport/UsageExportList.php` | 컨트롤러. 입력 검증, 권한, 필터 저장/읽기, 라디오 선택지. 머리말에 5버전 화면 구성과 구현 방향 |
-| `ui/modules/dmove/views/reports/usageexport.list.php` | 화면 뷰. 필터, 빨간 안내문, "구현 안 됨" 안내. 내보내기 버튼은 주석 |
-| `ui/modules/dmove/manifest.json` | `usageexport.list` 액션만 등록 (`usageexport.export` 없음) |
+| `ui/modules/dmove/actions/reports/usageexport/UsageExportList.php` | 컨트롤러. 화면과 내보내기가 같이 쓴다. 입력 검증, 권한, 기간/필터 저장과 읽기, 내보낼 수 없는 이유 찾기, 파일 이름 |
+| `ui/modules/dmove/includes/UsageExportService.php` | 대상 호스트/아이템 찾기(`buildPlan`), 미리보기(`preview`), CSV 흘려보내기(`stream`), 쿼리(`historySql`), 업무시간 조건(`hoursCondition`), 묶음 크기(`itemsPerQuery`), CSV 한 줄(`csvLine`) |
+| `ui/modules/dmove/views/reports/usageexport.list.php` | 화면 뷰. 필터 + 시간 선택기, 안내 줄, [CSV 내보내기] 버튼, 미리보기 표 |
+| `ui/modules/dmove/views/export/layout.stream.php` | 큰 CSV 를 읽는 대로 내려보내는 레이아웃. 출력 버퍼를 닫고 끝에서 `exit` |
+| `ui/modules/dmove/conf/usageexport.conf.php` | 최대 기간, 수집 간격 어림값, 줄 수 한도, 업무시간 |
+| `ui/modules/dmove/manifest.json` | `usageexport.list`, `usageexport.export` 액션 |
 | `ui/modules/dmove/Module.php` | `REPORT_MENUS` 의 `'CPU/Memory usage export'` |
 
 ### 같이 쓰는 부품
 
 | 파일 | 역할 |
 |---|---|
+| `ui/modules/dmove/includes/ServerUsageService.php` | `findItems()` 로 CPU / 메모리 아이템 찾기 |
+| `ui/modules/dmove/conf/serverusage.conf.php` | `cpu_item_keys`, `memory_item_keys` |
 | `ui/modules/dmove/includes/filter/HostFilter.php` | 호스트 그룹/호스트 선택 필터 |
+| `ui/modules/dmove/includes/export/ExportButtons.php`, `ExportFormat.php` | [CSV 내보내기] 버튼 |
 | `ui/modules/dmove/includes/Lang.php`, `ui/modules/dmove/lang/ko.php` | 다국어 문구 (항목, 시간, 안내문) |
-| (구현 시) `ui/modules/dmove/includes/ServerUsageService.php`, `conf/serverusage.conf.php` | CPU 아이템 찾기, trends 집계, 업무시간 설정 |
-| (구현 시) `ui/modules/dmove/includes/export/` | CSV/Excel 내보내기 |
-| (구현 시) `ui/modules/dmove/includes/HostHelper.php`, `ItsmRepository.php` | 대표 IP, ITSM Description |
