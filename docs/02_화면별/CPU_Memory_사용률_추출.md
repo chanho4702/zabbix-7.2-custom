@@ -98,7 +98,7 @@ web-01   CPU utilization   2026-11-22 09:03:00   13.1
 6. **계획 만들기** - `UsageExportService::buildPlan()`. 값은 아직 읽지 않는다.
    1. 호스트: `$host_options = HostFilter::toApiOptions($host_filter)` 를 먼저 구한 뒤 `API::Host()->get($host_options + [...])`. 사용자가 볼 수 있는 호스트만 나온다. (조건을 먼저 변수에 담는 이유: `../01_시작하기/해설집.md` 2.3 의 주의)
    2. 아이템: 고른 항목마다 `ServerUsageService::findItems()` 로 찾는다. 키는 `conf/serverusage.conf.php` 의 `cpu_item_keys` / `memory_item_keys` 다. 그 뒤 `item.get` 으로 이름과 값 형식을 읽고, 소수(0)와 정수(3) 형식만 남긴다.
-   3. 예상 줄 수 = `기간(초) / 180 x 아이템 수`. 한도(1000만)를 넘으면 `too_large` 가 `true` 다. (5버전과 같은 계산)
+   3. 예상 줄 수 = 아이템마다 `기간(초) / 그 아이템의 수집 간격` 을 더한 값. 간격을 알 수 없으면 180초로 본다. 한도(1000만)를 넘으면 `too_large` 가 `true` 다. (5버전은 모든 아이템을 180초로 봤다. 2026-11-24 변경)
 7. **내보낼 수 없는 이유 찾기** - `findProblem()`. 기간 초과 → 대상 없음 → 줄 수 초과 순서로 본다.
 8. **화면일 때** - `UsageExportService::preview()` 로 앞에서 100줄을 읽어 뷰(`views/reports/usageexport.list.php`)로 넘긴다.
 9. **내보내기일 때**
@@ -256,3 +256,14 @@ web-01   CPU utilization   2026-11-22 09:03:00   13.1
 | `ui/modules/dmove/includes/filter/HostFilter.php` | 호스트 그룹/호스트 선택 필터 |
 | `ui/modules/dmove/includes/export/ExportButtons.php`, `ExportFormat.php` | [CSV 내보내기] 버튼 |
 | `ui/modules/dmove/includes/Lang.php`, `ui/modules/dmove/lang/ko.php` | 다국어 문구 (항목, 시간, 안내문) |
+
+
+## 부록: 2026-11-24 보완 (코드 검수 반영)
+
+- **예상 줄 수**: 모든 아이템을 3분 간격으로 보던 것을, 아이템마다 실제 수집 간격(`delay`)으로 어림하도록 바꿨다. 간격을 알 수 없는 아이템(매크로, 트래퍼)만 `assumed_interval`(180초)을 쓴다. 1초 간격 아이템이 있을 때 줄 수를 크게 낮게 어림하던 문제를 막는다.
+- **나눠 읽기**: 한 번의 조회가 약 20만 줄이 되게 아이템을 묶는다. 한 아이템만으로 넘으면 기간을 여러 구간으로 나눠 읽는다. PostgreSQL 은 조회 결과를 한꺼번에 PHP 메모리로 가져오기 때문이다.
+- **마지막 안전장치**: 실제로 쓴 줄이 한도(`max_rows`)에 닿으면 멈추고 파일 끝에 "줄 수 한도에 닿아 여기서 멈췄습니다" 한 줄을 남긴다. 조회 오류가 나도 "DB 조회 오류로 파일이 끝까지 만들어지지 않았습니다" 를 남긴다. (예전에는 조용히 앞부분만 있는 파일이 내려왔다)
+- **세션 잠금**: 내려받는 동안 같은 브라우저의 다른 화면이 멈추지 않도록 내려보내기 전에 세션을 닫는다.
+- **기간 버튼**: 시간 선택기의 "어제" 같은 버튼과 < > 가 동작하지 않던 문제를 고쳤다. (코어 스크립트 `gtlc.js` 를 불러오지 않았고, 코어가 이 화면의 기간 저장 이름을 받지 않았다. `Module.php` 의 `registerTimeSelectors()`)
+- 확인: 1분 간격 아이템 2개 + 간격 불명 1개, 2시간 -> 예상 약 280줄, 실제 240줄. 한도를 50줄로 낮추면 내보내기 버튼 대신 한도 초과 안내가 나온다.
+- **필터 영역 순서와 기본 기간** (2026-11-24): 5버전 화면처럼 오른쪽 위 탭을 [< 줌 아웃 >] [최신 5 일간] [필터] 순서로 바꾸고, 처음 열면 [필터] 탭이 펼쳐지게 했다. 기간을 고른 적이 없으면 기본은 "최신 5 일간"(`now-5d`)이다. (`UsageExportList::DEFAULT_FROM`)

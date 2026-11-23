@@ -6,7 +6,7 @@
 |---|---|
 | 메뉴 위치 | 인벤토리 > SW 인벤토리 (코어 인벤토리 메뉴의 맨 끝에 붙는다. `Module.php` 의 `INVENTORY_MENUS`) |
 | 주소 | `zabbix.php?action=swinventory.list` |
-| 상태 | 완성. ITSM 테이블 이름 설정(`conf/itsm.conf.php`)과 Agent "예외" 구현 방식 결정만 남음 (7장) |
+| 상태 | 완성. Agent 미설치/예외 입력 창 포함 (2026-11-23). Agent 상태 표(`extends_agent`)가 고객 DB 에 있는지 확인 필요 |
 | 5버전 액션 | `swinventories` (화면), `swinventories.view.csv` (CSV). 컨트롤러는 `CControllerSwinventories`, `CControllerSWInventCSV` |
 | 내보내기 | 있음. `zabbix.php?action=swinventory.export&format=csv` 또는 `format=xlsx` (CSV, Excel 버튼 2개) |
 | 권한 | 코어 "인벤토리 > 호스트" 화면을 볼 수 있는 사용자 역할 (`CRoleHelper::UI_INVENTORY_HOSTS`). 모듈 자체도 사용자 역할의 "모듈 접근"에서 켜고 끌 수 있다 |
@@ -106,7 +106,8 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
       - `fetchAllHosts()` 가 DB 를 직접 읽는다. `hosts` (상태 0/1 = 모니터링/중지, 템플릿 제외, flags 0/4 = host.get 기본값과 같음)
         + `host_inventory` LEFT JOIN (줄이 없으면 인벤토리 꺼짐) + `interface` 를 따로 읽어 호스트에 붙인다. 그래서 행 중복이 없다.
       - 왜 전체인가: ITSM 목록은 권한과 관계없이 전부 나온다. Zabbix 호스트만 권한으로 줄이면, 권한 밖 호스트가 실제로는
-        등록돼 있는데도 "미설치"로 보인다. 5버전도 권한 없이 전체를 비교했다.
+        등록돼 있는데도 "미설치"로 보인다.
+      - **정정 (2026-11-24)**: 5버전은 권한 없이 전체를 비교한 것이 아니었다. 5버전은 `API::Host()->get()` 으로 호스트를 읽어 **사용자 권한이 적용됐다** (`v5_restored/src/CControllerSwinventories.php:200-208`). Super admin 은 전체가 보이므로 같은 결과지만, 일반 사용자는 5버전에서 권한 밖 호스트가 "미설치"로 보였다. 지금 7버전 코드는 전체를 읽는다. 어느 쪽으로 할지 사용자 확인 대기.
       - 따로 `API::Host()->get(['output' => ['hostid']])` 로 사용자가 볼 수 있는 호스트를 구한다. 코어 인벤토리 상세 화면 링크는
         이 호스트에만 단다. (권한 밖 호스트를 열면 코어가 권한 오류를 띄우기 때문)
       - 인벤토리는 `os`, `software_app_a~d` 다섯 필드만 가져온다 (`SoftwareResolver::getInventoryFields()`).
@@ -139,15 +140,28 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
    - 지금 `ItsmRepository::fetch()` 는 `os`, `web` 같은 열을 읽지 않으므로, 실제로는 **항상 인벤토리 값**이 나온다. 1순위 자리는 나중에 ITSM 이 그 값을 줄 때를 위해 비워 둔 것이다.
    - 인벤토리가 꺼진 호스트는 API 가 빈 배열을 주므로 빈칸이 된다.
 
-7. **Agent 상태 정하기** - `SwInventoryService::resolveAgentStatus()`
-   ```php
-   if ($zbx_host !== null) return self::AGENT_INSTALLED;        // 1
-   if (!empty($itsm_row['agent_exception'])) return self::AGENT_EXCEPTION;  // 4
-   return self::AGENT_NOT_INSTALLED;                             // 2
-   ```
-   - Zabbix 에 같은 이름의 호스트가 있으면 "설치". 호스트가 비활성(감시 안 함)이거나 Agent 가 응답하지 않아도 "설치"다.
-   - "예외"는 ITSM 행에 `agent_exception` 값이 있을 때로 가정해 두었다. 하지만 `fetch()` 가 이 열을 읽지 않으므로 **지금은 예외가 한 건도 나오지 않는다.** 5버전의 실제 방식은 ITSM 값이 아니라 사용자가 입력 창에서 지정하는 것이었다 (5장, 7장).
+7. **Agent 상태 정하기** - `SwInventoryService::applyAgentStatus()` (5버전 Agent 판정 클래스 `...HostAgent` 와 같은 규칙)
+
+   | 조건 | 상태 | 표시 |
+   |---|---|---|
+   | ITSM 서버 이름과 같은 Zabbix 호스트가 있다 | 설치(1) | 초록 글자 |
+   | 없다 + Agent 상태 표의 가장 최근 기록이 2 | 미설치(2) | 빨간 링크 |
+   | 없다 + 가장 최근 기록이 4 | 예외(4) | 회색 링크 |
+   | 없다 + 가장 최근 기록이 그 밖의 값 | 설치(1) | 5버전 코드 그대로 |
+   | 없다 + 기록이 없다 (또는 표가 없다) | 미설치(2) | 빨간 링크 |
+
+   - Agent 상태 표는 `extends_agent` 다 (`conf/swinventory.conf.php`). 줄의 키는 `itsm_` + ITSM id 이고 5버전과 같다. 그래서 5버전 DB 를 올렸으면 기존 미설치/예외 기록이 그대로 이어진다.
+   - 목록에 있는 서버들의 최신 기록을 쿼리 한 번으로 읽는다(`AgentStatusRepository::latestByKeys()`). 5버전은 서버마다 한 번씩 읽었다.
+   - 미설치/예외 링크에 마우스를 올리면 마지막 사유와 입력자, 시각이 보인다.
    - 값 1, 2, 4 는 2진수 001, 010, 100 이다. 필터에서 "설치 + 예외"를 체크하면 `1 | 4 = 5` 가 되고, 행마다 `(상태 & 5) != 0` 로 한 번에 검사한다. 예) 미설치(2) 는 `2 & 5 = 0` 이라 빠진다.
+
+7-1. **Agent 상태 입력 창** - 미설치/예외 링크를 누르면 열린다 (`swinventory.agent`, 5버전 `popup.agent`)
+   - 창: "Agent 상태: 서버 이름". 상태(미설치 / 예외) 선택, 사유(최대 2048자), 아래에 최근 기록 5개(시각, 상태, 사유, 입력자). [저장] [취소].
+   - [저장]: `swinventory.agent.save` 가 표에 한 줄을 **추가**한다. 고치거나 지우지 않고 쌓는다(5버전과 같다). 가장 최근 줄이 지금 상태다.
+   - 저장 요청은 CSRF 토큰과 권한(인벤토리 > 호스트 화면 권한)을 검사한다. 5버전은 권한 검사가 없었다.
+   - 키가 `itsm_` 로 시작하지 않으면(= Zabbix 에 등록된 서버) 거부한다. 등록된 서버는 항상 "설치"이기 때문이다.
+   - 5버전 입력 창의 소스는 받지 못했다. 표의 열 구성과 5버전의 "최근 5줄 읽기", "한 줄 추가" 코드를 근거로 만들었다. 창의 모양은 5버전과 다를 수 있다.
+   - 표가 없으면 목록 위에 노란 안내가 나오고, 창에는 [저장] 버튼 대신 안내가 나온다. 5버전은 표가 없으면 화면을 여는 도중에 표를 만들었다. 7버전은 자동으로 만들지 않고 `sql/extends_agent.sql` 을 둔다.
 
 8. **필터** - `SwInventoryService::filter()`
    텍스트 필터는 `mb_stripos()` 로 부분 일치, Agent 는 위의 비트 검사. 마지막에 `array_values()` 로 번호를 다시 매긴다.
@@ -166,14 +180,14 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
 
 | 주제 | 5버전 | 7버전 | 왜 |
 |---|---|---|---|
-| 호스트 목록 | `swinventory` DB 뷰(호스트 + 인터페이스 조인)를 직접 조회. 권한과 관계없이 전체 | DB 직접 조회(`fetchAllHosts()`). 권한과 관계없이 전체. 인벤토리 상세 링크만 볼 수 있는 호스트에 | 전체를 보는 것은 5버전과 같게 유지(2026-11-23 결정). 5버전 뷰의 행 중복(인터페이스 여러 개), 템플릿 섞임은 고쳤다 |
+| 호스트 목록 | `API::Host()->get()` (호스트 그룹/호스트 필터만). 사용자 권한이 적용됨 (`CControllerSwinventories.php:200-208`). (이전 문서의 "`swinventory` DB 뷰를 직접 조회, 권한과 관계없이 전체"는 틀린 설명이었다. 2026-11-24 정정) | DB 직접 조회(`fetchAllHosts()`). 권한과 관계없이 전체. 인벤토리 상세 링크만 볼 수 있는 호스트에 | 전체를 보는 것은 2026-11-23 결정. 다만 그 결정의 근거("5버전도 전체")가 틀렸음이 2026-11-24 확인돼 사용자 확인 대기. 5버전 뷰의 행 중복(인터페이스 여러 개), 템플릿 섞임은 고쳤다 |
 | ITSM 테이블 이름 | 트레잇 소스 맨 위에 고정 | `conf/itsm.conf.php` 설정. 이름 글자 검사, 테이블 존재 확인 | 공개 저장소에 고객 값을 넣지 않기 위해, 그리고 테이블이 없을 때 DB 오류가 화면에 뜨지 않게 |
 | ITSM 테이블이 없을 때 | 존재 확인 함수가 실패 결과를 그대로 읽어 PHP 8 에서 경고 | 조용히 "미연동"으로 처리하고 Zabbix 호스트 기준으로 표시 + 경고 상자 | 개발/검증 환경에서도 화면이 뜨게 |
 | 매칭 방식 | ITSM 행마다 전체 호스트를 도는 이중 반복문, `strtolower()` | 소문자 호스트명 색인 한 번, `mb_strtolower()` | 속도, PHP 8.1 의 `null` 경고 방지 |
 | 매칭 안 된 행의 표시명 | **버그**: 앞 행의 표시명이 그대로 찍힘 | 빈칸 | 미설치 서버에 다른 서버 이름이 보이던 오류 수정 |
 | OS/WEB/WAS/DB/이중화 | 아이템 값을 읽는 단계(`history_str`)가 먼저 돌고 인벤토리 단계가 마지막에 덮어씀. 아이템 값 조회 부분은 주석 처리되어 있어 실제로는 인벤토리 값만 나왔다. 값이 없으면 빨간 `-` / `--` 와 말풍선 | 인벤토리 필드만 사용. 값이 없으면 빈칸 | 실제로 동작하던 경로만 옮김. 표시 방식은 다르다(빈칸) |
 | IP | 인터페이스가 여러 개면 첫 IP + 말풍선에 전체 목록. 없으면 빨간 `---` | ITSM IP 우선, 없으면 대표 IP 하나. 없으면 빈칸 | 대표 IP 를 정하는 규칙을 공용 부품(`HostHelper`)으로 통일 |
-| Agent "예외" | Agent 판정 클래스(`...HostAgent`)에서 확인 (2026-11-23). Zabbix 에 등록된 호스트는 "설치". 그렇지 않은 행은 **따로 만든 표**에서 그 행의 가장 최근 기록을 읽어 상태 2 면 "미설치", 4 면 "예외", 기록이 없으면 "미설치". 미설치/예외 글자는 링크이고, 누르면 입력 창(`popup.agent`)이 떠서 상태와 사유를 넣는다. 표에는 대상 ID, 상태(1/2/4), 사유, 시각, 입력한 사용자(ID, 이름, 로그인 이름)가 쌓인다. 표가 없으면 화면을 열 때 만들었다 | "설치"와 "미설치"만 구분. 예외는 나오지 않는다 | 따로 만든 표를 Zabbix DB 에 추가할지 정해야 한다 (7장) |
+| Agent "예외" | Agent 판정 클래스(`...HostAgent`). Zabbix 에 등록된 호스트는 "설치". 그렇지 않은 행은 별도 표 `extends_agent` 의 가장 최근 기록으로 미설치/예외. 글자를 누르면 입력 창(`popup.agent`). 표가 없으면 화면을 열 때 만들었다. 서버마다 쿼리 1번, 값을 쿼리에 이어 붙임 | 같은 표, 같은 규칙. 입력 창(`swinventory.agent`) 구현. 최신 기록을 한 번에 읽고 값은 `zbx_dbstr()` 로 감쌈. 표는 자동으로 만들지 않음(`sql/extends_agent.sql`). 저장에 CSRF·권한 검사 추가 | 2026-11-23 구현 |
 | 정렬 가능한 열 | 호스트, OS, WEB, WAS, DB, Agent설치 | 10개 열 전부 | 편의 |
 | 긴 값 | 20자 넘으면 줄이고 전체는 말풍선 | 줄이지 않음 (Description 은 줄바꿈) | 미반영 (8장 제안) |
 | 권한 | 무조건 허용 | "인벤토리 > 호스트" 화면 권한 | 로그인만 하면 누구나 보던 것을 역할 기반으로 |
@@ -202,7 +216,7 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
 | 자리 | 내용 | 확인할 5버전 파일 | 고칠 곳 |
 |---|---|---|---|
 | `TODO(고객환경)` ITSM 테이블 이름 | 공개 저장소라 비워 둠 | ITSM 트레잇(`...Itms.php`) 맨 위 두 줄 | `conf/itsm.conf.php` |
-| **방향 결정** Agent "예외" | 지금은 "설치/미설치"만 구분한다. 5버전은 사용자가 입력 창에서 미설치/예외와 사유를 넣고, 그 기록을 따로 만든 표에 쌓았다 (5장). 7버전에서 고를 수 있는 방식: ① 같은 표를 Zabbix DB 에 추가 (5버전과 같은 동작. 업그레이드/백업 때 따로 챙겨야 하고, 저장하는 액션이라 CSRF 검사와 권한이 필요) ② 호스트 태그로 표시 (Zabbix 에 없는 서버에는 붙일 곳이 없다) ③ 설정 파일의 목록 (화면에서 못 바꾼다) | 입력 창의 항목: `popup.agent` 컨트롤러와 뷰 (받지 못함). 5버전 표에 쌓인 기존 예외 기록을 옮길지도 정한다 | `includes/SwInventoryService.php` 의 `resolveAgentStatus()`, 새 팝업 액션 |
+| 확인 | Agent 상태 표 `extends_agent` 가 고객 7버전 DB 에 있는지. 5버전 DB 를 올렸으면 있어야 한다. 없으면 `sql/extends_agent.sql` 을 실행한다 | `\dt *.extends_agent` (psql) | `conf/swinventory.conf.php` |
 | `TODO(고객환경)` 소프트웨어 판별 | 인벤토리 필드만 사용. 아이템 값으로 판별하는 규칙이 있으면 추가 | 같은 클래스, 또는 SW 인벤토리 컨트롤러가 쓰는 트레잇 | `includes/SoftwareResolver.php` 의 `resolve()` |
 | `TODO(고객환경)` 권한 | "인벤토리 > 호스트" 권한으로 가정 | `src/menu.inc.php` 의 메뉴별 조건 | `SwInventoryList::checkPermissions()` |
 | 인벤토리 값 | 7버전 서버의 호스트 인벤토리 `os`, `software_app_a~d` 에 값이 들어 있다고 가정 | (서버에서 호스트 인벤토리 탭 확인) | 서버 설정, 또는 `SoftwareResolver` |
@@ -264,7 +278,7 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
 1. `conf/itsm.conf.php` 를 채운 뒤, 같은 필터(예: Agent 미설치만)로 5버전 화면과 7버전 화면을 나란히 연다.
 2. 행 수가 같은지 본다. 다르면 호스트명 대소문자/공백 차이를 확인한다. (호스트 목록은 5버전처럼 권한과 관계없이 전체라서 사용자 권한에 따른 차이는 없다)
 3. 5버전에서 매칭이 안 된 행의 표시명이 7버전에서 빈칸인 것은 버그 수정이므로 차이로 보지 않는다.
-4. 5버전에 "예외" 행이 있으면 7버전에서는 "미설치"로 나온다. 예외는 사용자가 입력한 값이라 자동으로 맞출 수 없다 (7장의 방향 결정 후 처리).
+4. 미설치/예외 줄의 수가 5버전과 같은지 본다. 같은 표를 읽으므로 같아야 한다. 다르면 표 위치(`conf/swinventory.conf.php`)와 ITSM id 가 같은지 확인한다.
 5. OS/WEB/WAS/DB/이중화가 5버전에서 빨간 `-` 인 칸은 7버전에서 빈칸이면 같은 결과다.
 
 ## 10. 파일 목록
@@ -278,7 +292,13 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
 | `ui/modules/dmove/includes/SwInventoryService.php` | 데이터 조회, ITSM-Zabbix 매칭, Agent 판정, 필터, 정렬 |
 | `ui/modules/dmove/includes/SoftwareResolver.php` | OS/WEB/WAS/DB/이중화 값 결정. 인벤토리 필드 매핑 `INVENTORY_FIELDS` |
 | `ui/modules/dmove/conf/itsm.conf.php` | ITSM 스키마/테이블 이름 설정 |
-| `ui/modules/dmove/manifest.json` | `swinventory.list`, `swinventory.export` 액션 등록 |
+| `ui/modules/dmove/conf/swinventory.conf.php` | Agent 상태 표 위치 설정 |
+| `ui/modules/dmove/includes/AgentStatusRepository.php` | Agent 상태 표 읽기(최신 기록, 최근 5개)와 쓰기 |
+| `ui/modules/dmove/actions/inventory/swinventory/AgentEdit.php`, `AgentSave.php` | Agent 상태 입력 창 열기, 저장 |
+| `ui/modules/dmove/views/inventory/swinventory.agent.php` | 입력 창 내용 |
+| `ui/modules/dmove/views/js/inventory/swinventory.list.js.php` | 링크를 누르면 창을 열고 저장하는 스크립트 |
+| `ui/modules/dmove/sql/extends_agent.sql` | 표가 없을 때 만드는 SQL |
+| `ui/modules/dmove/manifest.json` | `swinventory.list`, `swinventory.export`, `swinventory.agent`, `swinventory.agent.save` 액션 등록 |
 | `ui/modules/dmove/Module.php` | `INVENTORY_MENUS` 에 메뉴 등록 |
 
 ### 같이 쓰는 부품

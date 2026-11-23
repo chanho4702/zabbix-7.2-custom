@@ -9,7 +9,7 @@
 | 내보내기 주소 | `zabbix.php?action=peakevent.export&format=csv` 또는 `format=xlsx` |
 | 상태 | 완성. 단, 집계 기준(무엇을 세는지)은 가정이다 |
 | 5버전 액션 | `peak_event.php` (`zabbix.php?action=` 형식이 아닌 독립 PHP 파일) |
-| 내보내기 | 있음 (CSV, Excel). 5버전에는 내보내기 버튼이 확인되지 않았다 |
+| 내보내기 | 있음 (CSV). 5버전에는 내보내기 버튼이 확인되지 않았다 |
 | 권한 | 로그인한 사용자 모두 (`getUserType() >= USER_TYPE_ZABBIX_USER` 이고 `!CWebUser::isGuest()`). 보이는 트리거/호스트는 API 가 사용자 권한으로 걸러 준다 |
 
 ## 2. 이 화면은 무엇을 하나
@@ -42,14 +42,14 @@
 
 ### 버튼/링크/팝업
 
-- 제목 오른쪽: 내보내기 버튼 2개 (CSV, Excel). 공용 부품 `ExportButtons::create('peakevent.export')`.
+- 제목 오른쪽: [CSV 내보내기] 버튼. 공용 부품 `ExportButtons::create('peakevent.export')`.
 - 표 안의 링크와 팝업은 없다.
 - 페이지 나누기 없음. 최대 100줄이 한 화면에 다 나온다.
 
 ### 스케치
 
 ```
-Peak 이벤트 분석                                    [CSV] [Excel]
+Peak 이벤트 분석                                    [CSV 내보내기]
                                     < 줌 아웃 >  [최신 1 시간] [필터]
 ┌──────────────────────────────────────────────────────────────────┐
 │ 시작 [now-1h      ][달력]  종료 [now        ][달력]   [적용]     │
@@ -125,7 +125,7 @@ host-B   | 10.0.0.2 | 웹 서버     | CPU 사용량 95% ..    | 높음   | 6
      예: 에이전트 기본 10.0.0.1 과 SNMP 기본 10.0.0.9 가 있으면 10.0.0.1.
    - 결과 한 줄: `['host' => 'host-A', 'ip' => '10.0.0.1', 'description' => '개발 DB', 'trigger' => '...', 'severity' => 2, 'count' => 12]`
 
-10. **내보내기 요청이면 파일로.** `doAction()` 3) : `isExportRequest()` 가 참이면 심각도 숫자를 `CSeverityHelper::getName()` 으로 이름으로 바꾼 뒤 `setExportResponse($title, 'peak_event', 열 정의, $rows)` 로 끝낸다. 파일 이름은 `peak_event_YYYYMMDD_HHMMSS.csv|xlsx`. `count` 열은 `'type' => 'number'` 로 지정되어 Excel 에 숫자로 들어간다.
+10. **내보내기 요청이면 파일로.** `doAction()` 3) : `isExportRequest()` 가 참이면 심각도 숫자를 `CSeverityHelper::getName()` 으로 이름으로 바꾼 뒤 `setExportResponse($title, 'peak_event', 열 정의, $rows)` 로 끝낸다. 파일 이름은 `peak_event_YYYYMMDD_HHMMSS.csv`.
 
 11. **화면 응답.** `doAction()` 4) : `CControllerResponseData` 에 `columns`, `timeline`, `timeline_profile`, `active_tab`(필터 탭 펼침 상태, 프로파일 `web.dmove.peakevent.filter.active`), `rows` 를 담는다.
 
@@ -146,7 +146,7 @@ host-B   | 10.0.0.2 | 웹 서버     | CPU 사용량 95% ..    | 높음   | 6
 | 호스트 열 | 밑줄 링크였다 | 글자만 | 링크 대상이 확인되지 않아 넣지 않음 |
 | 트리거 이름 열 | 점선 밑줄 링크(코어 트리거 메뉴로 보임)였다 | 글자만 | 위와 같음. 필요하면 추가 가능 (8장) |
 | 심각도 | 영어 이름 + 색 배경 | 코어 도우미로 이름 + 색. 사용자 언어와 관리 설정의 이름을 따른다 | 코어와 같은 표시 |
-| 내보내기 | 확인 안 됨 | CSV, Excel | 공통 개선 |
+| 내보내기 | 확인 안 됨 | CSV | 공통 개선 |
 | 화면 글자 | 한국어 고정 | 영어로 적고 `Lang::t()` / `_()` 로 번역. 그래서 열 이름이 5버전과 조금 다르다 ("Description" → "설명") | 다국어 공통 규칙 |
 
 5버전의 오류를 고친 부분은 이 화면에서는 확인된 것이 없다. (5버전 소스를 못 봤기 때문)
@@ -174,7 +174,7 @@ host-B   | 10.0.0.2 | 웹 서버     | CPU 사용량 95% ..    | 높음   | 6
 
 - 이벤트를 하나씩 가져와 세지 않고 `countOutput + groupBy` 로 DB 가 세게 했다. 호스트 정보도 한 번에 조회한다.
 - 볼 권한이 없는 트리거/호스트는 API 가 빼 준다.
-- CSV/Excel 내보내기. 개수 열은 Excel 에서 숫자로 정렬/합계가 된다.
+- CSV 내보내기.
 - 다국어 (`Lang::t('Peak event analysis')`, `Lang::t('Peak event type')`, 나머지는 코어 `_()`).
 
 ### 남은 개선 제안
@@ -190,12 +190,12 @@ host-B   | 10.0.0.2 | 웹 서버     | CPU 사용량 95% ..    | 높음   | 6
 
 테스트 환경: `dev/compose.yaml` 로 띄운 http://127.0.0.1:18970 , Admin / zabbix
 
-1. 보고서 > Peak 이벤트 분석 을 연다. 제목 "Peak 이벤트 분석", 오른쪽 위에 CSV/Excel 버튼, 시간 선택기 탭(최신 1 시간)이 보이면 된다.
+1. 보고서 > Peak 이벤트 분석 을 연다. 제목 "Peak 이벤트 분석", 오른쪽 위에 [CSV 내보내기] 버튼, 시간 선택기 탭(최신 1 시간)이 보이면 된다.
 2. 테스트 서버에 장애 이벤트가 없으면 표가 비어 "데이터를 찾을 수 없음"이 나온다. 이벤트를 만들려면 테스트 호스트에 낮은 임계값 트리거를 하나 두거나, 에이전트를 멈췄다 켜서 가용성 트리거가 몇 번 장애/복구되게 한다.
 3. 시간 선택기에서 "최신 7 일간"을 누른다. 화면이 다시 그려지고 기간이 바뀐다. 다른 메뉴에 갔다 와도 "최신 7 일간"이 유지되는지 본다 (프로파일 저장).
 4. 같은 기간으로 코어 보고서 > Top 100 triggers 를 연다. 필터를 비운 상태에서 트리거별 "장애의 수"(Number of problems) 숫자가 이 화면의 숫자와 같아야 한다.
 5. 심각도 칸의 색이 코어 문제 화면과 같은지 본다.
-6. CSV, Excel 버튼을 눌러 파일 이름이 `peak_event_날짜_시각` 이고, 심각도가 이름(숫자 아님)으로, 개수가 숫자로 들어 있는지 본다.
+6. [CSV 내보내기] 를 눌러 파일 이름이 `peak_event_날짜_시각.csv` 이고, 심각도가 이름(숫자 아님)으로 들어 있는지 본다.
 7. 일반 사용자(그룹 권한이 일부만 있는 계정)로 로그인해 권한 밖 호스트의 트리거가 안 나오는지 본다.
 
 고객환경에서 5버전과 비교: 5버전 `peak_event.php` 와 7버전 화면에서 **같은 기간**(예: "어제")을 골라 위에서 10줄의 트리거와 숫자를 맞춰 본다.
@@ -222,3 +222,10 @@ host-B   | 10.0.0.2 | 웹 서버     | CPU 사용량 95% ..    | 높음   | 6
 | `includes/Lang.php` | `Lang::t()` 번역 |
 | 코어 `ui/include/func.inc.php` | `getTimeSelectorPeriod()`, `updateTimeSelectorPeriod()` |
 | 코어 `CSeverityHelper` | 심각도 이름과 색 칸 |
+
+
+## 부록: 2026-11-24 보완
+
+- 시간 선택기의 "어제" 같은 버튼과 < > 가 동작하지 않던 문제를 고쳤다. 화면이 코어 스크립트 `gtlc.js` 를 불러오지 않았고, 코어 `timeselector.update` 가 모듈의 기간 저장 이름을 받지 않았다 (`Module.php` 의 `registerTimeSelectors()` 로 등록). 주소에 from/to 를 직접 넣었을 때는 동작해서 이전 확인에서 놓쳤다. 실제 브라우저에서 "그저께" 를 눌러 바뀌는 것을 확인했다.
+
+- 심각도 체크박스: 지금은 Zabbix 심각도 6단계 전체. 5버전 화면은 Critical / Minor / Warning 3개였다. 이 이름들이 어느 단계인지 사용자가 확인해 주기로 했다 (2026-11-24, 고객환경 체크리스트 3-7b). 확인되면 그 3개만 보이게 한다. "Peak이벤트 유형"은 심각도가 아니라 이벤트 이름(트리거 이름)의 부분 일치 글자 필터다.
