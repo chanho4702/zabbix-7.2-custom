@@ -6,7 +6,7 @@
 |---|---|
 | 메뉴 위치 | 보고서 > 일일점검 (`Module.php` 의 `REPORT_MENUS`) |
 | 주소 | `zabbix.php?action=dailycheck.list` (기본), `&period=1` (D-1), `&period=2` (D-2) |
-| 상태 | 완성. 단 `conf/dailycheck.conf.php` 에 트리거 태그 이름과 항목별 값을 채워야 숫자가 나온다. [CPU/Memory 사용률 Top 10] 버튼은 없음 |
+| 상태 | 완성. 단 `conf/dailycheck.conf.php` 에 트리거 태그 이름과 항목별 값을 채워야 숫자가 나온다. [CPU 사용률 Top 10] [Memory 사용률 Top 10] 팝업은 2026-11-23 추가 (`conf/serverusage.conf.php` 의 키 설정 필요) |
 | 5버전 액션 | `daily`, `&period1=1`, `&period2=1` (컨트롤러 `CControllerDaily.php`, 일일점검 트레잇, 규칙 `daily.json`) |
 | 내보내기 | 없음 (5버전에도 없었다) |
 | 권한 | 사용자 유형 Zabbix User 이상. 세는 호스트와 이벤트는 API 가 사용자 권한대로 거른다 |
@@ -173,7 +173,11 @@
 | 호스트 링크 기간 | 장애 화면을 `from=now-5d` (또는 `now-2d`) 고정 기간으로 열었다 | 점검 구간 그대로 (`filter_custom_time=1`, `from`, `to`) | 화면 숫자와 링크 결과가 맞게 |
 | 숫자 링크 모양 | `ZBX_STYLE_BTN_LINK` + 말풍선 | `ZBX_STYLE_LINK_ACTION`(점선 밑줄) + 고정형 말풍선 | 7버전 스타일 |
 | 브라우저 제목 | `_('Hosts')` → "호스트" | "일일점검" | 5버전 오류 수정 |
-| Top 10 버튼 | 제목 오른쪽 [CPU 사용률 Top 10] [Memory 사용률 Top 10] (`popup.topcpu`, `popup.topmemory`) | 없음 (뷰에 TODO 주석과 붙이는 예시만) | 버튼이 여는 화면의 소스를 확인하지 못함 |
+| Top 10 버튼 | 제목 오른쪽 [CPU 사용률 Top 10] [Memory 사용률 Top 10] (`popup.topcpu`, `popup.topmemory`) | 같은 자리에 같은 버튼. 액션 하나(`dailycheck.top`)에 `metric=cpu` / `memory` | 5버전은 거의 같은 컨트롤러 2개였다. 하나로 합침 |
+| Top 10 내용 | 전체 호스트의 **전일** 평균을 큰 순으로 10개. 열: No, 호스트, IP, Description, 사용율(%). 제목 `CPU 사용율 Top10 (날짜)` | 같다 | 그대로 옮김 |
+| Top 10 값이 없는 호스트 | 0 으로 넣어서, 값이 있는 호스트가 10대보다 적으면 0 인 줄이 섞여 나왔다 | 값이 있는 호스트만 | 의미 없는 줄 제거 |
+| Top 10 집계 | 집계 클래스(`...CPU`, `...Memory`)를 전일 날짜로 불렀다. 그 클래스 소스는 받지 못함 | 저사용/고사용과 같은 집계(`ServerUsageService`)를 어제 00:00:00 ~ 23:59:59, 전체 시간으로 | 5버전 계산식은 미확인 (7장) |
+| Top 10 닫기 버튼 | 스크립트로 버튼 글자를 "닫기"로 바꿈 | 처음부터 닫기 버튼 | 스크립트 불필요 |
 | 설정 누락 | (해당 없음, 코드에 박혀 있음) | 숫자 `-` + 노란 안내 상자 | 빈 설정을 0 과 구분 |
 
 ## 6. 설정
@@ -201,7 +205,9 @@
 |---|---|---|---|
 | TODO(고객환경) | 트리거 태그 이름과 항목별 값 7개 | 일일점검 트레잇(`...Daily.php`)의 `$tag_*` | `conf/dailycheck.conf.php` (CHECKLIST 1-2) |
 | TODO(고객환경) | 7버전 서버의 트리거(또는 템플릿)에 그 태그가 5버전과 같게 달려 있는가 | 서버의 데이터 수집 > 호스트/템플릿 > 트리거 > 태그 | 서버 설정 (CHECKLIST 1-2) |
-| 없음 (방향 결정) | [CPU 사용률 Top 10] [Memory 사용률 Top 10] 버튼. 대시보드 "Top hosts" 위젯으로 대체할지, 팝업으로 만들지 | `popup.topcpu`, `popup.topmemory` 컨트롤러 | `views/reports/dailycheck.list.php` 의 TODO 주석 자리 (UNIMPLEMENTED 2장, CHECKLIST 3-6) |
+| TODO(고객환경) | Top 10 팝업이 읽을 아이템 키. CPU 는 저사용/고사용과 같은 `cpu_item_keys`, 메모리는 `memory_item_keys` | 키 클래스(`...Key.php`)의 `serverCpuUsage()`, `serverMemoryUsage()` | `conf/serverusage.conf.php` (CHECKLIST 1장) |
+| 가정 | Top 10 의 전일 평균 = trends 의 어제 하루 평균. 5버전 집계 클래스의 계산식은 미확인 | 사용률 집계 클래스(`...CPU`, `...Memory`) | `actions/reports/dailycheck/DailyCheckTop.php` |
+| 미확인 | 항목별 집계 방식. 5버전 일일점검 트레잇은 일부(274~308줄: 아이템 → 트리거 → 이벤트로 OS 항목을 세는 부분)만 받았다. 전체를 받아 지금의 태그 기준 집계와 대조해야 한다 | 일일점검 트레잇(`...Daily.php`) 전체 | `actions/reports/dailycheck/DailyCheckList.php` |
 | 가정 | 시간대 = 로그인한 사용자 시간대. 07:00 경계가 이 시간대로 계산된다 | - | 관리 > 일반 > GUI 기본 시간대 (CHECKLIST 6-4) |
 
 ## 8. 개선점
@@ -214,12 +220,14 @@
 - 브라우저 제목 수정, 기간 파라미터 하나로 정리 + 입력 검증.
 - 호출되지 않던 trends 계산 함수(오류 포함)를 옮기지 않음.
 - 설정이 비면 `-` + 안내 상자, 다국어.
+- [CPU 사용률 Top 10] [Memory 사용률 Top 10] 팝업 추가 (2026-11-23). 컨트롤러 2개를 하나로, 값 없는 호스트의 0 줄 제거.
+- 점검 구간 끝 1초(06:59:59) 누락 수정 (2026-11-23).
 
 ### 남은 개선 제안
 
 | 제안 | 효과 | 5버전과 결과가 달라지나 (합의 필요?) |
 |---|---|---|
-| Top 10 버튼 → 대시보드 **Top hosts** 위젯으로 대체 (CPU 사용률 열 내림차순, 10개). 일일점검 화면에는 그 대시보드로 가는 버튼만 둔다 | 코드 없이 같은 정보. 위젯에서 기간, 집계 함수, 그룹을 바꿀 수 있다 | 5버전 팝업의 집계 방식(최신 값인지, 기간 평균인지)을 모르므로 숫자가 다를 수 있다 → 합의 필요 |
+| Top 10 팝업에 호스트 그룹 필터나 기간 선택 추가 | 담당 그룹만, 또는 다른 날짜로 볼 수 있다 | 같다 (추가 기능) |
 | 구간 시작 전부터 이어진 장애도 "장애발생" 에 넣기 (구간 안에 PROBLEM 상태였던 트리거) | 밤새 내려가 있던 서버가 정상으로 보이는 일이 없어진다 | 장애발생 숫자가 늘 수 있다 → 합의 필요 |
 | 중지된 트리거/호스트를 점검대상에서 빼기 (`trigger.get` 에 `monitored => true`) | 폐기한 서버가 점검대상에 남는 것 방지 | 점검대상 숫자가 줄 수 있다 → 합의 필요 |
 | 유지보수 중 호스트 표시 또는 제외 | 계획 작업 때문에 생긴 장애 구분 | 제외하면 숫자가 달라진다 → 합의 필요 |
@@ -267,9 +275,12 @@
 | 파일 | 역할 |
 |---|---|
 | `ui/modules/dmove/actions/reports/dailycheck/DailyCheckList.php` | 컨트롤러. 구간 계산, 항목별 `trigger.get` / `event.get` 집계 |
-| `ui/modules/dmove/views/reports/dailycheck.list.php` | 뷰. 날짜 줄과 D-1/D-2 버튼, 표, 말풍선, 장애 화면 링크, Top 10 버튼 TODO 자리 |
+| `ui/modules/dmove/views/reports/dailycheck.list.php` | 뷰. 날짜 줄과 D-1/D-2 버튼, 표, 말풍선, 장애 화면 링크, Top 10 버튼 2개 |
+| `ui/modules/dmove/actions/reports/dailycheck/DailyCheckTop.php` | Top 10 팝업 컨트롤러 (`dailycheck.top`). 전일 평균 상위 10개 |
+| `ui/modules/dmove/views/reports/dailycheck.top.php` | Top 10 팝업 내용 (JSON 출력) |
+| `ui/modules/dmove/views/js/reports/dailycheck.list.js.php` | 버튼을 누르면 `PopUp()` 으로 팝업을 여는 스크립트 |
 | `ui/modules/dmove/conf/dailycheck.conf.php` | 트리거 태그 이름과 항목별 값 |
-| `ui/modules/dmove/manifest.json` | `dailycheck.list` 등록 |
+| `ui/modules/dmove/manifest.json` | `dailycheck.list`, `dailycheck.top` 등록 |
 | `ui/modules/dmove/Module.php` | 보고서 메뉴 등록 |
 | `ui/modules/dmove/lang/ko.php` | 한국어 문구 (항목 이름, 열 제목) |
 | `ui/modules/dmove/assets/css/dmove.css` | 날짜 줄 여백(`dm-toolbar`) |
@@ -279,4 +290,6 @@
 | 파일 | 역할 |
 |---|---|
 | `includes/Lang.php` | 번역 (`Lang::t()`) |
+| `includes/ServerUsageService.php`, `conf/serverusage.conf.php` | Top 10 의 평균 집계와 아이템 키 설정 (`cpu_item_keys`, `memory_item_keys`) |
+| `includes/HostHelper.php`, `includes/ItsmRepository.php` | Top 10 의 대표 IP, Description |
 | 코어 `problem.view` (모니터링 > 장애) | 호스트 이름 링크가 여는 화면 |
