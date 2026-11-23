@@ -178,16 +178,15 @@ find /usr/share/zabbix/modules/dmove -name '*.php' -exec php -l {} \;
 
 | 메뉴 | 액션 | 상태 |
 |---|---|---|
-| 인벤토리 > SW 인벤토리 | `swinventory.list`, `.export` | 구현. ITSM 테이블 이름 설정과 Agent "예외" 기준만 남음 |
+| 인벤토리 > SW 인벤토리 | `swinventory.list`, `.export` | 구현. ITSM 테이블 이름 설정과 Agent "예외" 구현 방식 결정만 남음 |
 | 보고서 > 저사용 서버 사용현황 | `lowserver.list`, `.export` | 구현 (5버전 소스 기준. 업무시간 = 월~금 09~18시, Peak 는 5버전과 같은 방식) |
 | 보고서 > 고사용 서버 사용현황 | `highserver.list`, `.export` | 구현. 판정 조건은 가정 (확인 필요) |
-| 보고서 > 일일점검 | `dailycheck.list` | 구현 (5버전 소스 기준). 태그 설정(`conf/dailycheck.conf.php`)을 채워야 한다 |
-| 보고서 > Peak 이벤트 분석 | `peakevent.list`, `.export` | 구현. 집계 기준은 가정 (확인 필요) |
+| 보고서 > 일일점검 | `dailycheck.list`, `dailycheck.top` | 구현 (5버전 소스 기준). 태그 설정(`conf/dailycheck.conf.php`)을 채워야 한다. Top 10 팝업은 `conf/serverusage.conf.php` 의 키 설정을 쓴다 |
+| 보고서 > Peak 이벤트 분석 | `peakevent.list`, `.export` | 구현. 집계 기준은 가정 (확인 필요). 5버전 화면의 필터 4종 포함 |
 | 보고서 > 윈도우즈 패치 현황 | `winpatch.list`, `.export`, `.detail` | 구현 (5버전 소스 기준). 필터의 세부 동작은 가정 |
-| 보고서 > Box 사용현황 | `hostbox.list`, `.export` | 구현 (5버전 트레잇 기준). 메뉴 위치는 확인 필요 |
-| 보고서 > 서버 시간 확인 | `uptime.list` | 필터/표 구성 완료, 데이터 조회 TODO |
-| 유저 > 장기 미접속 계정 현황 | `userunconnect.list` | 필터/표 구성 완료, 데이터 조회 TODO |
-| 보고서 > CPU/Memory 전체 사용률 추출 | `usageexport.list` | 필터 구성 완료, 추출 기능 TODO |
+| 보고서 > 서버 시간 확인 | `uptime.list` | 구현 (5버전 소스 기준, 2026-11-23). Description 출처만 가정 |
+| 유저 > 장기 미접속 계정 현황 | `userunconnect.list` | 구현 (5버전 소스 기준, 2026-11-23). 감사 로그 보관 기간을 확인해야 한다 |
+| 보고서 > CPU/Memory 전체 사용률 추출 | `usageexport.list`, `.export` | 구현 (2026-11-23). 수집 값 원본을 CSV 로 흘려보냄 (`HOST, ITEM, CLOCK, VALUE`). 아이템 키 설정, 이력 보관 기간 확인 필요 |
 | 보고서 > 성능 데이터 추세 분석 | `perftrend.list` | 빈 페이지. 대시보드 그래프 위젯으로 대체할지 먼저 결정 |
 
 "구현"인 화면도 `conf/` 의 설정(ITSM 테이블, 아이템 키, 태그)을 채워야 값이 나온다. 공개 저장소라서 그 값은 비워 두었다.

@@ -3,63 +3,84 @@
 7버전 모듈에서 아직 비어 있거나 가정으로 만든 곳, 그리고 그것을 채우려면 5버전 서버에서 어떤 파일을 봐야 하는지 정리했다.
 코드에서 `TODO(고객환경)` 를 검색하면 아래 항목의 자리가 모두 나온다.
 
-- 설정값만 넣으면 되는 것(`conf/` 파일 5개)은 `CUSTOMER_ENV_CHECKLIST.md` 1장에 있다.
+- 설정값(`conf/`)은 5버전 소스의 값으로 채워 두었다 (2026-11-23). 고객 서버에서 확인할 항목은 `CUSTOMER_ENV_CHECKLIST.md` 1장에 있다.
 - 화면별 진행 상태 표는 `DEVELOPMENT_GUIDE.md` 5.1 에 있다.
 - 문서의 `autoever/` 는 5버전 서버의 커스텀 폴더 이름이다. (`DEVELOPMENT_GUIDE.md` 맨 위 참고)
 
 ## 한눈에 보기
 
+> Box 사용현황 화면은 옮기지 않기로 했다 (2026-11-23). 모듈에서 메뉴, 화면, 설정 파일을 뺐다. 필요해지면 git 이력(`fb6820e` 이전)에서 되살릴 수 있다.
+
 | 구분 | 화면 / 기능 |
 |---|---|
-| 완성 (설정값만 넣으면 됨) | SW 인벤토리, 저사용 서버, 고사용 서버, 일일점검, Peak 이벤트 분석, 윈도우즈 패치 현황, Box 사용현황 |
-| 껍데기 (필터와 표만, 데이터 없음) | 서버 시간 확인, 장기 미접속 계정 현황, CPU/Memory 전체 사용률 추출 |
+| 완성 (설정값만 넣으면 됨) | SW 인벤토리, 저사용 서버, 고사용 서버, 일일점검(+ CPU / Memory Top 10 팝업), Peak 이벤트 분석, 윈도우즈 패치 현황, CPU/Memory 전체 사용률 추출 (2026-11-23 구현) |
+| 완성 (설정 없이 동작) | 서버 시간 확인, 장기 미접속 계정 현황 (2026-11-23 구현) |
+| 껍데기 | 없음 |
 | 빈 페이지 | 성능 데이터 추세 분석 |
-| 없음 | 일일점검 Top 10 버튼, [기준설정] 버튼, 윈도우 전체, ESXi, 사이드바 하단 링크, 커스텀 CSS, 로그인 OTP / mypass |
+| 없음 | [기준설정] 버튼, Agent 예외 입력 팝업, 윈도우 전체, ESXi, 사이드바 하단 링크, 커스텀 CSS, 로그인 OTP / 간편인증 |
 
 ## 받아올 5버전 소스 목록
 
 5버전 서버에서 가져올 파일을 한곳에 모았다. 받으면 `[ ]` 를 `[x]` 로 바꾸고 받은 날짜를 적는다.
 "컨트롤러"를 받을 때는 **그 컨트롤러가 `use` 하는 트레잇 파일도 같이** 받는다. 실제 계산이 트레잇에 있는 경우가 많았다. (찾는 방법: 5장)
 
+### 받은 것 (2026-11-23)
+
+| 받음 | 파일 | 쓰는 곳 | 처리 |
+|---|---|---|---|
+| [x] | `routing.php` 전체 | 모든 화면 | 액션 목록 확정. 단 `perf.analysis.view` 는 이 파일에 없다 (다른 곳에 등록된 것으로 보임) |
+| [x] | `CControllerUserunconnect.php` + 뷰 `administration.user.unconnect.php` | 장기 미접속 계정 현황 | 5버전 조건 그대로 구현함 |
+| [x] | `CControllerUptimeView.php` + 부모 `CControllerUptime.php` | 서버 시간 확인 | 구현함. 뷰(`monitoring.uptime.view.php`)는 못 받음 |
+| [x] | `CControllerPerf.php`, `CControllerPerfAnalysis.php`, 뷰 `monitoring.perf.view.php` | CPU/Memory 전체 사용률 추출 | 구현함 (2026-11-23). 수집 값 원본을 Zabbix 이력 표에서 바로 내려받는다 |
+| [x] | `CControllerPopupTopCpu.php`, `CControllerPopupTopMemory.php`, 뷰 `popup.topcpu.php`, `popup.topmemory.php` | 일일점검 Top 10 | 팝업 구현함. 집계 클래스(`...CPU`, `...Memory`)는 못 받음 |
+| [x] | `CControllerWindows.php`, `CControllerPopupWindows.php`, 뷰 `popup.windows.php` | 윈도우즈 패치 현황 | 대조함. 차이는 `pages/winpatch.md` |
+| [x] | `CControllerWindowsAll.php`, `CControllerPopupWindowsAll.php`, 뷰 `popup.windows.all.php` | 윈도우 전체 | 필요 여부 결정 필요 (4장) |
+| [x] | Agent 판정 클래스 (`...HostAgent`) | SW 인벤토리 | "예외"의 정체 확인. 구현 방식 결정 필요 (2장) |
+| [x] | 키 클래스 (`...Key`) | 설정값 | `conf/` 에 넣을 아이템 키 확인. 값은 저장소에 넣지 않는다 (`CUSTOMER_ENV_CHECKLIST.md` 1장) |
+| [x] | `CControllerDataAnalysis.php`, 뷰 `monitoring.data.analysis.php`, `CControllerWidgetSvgGraphView.php` | 성능 데이터 추세 분석 | 구조 확인. 방향 결정 필요 (2장) |
+| [x] | `index.php`, `index_hidfrm.php`, `general.login.php` (로그인 커스텀) | 로그인 | 구조 확인. `CWebUser.php` 의 인증 함수 본문은 못 받음 |
+
+### 아직 필요한 것
+
 | 받음 | 순위 | 파일 | 쓰는 곳 | 받은 뒤 할 일 |
 |---|---|---|---|---|
-| [ ] | 1 | `routing.php` 전체 | 모든 화면 | 아래 액션들의 컨트롤러 클래스 / 뷰 이름 확인, 남은 액션 목록 확정 |
-| [ ] | 1 | `user.unconnect` 액션의 컨트롤러 + 뷰 + 트레잇 | 장기 미접속 계정 현황 | **소스를 보고 판단하기로 함** (2026-11-22). 5버전대로 옮길지, 7.0 데이터(`user.get` + 세션의 마지막 접속 시각)로 새로 만들지 정한다 |
-| [ ] | 1 | `controllers/CControllerUptimeView.php` + 뷰 + 트레잇 | 서버 시간 확인 | 아이템 키, "N day 이상" 비교, OS / Description 출처 확인 후 `getRows()` 구현 |
-| [ ] | 1 | `perf.analysis.view` 액션의 컨트롤러 + 뷰 + 트레잇 | CPU/Memory 전체 사용률 추출 | 기간, CSV 열, 파일 분할 기준 확인 후 추출 구현 |
-| [ ] | 2 | `controllers/CControllerHighserver.php` | 고사용 서버 | 판정 조건(그리고/또는, 기준값) 확정 |
-| [ ] | 2 | 저사용 컨트롤러(`CControllerLowserver.php`)의 기본값 부분 | 저사용 서버 | 평균 기준 30 / 20 확정 |
-| [ ] | 2 | 저사용/고사용 컨트롤러가 쓰는 트레잇 중 CPU 아이템을 찾고 요약표(`extends_trends_day`)를 읽는 부분 | 저사용/고사용 서버 | 한 서버에 CPU 아이템이 여러 개일 때 어느 값을 쓰는지 (지금: 평균이 큰 아이템의 평균/Peak). 소스를 보고 판단하기로 함 (2026-11-23) |
-| [ ] | 2 | `peak_event.php` | Peak 이벤트 분석 | 집계 기준(대상 이벤트, 세는 방법, 건수 제한) 확정. "상태 변경 횟수"가 장애만 세는지 복구까지 세는지 소스를 보고 판단하기로 함 (2026-11-23) |
-| [ ] | 2 | Agent 판정 트레잇(`...HostAgent`) | SW 인벤토리 | "예외" 판정 기준 확인. ITSM 표의 실제 열 이름도 같이 확인 |
-| [ ] | 2 | `popup.topcpu`, `popup.topmemory`, `popup.lowserver` 컨트롤러 | 일일점검 Top 10, [기준설정] | 대시보드 위젯 대체 여부와 같이 판단 |
-| [ ] | 3 | `src/menu.inc.php` 의 원본과의 차이(`diff`) | 메뉴 전체 | 메뉴 위치(Box 사용현황 포함), 메뉴별 권한, 사이드바 하단 링크 |
+| [ ] | 1 | `peak_event.php` | Peak 이벤트 분석 | 집계 기준(대상 이벤트, 세는 방법, 건수 제한) 확정. "상태 변경 횟수"가 장애만 세는지 복구까지 세는지 판단 |
+| [ ] | 1 | `CControllerHighserver.php` | 고사용 서버 | 판정 비교식(그리고/또는, 이상/초과) 확정. 지금은 화면 문구("이상")에 맞춰 둠. 저사용 컨트롤러는 이전에 받아서 반영돼 있다 |
+| [ ] | 1 | `CControllerPopupLowserver.php` + 뷰 `popup.lowserver.php` | 저사용/고사용 [기준설정] | 기준값을 어디에 저장하는지(사용자별 / 전체 공통) |
+| [ ] | 1 | 사용률 집계 클래스 (`...CPU`, `...Memory`) + 저사용 트레잇 (`...Lowserver`, `...Data`) | 저사용/고사용, Top 10 | 한 서버에 CPU 아이템이 여러 개일 때 어느 값을 쓰는지, Top 10 의 전일 평균 계산 방식 |
+| [ ] | 2 | 일일점검 트레잇 (`...Daily`) 전체 (지금은 274~308줄만 있음) | 일일점검 | 항목별 집계 방식이 태그 기준인지 아이템→트리거 기준인지 대조 |
+| [ ] | 2 | 윈도우 트레잇 (`...Windows`), 필터 트레잇 (`...Filter`) | 윈도우즈 패치 현황 | 목록의 패치 파일명/버전/적용일 열 값, HotFix 필터 비교 방식 |
+| [ ] | 2 | `conf/rules/windows.json`, `daily.json` | 윈도우즈 패치, 일일점검 | 목록의 열 구성 |
+| [ ] | 2 | 뷰 `monitoring.uptime.view.php` | 서버 시간 확인 | Description 출처, 표시 형식 대조 |
+| [ ] | 2 | `CControllerPopupAgent.php` + 뷰 `popup.agent.php` | SW 인벤토리 | Agent 미설치/예외 입력 창의 입력 항목 |
+| [ ] | 3 | `export_csv.sh`, `delete_file.sh`, 요약 표(`history_cpumemdata` 등)를 채우는 배치 | CPU/Memory 전체 사용률 추출 | 참고용. 5버전이 파일을 여러 개로 나누던 기준, `ITEM` 열에 넣던 값. 7버전은 복사 표와 스크립트 없이 구현했다 |
+| [ ] | 2 | `include/classes/user/CWebUser.php` 의 OTP / 간편인증 함수 본문 | 로그인 | 외부 인증 서버 호출 방식 |
+| [ ] | 3 | `src/menu.inc.php` 의 원본과의 차이(`diff`) | 메뉴 전체 | 메뉴 위치, 메뉴별 권한, 사이드바 하단 링크 |
 | [ ] | 3 | `src/blue-theme.css` 의 원본과의 차이(`diff`) | 화면 꾸밈 | 커스텀 CSS, 로고 |
-| [ ] | 3 | `index.php`, `include/views/general.login.php` 의 원본과의 차이 + `grep -rn -i "otp\|mypass"` 결과 | 로그인 | OTP / mypass 구조 확인 후 7.0 기본 MFA 대체 여부 판단 |
-| [ ] | 2 | 윈도우 패치 화면 컨트롤러 (`windows` 액션) + 쓰는 트레잇 전체 | 윈도우즈 패치 현황 | HotFix ID 필터를 어떻게 걸렀는지(목록 값 읽는 방식, 속도), 수집월 기본값. 소스를 보고 판단하기로 함 (2026-11-23) |
-| [ ] | 3 | `windowsall`, `popup.windows.all`, `hostesxi` 컨트롤러 | 윈도우 전체, ESXi | 필요 여부부터 판단 |
+| [ ] | 3 | `CControllerHostESXI.php` + 뷰 | ESXi | 필요 여부 |
 
 ---
 
 ## 1. 껍데기 화면 (1순위)
 
-메뉴와 화면은 뜨지만 데이터 조회부가 비어 있다. 화면에 "준비 중" 안내가 나온다.
-컨트롤러의 `getRows()` 를 채우고 `'data_ready' => false` 를 `true` 로 바꾸면 안내가 사라진다.
-
-| 화면 | 7버전 파일 | 필요한 5버전 파일 | 그 안에서 볼 것 |
-|---|---|---|---|
-| 서버 시간 확인 | `actions/reports/uptime/UptimeList.php` | `controllers/CControllerUptimeView.php`, 그 뷰, 컨트롤러가 쓰는 트레잇 | 서버 Time / 서버 start 를 읽는 아이템 키, "N day 이상" 비교 방식, OS 와 Description 의 출처 |
-| 장기 미접속 계정 현황 | `actions/users/userunconnect/UserUnconnectList.php` | `user.unconnect` 액션의 컨트롤러와 뷰 | "장기"의 기준 일수, 최근 접속일을 읽는 곳(테이블 또는 함수), 접속 기록이 없는 계정의 처리 |
-| CPU/Memory 전체 사용률 추출 | `actions/reports/usageexport/UsageExportList.php` | `perf.analysis.view` 액션의 컨트롤러와 뷰 | 기간을 정하는 방법, CSV 열 구성, 파일이 여러 개로 나뉘는 기준 |
+| 화면 | 7버전 파일 | 상태 |
+|---|---|---|
+| 서버 시간 확인 | `actions/reports/uptime/UptimeList.php` | 구현함 (2026-11-23). `pages/uptime.md` |
+| 장기 미접속 계정 현황 | `actions/users/userunconnect/UserUnconnectList.php` | 구현함 (2026-11-23). `pages/userunconnect.md` |
+| CPU/Memory 전체 사용률 추출 | `actions/reports/usageexport/UsageExportList.php` | 구현함 (2026-11-23). `pages/usageexport.md` |
 
 ## 2. 방향을 먼저 정할 것
 
-| 화면 | 7버전 파일 | 정할 것 |
-|---|---|---|
-| 성능 데이터 추세 분석 | `actions/reports/perftrend/PerfTrendList.php` | 대시보드 "그래프" 위젯으로 대체할지(권장), 독립 화면으로 만들지. 독립 화면이면 `data.analysis` 컨트롤러와 CSV 구성이 필요하다 |
-| 일일점검 [CPU / Memory 사용률 Top 10] | `views/reports/dailycheck.list.php` | 대시보드 "Top hosts" 위젯으로 대체할지, 팝업으로 만들지. 팝업이면 `popup.topcpu`, `popup.topmemory` 컨트롤러가 필요하다 |
-| 저사용/고사용 [기준설정] | 지금은 `conf/serverusage.conf.php` 로 대체 | 화면에서 바꾸게 할지. 바꾼다면 사용자별 저장인지 전체 공통인지. 5버전 `popup.lowserver` 컨트롤러를 본다 |
-| 로그인 OTP / mypass | `docs/LOGIN_CUSTOMIZATION.md` | 7.0 기본 다단계 인증(TOTP, Duo)으로 대체할지(권장) |
+| 화면 | 7버전 파일 | 5버전에서 확인한 것 | 정할 것 |
+|---|---|---|---|
+| CPU/Memory 전체 사용률 추출 | `actions/reports/usageexport/UsageExportList.php` | 화면은 기간 선택 + 항목 + 시간. 값은 따로 만든 복사 표에서 읽고, 서버의 셸 스크립트로 CSV 를 만들었다. 열은 HOST, ITEM, CLOCK, VALUE (수집 값 한 건이 한 줄) | **결정함** (2026-11-23): 고객이 받던 파일과 같은 모양으로, Zabbix 이력 표(history)에서 원본 값을 바로 내려받는다. 복사 표, 배치, 스크립트는 만들지 않는다. 남은 확인: 아이템의 이력 보관 기간이 받으려는 기간(최대 3개월)보다 긴가 (`CUSTOMER_ENV_CHECKLIST.md` 1-9) |
+| 성능 데이터 추세 분석 | `actions/reports/perftrend/PerfTrendList.php` | 5버전은 코어 대시보드의 그래프 위젯 코드를 복사해 독립 화면으로 만들었다. 호스트/아이템 패턴을 고르면 그래프를 그리고 CSV 로 내려받는다 | 7.0 대시보드 "그래프" 위젯으로 대체할지(권장), 독립 화면으로 다시 만들지 |
+| SW 인벤토리 Agent "예외" | `includes/SwInventoryService.php` | 예외는 ITSM 값이 아니었다. 화면에서 미설치/예외 글자를 누르면 입력 창(`popup.agent`)이 뜨고, 사유와 함께 **따로 만든 표**(`extends_agent`: 호스트, 상태, 사유, 시각, 입력한 사용자)에 저장했다 | Zabbix DB 에 표를 추가할지. 추가하면 업그레이드/백업 때 따로 챙겨야 한다. 대안: 호스트 태그 또는 설정 파일 목록 |
+| 저사용/고사용 [기준설정] | 지금은 `conf/serverusage.conf.php` 로 대체 | 화면에 [기준설정] 버튼이 있고 창에서 4개 값(저사용 평균/Peak, 고사용 평균/Peak, 1~99)을 바꾼다 | 화면에서 바꾸게 할지. 저장 위치는 `popup.lowserver` 컨트롤러를 받아야 알 수 있다 |
+| 장기 미접속 계정: 감사 로그 보관 기간 | `conf/userunconnect.conf.php` | "만든 지 60일 넘은 계정"을 감사 로그로 판단한다 | 7.0 의 감사 로그 기본 보관 기간은 31일이다. 60일보다 짧으면 목록이 빈다. 보관 기간을 늘리거나(관리 > 하우스키핑) `created_check` 를 `'exclude_recent'` 로 바꾼다 |
+| 장기 미접속 계정: 만든 날짜 판단 (2026-11-23 결정) | `conf/userunconnect.conf.php` | 5버전 조건은 감사 로그의 유저 추가 기록에 의존해, 기록이 없는 기존 계정이 목록에서 빠진다 | **결정함**: `created_check = 'exclude_recent'` (최근에 만든 기록이 있는 계정만 제외). 고객 서버에서 확인 쿼리로 검증만 하면 된다 |
+| 윈도우 전체 (`windowsall`) | 없음 | `routing.php` 에 "임시 라우터"라고 적혀 있다. 기간 조건 없이 아이템의 값 1건을 보여 주는 화면 | 쓰는 화면인지 확인. 임시였다면 옮기지 않는다 |
+| 로그인 OTP / 간편인증 | `docs/LOGIN_CUSTOMIZATION.md` | 로그인 화면에 OTP 입력과 간편인증(푸시) 버튼이 추가돼 있고, 외부 인증 서버를 부른다 | 7.0 기본 다단계 인증(TOTP, Duo)으로 대체할지(권장). 외부 인증 서버를 계속 쓰려면 인증 함수 본문이 필요하다 |
 
 ## 3. 가정으로 만든 것 (2순위)
 
@@ -67,14 +88,13 @@
 
 | 화면 | 가정한 내용 | 필요한 5버전 파일 | 고칠 곳 |
 |---|---|---|---|
-| 고사용 서버 | 평균 50% 이상 **그리고** Peak 70% 이상 | `controllers/CControllerHighserver.php` | `actions/reports/highserver/HighServerList.php` 의 `matches()` |
-| 저사용 서버 | 평균 기준 30% | 저사용 컨트롤러(`CControllerLowserver.php`)의 기본값 | `conf/serverusage.conf.php` |
+| 고사용 서버 | 평균 50% 이상 **그리고** Peak 70% 이상 (화면 문구로 확인. 그리고/또는은 미확인) | `controllers/CControllerHighserver.php` | `actions/reports/highserver/HighServerList.php` 의 `matches()` |
+| 저사용 서버 | 평균 30% **이하** 그리고 Peak 70% **이하** (5버전 코드와 같다). 5버전 화면 문구는 "미만"이라 문구만 다르다 | 문구를 어느 쪽으로 둘지 고객 확인 | `lang/ko.php` 의 저사용 기준 문구 |
 | 저사용/고사용 | 업무시간 Peak = 업무일 하루 전체의 최대 (5버전과 같게 둠) | 확인 끝. 고칠지 합의만 필요 | `conf/serverusage.conf.php` 의 `business_peak_whole_day` |
 | Peak 이벤트 분석 | 기간 안 장애 이벤트 수를 트리거별로 센 상위 100개 | `peak_event.php` | `actions/reports/peakevent/PeakEventList.php` 의 `getRows()` |
-| SW 인벤토리 | Agent "예외" = ITSM 행의 `agent_exception` 값. 단, ITSM 조회가 이 열을 읽지 않아 지금은 예외가 나오지 않는다 (ITSM 표의 실제 열 이름을 알면 `ItsmRepository::fetch()` 의 SELECT 에 추가) | Agent 판정 트레잇(`...HostAgent`) | `includes/SwInventoryService.php` |
+| SW 인벤토리 | Agent "예외" 는 지금 나오지 않는다. 5버전은 사용자가 입력 창에서 지정한 값을 따로 만든 표에 저장했다 (2장) | `popup.agent` 컨트롤러와 뷰 | `includes/SwInventoryService.php` 의 `resolveAgentStatus()` |
 | SW 인벤토리 | 소프트웨어 판별 = 인벤토리 필드만 | 같은 트레잇, 또는 SW 인벤토리 컨트롤러가 쓰는 트레잇 | `includes/SoftwareResolver.php` |
-| 윈도우즈 패치 현황 | HotFix ID = 그 달 패치 목록에 글자가 들어 있는 호스트, 수집월 기본값 = 지난달 | 윈도우 패치 컨트롤러 | `includes/WinPatchService.php`, `actions/reports/winpatch/WinPatchList.php` |
-| Box 사용현황 | 메뉴는 보고서 맨 끝, 필터는 호스트 그룹/호스트 | `src/menu.inc.php`, `hostbox` 컨트롤러 | `Module.php`, `actions/reports/hostbox/HostBoxList.php` |
+| 윈도우즈 패치 현황 | 수집월 기본값 = 지난달 1일 (5버전과 같음, 확인함). HotFix ID 필터는 5버전도 부분 일치였으나 비교 대상 열은 트레잇을 봐야 한다. 대상 호스트: 5버전은 인벤토리 OS 에 windows 가 들어간 호스트, 7버전은 패치 아이템을 가진 호스트 | 윈도우 트레잇, 필터 트레잇 | `includes/WinPatchService.php`, `actions/reports/winpatch/WinPatchList.php` |
 | 내보내기 | CSV 는 UTF-8 + BOM, 쉼표 구분 | 5버전 공통 CSV 처리 부분 (EUC-KR 변환 등이 있었는지) | `includes/export/CsvWriter.php` |
 
 ## 4. 아예 없는 것 (3순위)
@@ -116,7 +136,7 @@ grep -rn -i "otp\|mypass" --include=*.php /usr/share/zabbix
 
 ## 6. 파일을 가져올 수 없을 때
 
-1장의 화면 3개는 아래만 알아도 7.0 기본 데이터로 새로 설계할 수 있다.
+아직 못 받은 화면은 아래만 알아도 7.0 기본 데이터로 새로 설계할 수 있다.
 
 - 5버전 화면의 **열 이름**과 **값 예시 한두 줄** (서버 이름, IP 는 가린다)
 - **필터 항목**
@@ -132,10 +152,10 @@ grep -rn -i "otp\|mypass" --include=*.php /usr/share/zabbix
 
 ## 7. 우선순위
 
-1. 1장의 컨트롤러 3개와 그 컨트롤러가 쓰는 트레잇. 이것만 있으면 껍데기 화면이 모두 채워진다.
-2. `CControllerHighserver.php`, `peak_event.php`. 보고서 숫자에 직접 영향을 준다.
-3. `src/menu.inc.php` 의 차이. 메뉴 위치, 권한, 링크가 한 번에 확정된다.
-4. 2장의 방향 결정. 파일보다 결정이 먼저 필요하다.
+1. 2장의 방향 결정. 특히 CPU/Memory 추출 방식과 Agent "예외" 저장 방식. 파일보다 결정이 먼저 필요하다.
+2. `peak_event.php`, 저사용/고사용 컨트롤러, 사용률 집계 클래스. 보고서 숫자에 직접 영향을 준다.
+3. 일일점검 트레잇 전체, 윈도우 트레잇. 지금 구현과 대조하는 용도다.
+4. `src/menu.inc.php` 의 차이. 메뉴 위치, 권한, 링크가 한 번에 확정된다.
 
 ## 8. 코드 리뷰 결과 처리 (2026-11-23)
 
@@ -149,3 +169,11 @@ grep -rn -i "otp\|mypass" --include=*.php /usr/share/zabbix
 | 9 | CPU 아이템이 여러 개인 서버의 Peak 선택 | 저사용/고사용 트레잇을 보고 판단 |
 | 10 | 윈도우 패치 HotFix 필터가 호스트마다 history.get | 윈도우 패치 컨트롤러를 보고 판단 |
 | 11 | 내보내기를 전부 메모리에 올림 | 그대로 둠. 5버전도 한 번에 만들었고, 서버 수천 대 규모에서는 문제가 될 가능성이 낮다 |
+
+## 9. 리뷰 이후에 찾은 것 (2026-11-23)
+
+| 내용 | 처리 |
+|---|---|
+| 호스트 그룹 필터를 고르면 API 가 엉뚱하게 호출됨. `API::X()->get(HostFilter::toApiOptions(...) + [...])` 처럼 조건을 괄호 안에 직접 쓰면, 안쪽의 호스트 그룹 조회가 코어의 공용 API 객체를 hostgroup 으로 바꿔서 바깥 호출이 `hostgroup.get` 으로 실행된다. 호스트 그룹을 고르지 않으면 드러나지 않는다 | 4곳 수정 (저사용/고사용, Box 사용현황, 윈도우즈 패치 현황, CPU/Memory 추출). 조건을 먼저 변수에 담는다. 설명은 `HANDBOOK.md` 2.3, `includes/filter/HostFilter.php` 의 `toApiOptions()` 주석 (`fb6820e`) |
+| 저사용 판정을 화면 문구만 보고 "미만"으로 바꿨던 것 | 5버전 코드 동작("이하")으로 되돌림 (`ad1af16`) |
+| Peak 이벤트 분석에 5버전 필터 4종이 없던 것 | 추가함 (`ad1af16`) |

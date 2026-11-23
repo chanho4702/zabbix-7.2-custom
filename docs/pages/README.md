@@ -8,16 +8,15 @@
 | 메뉴 | 화면 | 상태 | 문서 |
 |---|---|---|---|
 | 인벤토리 | SW 인벤토리 | 완성 | [swinventory.md](swinventory.md) |
-| 보고서 | 서버 시간 확인 | 껍데기 | [uptime.md](uptime.md) |
+| 보고서 | 서버 시간 확인 | 완성 (2026-11-23 구현) | [uptime.md](uptime.md) |
 | 보고서 | 저사용 서버 사용현황 | 완성 | [lowserver.md](lowserver.md) |
 | 보고서 | 고사용 서버 사용현황 | 완성 (판정 조건 가정) | [highserver.md](highserver.md) |
 | 보고서 | 성능 데이터 추세 분석 | 빈 페이지 | [perftrend.md](perftrend.md) |
-| 보고서 | 일일점검 | 완성 | [dailycheck.md](dailycheck.md) |
+| 보고서 | 일일점검 | 완성 (Top 10 팝업 포함) | [dailycheck.md](dailycheck.md) |
 | 보고서 | Peak 이벤트 분석 | 완성 (집계 기준 가정) | [peakevent.md](peakevent.md) |
 | 보고서 | 윈도우즈 패치 현황 | 완성 | [winpatch.md](winpatch.md) |
-| 보고서 | CPU/Memory 전체 사용률 추출 | 껍데기 | [usageexport.md](usageexport.md) |
-| 보고서 | Box 사용현황 | 완성 (메뉴 위치 가정) | [hostbox.md](hostbox.md) |
-| 유저 | 장기 미접속 계정 현황 | 껍데기 | [userunconnect.md](userunconnect.md) |
+| 보고서 | CPU/Memory 전체 사용률 추출 | 완성 (설정값 필요, 이력 보관 기간 확인) | [usageexport.md](usageexport.md) |
+| 유저 | 장기 미접속 계정 현황 | 완성 (2026-11-23 구현, 감사 로그 보관 기간 확인 필요) | [userunconnect.md](userunconnect.md) |
 
 함께 볼 문서:
 

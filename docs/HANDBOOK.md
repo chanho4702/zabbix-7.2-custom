@@ -285,11 +285,12 @@ Excel 파일은 제목 줄 서식/고정/필터, 테두리, 열 너비 맞춤이
 |---|---|---|
 | SW 인벤토리 | `actions/inventory/swinventory/`, `views/inventory/swinventory.list.php` | 체크박스 필터, 로직을 `includes/` 로 분리, 외부 DB(ITSM) 합치기 |
 | 저사용 / 고사용 서버 | `actions/reports/serverusage/ServerUsageController.php` + `lowserver/`, `highserver/` | 비슷한 화면 두 개를 공통 컨트롤러로 묶기, 날짜 기간 필터, trends 집계 |
-| 일일점검 | `actions/reports/dailycheck/`, `views/reports/dailycheck.list.php` | 버튼으로 기간 바꾸기(D-1, D-2), 숫자에 말풍선 목록, 코어 화면으로 가는 링크 |
+| 일일점검 | `actions/reports/dailycheck/`, `views/reports/dailycheck.*.php`, `views/js/reports/dailycheck.list.js.php` | 버튼으로 기간 바꾸기(D-1, D-2), 숫자에 말풍선 목록, 코어 화면으로 가는 링크, 버튼으로 여는 팝업(Top 10) |
 | Peak 이벤트 분석 | `actions/reports/peakevent/`, `views/reports/peakevent.list.php` | 코어의 시간 선택기(최근 1시간, 어제 ...) |
 | 윈도우즈 패치 현황 | `actions/reports/winpatch/`, `views/reports/winpatch.*.php`, `views/js/reports/winpatch.list.js.php` | 상세 팝업, 화면 전용 스크립트, 이력(history) 값 읽기 |
-| Box 사용현황 | `actions/reports/hostbox/`, `views/reports/hostbox.list.php` | 아이템 마지막 값으로 표 만들기, 설정 파일에서 아이템 키 읽기, 단위 변환 |
-| 서버 시간 확인, 장기 미접속 계정, CPU/Memory 추출 | `uptime/`, `users/userunconnect/`, `usageexport/` | 데이터 없이 필터와 표만 있는 껍데기. 드롭다운/라디오 필터 |
+| 서버 시간 확인 | `actions/reports/uptime/`, `views/reports/uptime.list.php` | 아이템 마지막 값으로 계산한 열(가동 시간, 부팅 시각), 인벤토리 검색 필터, 숫자 열 정렬 |
+| 장기 미접속 계정 | `actions/users/userunconnect/`, `views/users/userunconnect.list.php`, `conf/userunconnect.conf.php` | API 로 할 수 없는 조건을 DB 로 찾고 나머지는 API 로, 드롭다운/라디오 필터, 설정 파일의 기본값 처리 |
+| CPU/Memory 추출 | `actions/reports/usageexport/` | 시간 선택기 + 필터, 수백만 줄을 흘려보내는 CSV 내보내기(`includes/UsageExportService.php`, `views/export/layout.stream.php`), 미리보기 표 |
 
 ---
 
@@ -323,7 +324,7 @@ Excel 파일은 제목 줄 서식/고정/필터, 테두리, 열 너비 맞춤이
 ### 설정 파일 (고객 값을 코드 밖으로)
 
 고객 서버마다 다른 값(아이템 키 등)은 `conf/<이름>.conf.php` 에 두고, 비어 있으면 화면에 안내를 띄운다.
-본보기: `conf/hostbox.conf.php`, `actions/reports/hostbox/HostBoxList.php`
+본보기: `conf/winpatch.conf.php`, `includes/WinPatchService.php`
 
 ```php
 // conf/diskusage.conf.php : 배열을 return 하는 PHP 파일. 공개 저장소에는 값을 비워서 올린다.
@@ -355,7 +356,7 @@ if ($data['config_missing']) {
 
 ### 호스트 그룹 / 호스트 필터
 
-공용 부품 `includes/filter/HostFilter.php` 를 쓴다. 본보기: `HostBoxList.php`, `views/reports/hostbox.list.php`
+공용 부품 `includes/filter/HostFilter.php` 를 쓴다. 본보기: `actions/reports/uptime/UptimeList.php`, `views/reports/uptime.list.php`
 
 ```php
 // 컨트롤러 checkInput()
@@ -371,11 +372,30 @@ elseif ($this->hasInput('filter_rst')) {
 $host_filter = HostFilter::load(self::PROFILE_PREFIX);
 
 // API 조회에 조건 붙이기
-$items = API::Item()->get(HostFilter::toApiOptions($host_filter) + ['output' => [...], ...]);
+// 조건은 API 호출 앞에서 변수에 담는다. 괄호 안에 직접 쓰면 호스트 그룹 필터에서 오류가 난다 (HostFilter::toApiOptions 설명)
+$host_options = HostFilter::toApiOptions($host_filter);
+$items = API::Item()->get($host_options + ['output' => [...], ...]);
 
 // 뷰로 넘기기
 $data['host_filter'] = HostFilter::toViewData($host_filter);
 ```
+
+**주의: `toApiOptions()` 를 API 호출 괄호 안에 직접 쓰지 않는다.**
+
+```php
+// 잘못된 예. 호스트 그룹을 골랐을 때만 오류가 난다.
+$items = API::Item()->get(HostFilter::toApiOptions($host_filter) + ['output' => [...]]);
+
+// 맞는 예. 조건을 먼저 변수에 담는다.
+$host_options = HostFilter::toApiOptions($host_filter);
+$items = API::Item()->get($host_options + ['output' => [...]]);
+```
+
+- 이유: 코어의 `API::Host()`, `API::Item()` 등은 호출할 때마다 새 객체를 주지 않는다. **같은 객체 하나**를 돌려주면서 "지금 부를 API 이름"만 바꾼다 (`ui/include/classes/api/API.php` 의 `getApi()`).
+- PHP 는 `API::Item()` 을 먼저 실행하고(이름 = item), 그다음 괄호 안의 인자를 계산한다. 인자 안의 `toApiOptions()` 는 호스트 그룹을 골랐을 때 `getSubGroups()` 를 부르고, 그 안에서 `API::HostGroup()` 이 실행되어 이름이 hostgroup 으로 바뀐다. 그 뒤에 실행되는 바깥의 `get()` 은 `item.get` 이 아니라 `hostgroup.get` 이 된다.
+- 호스트 그룹을 고르지 않으면 `getSubGroups()` 를 부르지 않아서 문제가 드러나지 않는다. 그래서 필터를 비운 테스트로는 찾을 수 없다.
+- 같은 이유로, API 호출의 인자 안에서 다른 API 를 부르는 코드는 모두 먼저 변수에 담는다.
+- 2026-11-23 에 4곳(저사용/고사용, Box 사용현황(이후 삭제), 윈도우즈 패치 현황, CPU/Memory 추출)에서 발견해 고쳤다. 필터를 쓰는 화면을 만들면 **호스트 그룹을 고른 상태로도** 열어 본다.
 
 ```php
 // 뷰
@@ -442,7 +462,7 @@ $timeline = getTimeSelectorPeriod($options);   // $timeline['from_ts'], ['to_ts'
 
 | 필요한 값 | 방법 | 본보기 |
 |---|---|---|
-| 아이템의 지금 값 | `API::Item()->get(['output' => ['lastvalue', 'lastclock'], 'filter' => ['key_' => ...]])`. `lastclock` 이 0 이면 아직 수집 안 됨 | `HostBoxList::getRows()` |
+| 아이템의 지금 값 | `API::Item()->get(['output' => ['lastvalue', 'lastclock'], 'filter' => ['key_' => ...]])`. `lastclock` 이 0 이면 아직 수집 안 됨 | `UptimeList::getRows()` |
 | 기간 안의 원래 값(글자, 숫자) | `API::History()->get(['history' => 아이템의 value_type, ...])` | `WinPatchService::getLatestValue()` |
 | 기간의 시간별 평균/최대 (며칠~몇 달) | `trends` 표 집계 SQL. 고객 DB 는 PostgreSQL 이다. (쿼리는 MySQL 문법과도 맞게 써 두었다) | `ServerUsageService::getUsage()` |
 | 트리거 / 장애 건수 | `API::Trigger()->get(['tags' => ...])`, `API::Event()->get(['countOutput' => true, 'groupBy' => ['objectid']])` | `DailyCheckList::getCheckResult()`, `PeakEventList::getRows()` |
@@ -709,21 +729,21 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 
 | 5버전 액션 | 화면 | 7.0 상태 |
 |---|---|---|
-| `swinventories`, `swinventories.view.csv` | SW 인벤토리 | 완성. Agent "예외" 판정만 비어 있음 |
+| `swinventories`, `swinventories.view.csv` | SW 인벤토리 | 완성. Agent "예외" 만 비어 있음 (구현 방식 결정 필요) |
 | `lowserver`, `lowserver.view.csv` | 저사용 서버 | 완성. [기준설정] 버튼은 설정 파일로 대체 |
-| `highserver`, `highserver.view.csv`, `popup.agent` | 고사용 서버 | 완성. 판정 조건은 가정 |
+| `highserver`, `highserver.view.csv` | 고사용 서버 | 완성. 판정 조건(그리고/또는)은 가정 |
+| `popup.agent` | SW 인벤토리의 Agent 미설치/예외 입력 창 | 미착수. 저장 방식 결정 필요 |
 | `windows`, `windows.view.csv`, `popup.windows` | 윈도우즈 패치 현황 | 완성 (상세 팝업 포함) |
-| `popup.windows.all`, `windowsall`, `windowsall.view.csv` | 윈도우 전체 | 미착수. 필요 여부 확인 |
-| `hostbox` | Box 사용현황 | 완성. 메뉴 위치는 가정 |
+| `popup.windows.all`, `windowsall`, `windowsall.view.csv` | 윈도우 전체 | 미착수. 5버전 액션 목록에 "임시 라우터"로 적혀 있다. 필요 여부 확인 |
 | `hostesxi` | ESXi | 미착수. 소스 없음 |
 | `daily` | 일일점검 | 완성 |
-| `popup.topcpu`, `popup.topmemory` | 일일점검의 Top 10 버튼 | 미착수. 소스 없음 |
+| `popup.topcpu`, `popup.topmemory` | 일일점검의 Top 10 버튼 | 완성 (2026-11-23, `dailycheck.top`). 5버전 집계 클래스는 미확인 |
 | `popup.batch` | 배치 팝업 | 미착수. 7버전에서는 일별 집계표(`extends_trends_day`) 없이 `trends` 를 바로 집계하므로 필요 없을 가능성이 크다 |
-| `uptime.view` | 서버 시간 확인 | 껍데기 (필터와 표만) |
-| `user.unconnect` | 장기 미접속 계정 | 껍데기 |
-| `perf.analysis.view` | CPU/Memory 사용률 추출 | 껍데기 |
-| `data.analysis` | 성능 데이터 추세 분석 | 빈 페이지. 대시보드 위젯으로 대체할지 결정 필요 |
-| (peak_event.php) | Peak 이벤트 분석 | 완성. 집계 기준은 가정 |
+| `uptime.view`, `uptime.view.refresh` | 서버 시간 확인 | 완성 (2026-11-23). 자동 새로고침 액션은 옮기지 않음 |
+| `user.unconnect` | 장기 미접속 계정 | 완성 (2026-11-23). 감사 로그 보관 기간 확인 필요 |
+| `perf.analysis.view` | CPU/Memory 사용률 추출 | 완성 (2026-11-23). 수집 값 원본을 CSV 로. 아이템 키 설정과 이력 보관 기간 확인 필요 |
+| `data.analysis`, `data.analysis.edit`, `data.analysis.csv`, `widget.data.analysis.svggraph.view` | 성능 데이터 추세 분석 | 빈 페이지. 대시보드 위젯으로 대체할지 결정 필요 |
+| (peak_event.php) | Peak 이벤트 분석 | 완성. 집계 기준은 가정. 5버전 화면의 필터 4종(그룹, 호스트, 유형, 심각도) 있음 |
 
 화면별 최신 상태는 `DEVELOPMENT_GUIDE.md` 5.1, 고객환경에서 확인할 것은 `CUSTOMER_ENV_CHECKLIST.md` 에 있다.
 
@@ -734,7 +754,7 @@ find . -name '*.php' -exec php -l {} \; | grep -v 'No syntax errors'
 3. 메뉴의 화면을 하나씩 연다. 이 시점에는 "설정이 필요합니다: conf/..." 안내가 보이는 것이 정상이다.
 4. `CUSTOMER_ENV_CHECKLIST.md` 1장을 따라 `conf/` 의 설정 파일을 채운다.
 5. 5버전 화면과 7버전 화면을 같은 조건으로 열어(또는 CSV 를 뽑아) 행 수와 값을 비교한다. (체크리스트 2장)
-6. 껍데기 화면은 5버전 소스를 보고 2.3 의 방법으로 채운다.
+6. 방향 결정이 필요한 항목(성능 데이터 추세 분석, Agent 예외 등)은 `UNIMPLEMENTED.md` 2장을 보고 진행한다.
 
 ---
 
