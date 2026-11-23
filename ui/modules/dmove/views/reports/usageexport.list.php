@@ -56,6 +56,14 @@ use Modules\DMove\Includes\Export\ExportFormat;
 use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\Lang;
 
+/*
+ * 시간 선택기에 필요한 코어 스크립트. 코어 보고서 화면(reports.auditlog.list.php)과 같다.
+ *   gtlc.js            : 시간 선택기 동작(timeControl). 없으면 기간 버튼을 눌러도 아무 일도 일어나지 않는다.
+ *   class.calendar.js  : 날짜 입력칸 옆 달력.
+ */
+$this->addJsFile('gtlc.js');
+$this->addJsFile('class.calendar.js');
+
 // ── 1) 필터 영역 ────────────────────────────────────────────────────────────
 
 /*
@@ -94,12 +102,15 @@ $filter = (new CFilter())
 	->setActiveTab($data['active_tab'])
 	// [적용] 을 눌렀을 때 같은 액션으로 돌아오도록 숨은 값으로 넣는다.
 	->addVar('action', $data['action'])
-	->addFilterTab(_('Filter'), [$filter_form])
 	/*
+	 * 탭 순서는 5버전 화면과 같게: [< 줌 아웃 >] [최신 5 일간] [필터]
+	 * 탭은 더한 순서대로 왼쪽부터 놓이므로 시간 선택기를 먼저, 필터를 나중에 더한다.
+	 *
 	 * 시간 선택기 탭. 인자: 시작, 종료, 탭을 표시할지, 기간을 저장할 프로파일 키.
-	 * 시작/종료는 "now-1d", "now" 같은 표현이다. 컨트롤러의 getTimeSelectorPeriod() 가 만들어 준 값이다.
+	 * 시작/종료는 "now-5d", "now" 같은 표현이다. 컨트롤러의 getTimeSelectorPeriod() 가 만들어 준 값이다.
 	 */
-	->addTimeSelector($data['timeline']['from'], $data['timeline']['to'], true, $data['timeline_profile']);
+	->addTimeSelector($data['timeline']['from'], $data['timeline']['to'], true, $data['timeline_profile'])
+	->addFilterTab(_('Filter'), [$filter_form]);
 
 // ── 2) 페이지 조립 ──────────────────────────────────────────────────────────
 

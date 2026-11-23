@@ -79,6 +79,9 @@ class UsageExportList extends CController {
 	/** 시간 선택기가 기간을 저장하는 프로파일 키. 뷰의 CFilter::setProfile() 값과 같아야 한다. */
 	private const TIMELINE_PROFILE = 'web.dmove.usageexport.filter';
 
+	/** 기본 기간의 시작. 5버전 화면: "최신 5 일간" */
+	private const DEFAULT_FROM = 'now-5d';
+
 	/** 화면의 미리보기 표에 보여 줄 줄 수. 전체는 [CSV 내보내기] 로 받는다. */
 	private const PREVIEW_ROWS = 100;
 
@@ -151,6 +154,17 @@ class UsageExportList extends CController {
 			'to' => null
 		];
 		$this->getInputs($timeselector_options, ['from', 'to']);
+
+		/*
+		 * 기본 기간은 5버전 화면과 같은 "최신 5 일간". 사용자가 기간을 고른 적이 없을 때만 쓴다.
+		 * (코어 기본값은 "최신 1 시간"이라 그대로 두면 이 화면의 5버전 기본값과 다르다)
+		 * CProfile::get(키): 저장된 값이 없으면 null.
+		 */
+		if ($timeselector_options['from'] === null && CProfile::get(self::TIMELINE_PROFILE.'.from') === null) {
+			$timeselector_options['from'] = self::DEFAULT_FROM;
+			$timeselector_options['to'] = 'now';
+		}
+
 		updateTimeSelectorPeriod($timeselector_options);
 
 		$timeline = getTimeSelectorPeriod($timeselector_options);
@@ -224,7 +238,8 @@ class UsageExportList extends CController {
 			'title' => $title,
 			'timeline' => $timeline,
 			'timeline_profile' => self::TIMELINE_PROFILE,
-			'active_tab' => CProfile::get(self::TIMELINE_PROFILE.'.active', 1),
+			// 처음 열면 [필터] 탭(두 번째)이 펼쳐져 있게 한다. 탭 순서가 [기간] [필터] 라서 2 다. (5버전 화면과 같다)
+			'active_tab' => CProfile::get(self::TIMELINE_PROFILE.'.active', 2),
 			// 선택창에 표시할 값(ID + 이름)으로 바꿔 넘긴다.
 			'host_filter' => HostFilter::toViewData($host_filter),
 			'filter' => $filter,

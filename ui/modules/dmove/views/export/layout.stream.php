@@ -31,6 +31,15 @@ while (ob_get_level() > 0) {
 	ob_end_clean();
 }
 
+/*
+ * 세션 잠금을 푼다. PHP 는 요청 하나가 세션을 쓰는 동안 같은 사용자의 다른 요청을 기다리게 한다.
+ * 내려받기가 몇 분 걸리면 그동안 같은 브라우저의 다른 화면이 멈춘다. 이 뒤로는 세션 값을 바꾸지 않으므로 닫아도 된다.
+ *   session_status() === PHP_SESSION_ACTIVE : 세션이 열려 있을 때만 닫는다.
+ */
+if (session_status() === PHP_SESSION_ACTIVE) {
+	session_write_close();
+}
+
 // 줄 수가 많으면 PHP 기본 실행 시간(보통 300초)을 넘길 수 있다. 0 = 시간 제한 없음. (5버전도 같은 설정을 썼다)
 set_time_limit(0);
 

@@ -57,6 +57,9 @@ class UsageExportService {
 	/** @var array  conf/usageexport.conf.php 의 내용 (빠진 값은 기본값으로 채움) */
 	private array $config;
 
+	/** stream() 이 지금까지 쓴 값 줄 수. */
+	private int $written = 0;
+
 	/**
 	 * 설정 파일을 읽는다. 파일이 없거나 값이 빠져 있으면 5버전 기본값을 쓴다.
 	 */
@@ -170,7 +173,8 @@ class UsageExportService {
 			 *   value_type : 0 = 소수(history 표), 3 = 정수(history_uint 표). 그 밖의 형식(문자 등)은 사용률이 아니므로 뺀다.
 			 */
 			$db_items = API::Item()->get([
-				'output' => ['itemid', 'hostid', 'name', 'value_type'],
+				// delay: 수집 간격. 줄 수를 어림하는 데 쓴다. (예: '1m', '30s', '5m;wd1-5,9-18')
+				'output' => ['itemid', 'hostid', 'name', 'value_type', 'delay'],
 				'itemids' => array_keys($hostid_by_itemid),
 				'filter' => ['value_type' => [ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64]]
 			]);
@@ -179,14 +183,19 @@ class UsageExportService {
 				$plan_items[$item['itemid']] = [
 					'host' => $hosts[$item['hostid']]['name'],
 					'name' => $item['name'],
-					'value_type' => (int) $item['value_type']
+					'value_type' => (int) $item['value_type'],
+					// 이 아이템의 어림 줄 수 = 기간(초) / 수집 간격(초). intdiv(a, b): 나눗셈의 몫(정수).
+					'est_rows' => intdiv(max(0, $time_till - $time_from), $this->intervalOf($item['delay']))
 				];
 			}
 		}
 
-		// 3) 줄 수 어림. intdiv(a, b): 나눗셈의 몫(정수).
-		$estimated_rows = intdiv(max(0, $time_till - $time_from), $this->config['assumed_interval'])
-			* count($plan_items);
+		/*
+		 * 3) 줄 수 어림. 아이템마다 실제 수집 간격으로 어림해서 더한다.
+		 *    (예전에는 모든 아이템을 3분 간격으로 보았다. 그러면 1초마다 수집하는 아이템이 있을 때 줄 수를 크게 낮게 어림했다)
+		 *    array_column(배열, 'est_rows'): 각 아이템의 est_rows 만 뽑는다. array_sum: 더한다.
+		 */
+		$estimated_rows = (int) array_sum(array_column($plan_items, 'est_rows'));
 
 		return [
 			'items' => $plan_items,
@@ -211,6 +220,9 @@ class UsageExportService {
 		echo "\xEF\xBB\xBF";
 		echo self::csvLine(['HOST', 'ITEM', 'CLOCK', 'VALUE']);
 
+		// 지금까지 쓴 값 줄 수. 한도(max_rows)를 넘으면 멈춘다. (어림이 틀렸을 때를 대비한 마지막 안전장치)
+		$this->written = 0;
+
 		// 값 형식별로 표가 다르다. 소수는 history, 정수는 history_uint.
 		$tables = [
 			ITEM_VALUE_TYPE_FLOAT => 'history',
@@ -219,17 +231,12 @@ class UsageExportService {
 
 		foreach ($tables as $value_type => $table) {
 			// 이 표에 값이 있는 아이템만 고른다.
-			$itemids = [];
+			$items = array_filter($plan['items'], static fn(array $item): bool => $item['value_type'] === $value_type);
 
-			foreach ($plan['items'] as $itemid => $item) {
-				if ($item['value_type'] === $value_type) {
-					$itemids[] = $itemid;
+			foreach ($this->makeQueries($items, $plan) as [$itemids, $from, $till]) {
+				if (!$this->streamChunk($table, $itemids, $from, $till, $plan)) {
+					return;
 				}
-			}
-
-			// array_chunk(배열, N): 배열을 N 개씩 나눈다. 한 번에 너무 많은 줄을 읽지 않기 위해서다.
-			foreach (array_chunk($itemids, $this->itemsPerQuery($plan)) as $chunk) {
-				$this->streamChunk($table, $chunk, $plan);
 			}
 		}
 	}
@@ -262,8 +269,8 @@ class UsageExportService {
 				}
 			}
 
-			// 아이템을 나눠서 조회한다. 필요한 줄 수가 차면 더 읽지 않는다.
-			foreach (array_chunk($itemids, $this->itemsPerQuery($plan)) as $chunk) {
+			// 아이템을 나눠서 조회한다. 필요한 줄 수가 차면 더 읽지 않는다. (미리보기는 앞의 몇 줄만 읽으므로 묶음 크기만 지킨다)
+			foreach (array_chunk($itemids, 100) as $chunk) {
 				$remaining = $limit - count($rows);
 
 				if ($remaining <= 0) {
@@ -296,38 +303,56 @@ class UsageExportService {
 	 *
 	 *   ORDER BY itemid, clock : 아이템별로, 시간 순서대로. 이력 표의 색인(itemid, clock) 순서라서 빠르다.
 	 *
-	 * @param string $table    'history' 또는 'history_uint'
-	 * @param array  $itemids  읽을 아이템 ID.
+	 * @param string   $table    'history' 또는 'history_uint'
+	 * @param array    $itemids  읽을 아이템 ID.
+	 * @param int|null $from     이번 조회의 시작. null 이면 계획의 시작. (긴 기간을 나눠 읽을 때 쓴다)
+	 * @param int|null $till     이번 조회의 끝. null 이면 계획의 끝.
 	 */
-	private function historySql(string $table, array $itemids, array $plan): string {
+	private function historySql(string $table, array $itemids, array $plan, ?int $from = null,
+			?int $till = null): string {
 		return 'SELECT itemid,clock,value'.
 			' FROM '.$table.
 			' WHERE '.dbConditionId('itemid', $itemids).
-				' AND clock>='.(int) $plan['time_from'].
-				' AND clock<='.(int) $plan['time_till'].
+				' AND clock>='.(int) ($from ?? $plan['time_from']).
+				' AND clock<='.(int) ($till ?? $plan['time_till']).
 				$this->hoursCondition((int) $plan['hours']).
 			' ORDER BY itemid,clock';
 	}
 
 	/**
-	 * 아이템 한 묶음의 값을 조회해서 CSV 줄로 출력한다.
+	 * 아이템 한 묶음, 한 기간 구간의 값을 조회해서 CSV 줄로 출력한다.
 	 *
-	 * 쿼리는 historySql() 이 만든다.
+	 * 조회에 실패하거나 줄 수 한도를 넘으면 파일 끝에 이유를 한 줄 쓰고 false 를 돌려준다. (더 읽지 않는다)
+	 * 이미 앞부분을 브라우저로 보낸 뒤라서 오류 화면으로 바꿀 수 없기 때문이다.
 	 *
 	 * @param string $table    'history' 또는 'history_uint'
 	 * @param array  $itemids  이번에 읽을 아이템 ID.
+	 * @param int    $from     이번 구간의 시작(유닉스 초)
+	 * @param int    $till     이번 구간의 끝(유닉스 초)
+	 *
+	 * @return bool  계속 읽어도 되면 true.
 	 */
-	private function streamChunk(string $table, array $itemids, array $plan): void {
-		$result = DBselect($this->historySql($table, $itemids, $plan));
+	private function streamChunk(string $table, array $itemids, int $from, int $till, array $plan): bool {
+		$result = DBselect($this->historySql($table, $itemids, $plan, $from, $till));
 
-		// DBselect 는 실패하면 false 를 돌려준다. 그대로 DBfetch 에 넘기면 경고가 나므로 먼저 확인한다.
+		// DBselect 는 실패하면 false 를 돌려준다. 그대로 두면 앞부분만 있는 파일이 "성공"처럼 보이므로 이유를 남긴다.
 		if ($result === false) {
-			return;
+			echo self::csvLine([Lang::t('* A database error occurred. The file is incomplete.')]);
+			flush();
+
+			return false;
 		}
 
-		$lines = 0;
-
 		while ($row = DBfetch($result)) {
+			if ($this->written >= $this->config['max_rows']) {
+				echo self::csvLine([Lang::t('* Stopped at the row limit (%1$s rows). The file is incomplete.',
+					number_format($this->config['max_rows'])
+				)]);
+				flush();
+
+				return false;
+			}
+
 			$item = $plan['items'][$row['itemid']];
 
 			echo self::csvLine([
@@ -339,12 +364,14 @@ class UsageExportService {
 			]);
 
 			// 5000줄마다 브라우저로 밀어 보낸다. 보내지 않고 쌓아 두면 메모리가 늘고 브라우저가 "응답 없음"으로 본다.
-			if (++$lines % 5000 === 0) {
+			if (++$this->written % 5000 === 0) {
 				flush();
 			}
 		}
 
 		flush();
+
+		return true;
 	}
 
 	/**
@@ -369,20 +396,72 @@ class UsageExportService {
 	}
 
 	/**
-	 * 한 번의 조회에 아이템을 몇 개씩 묶을지.
+	 * 조회를 몇 번으로 나눌지 정한다. 한 번의 조회가 ROWS_PER_QUERY(20만) 줄 정도가 되게 한다.
 	 *
-	 * 아이템 하나의 어림 줄 수 = 기간(초) / 수집 간격(초). 한 번에 ROWS_PER_QUERY 줄 정도가 되게 묶는다.
-	 * 예) 3개월(8035200초) / 180초 = 44640줄 -> 200000 / 44640 = 4개씩
-	 *     하루(86400초) / 180초 = 480줄      -> 200000 / 480 = 416개씩
+	 * PostgreSQL 은 조회 결과를 한꺼번에 PHP 메모리로 가져온다. 그래서 한 번에 읽는 줄 수를 묶음 크기로 제한해야 한다.
+	 *   - 어림 줄 수가 작은 아이템은 여러 개를 한 조회로 묶는다.
+	 *   - 한 아이템만으로도 큰 경우(수집 간격이 짧고 기간이 긴 경우)는 기간을 여러 구간으로 나눠 읽는다.
 	 *
-	 * @return int  1 이상.
+	 * 예) 3개월, 1분 간격 아이템(약 13만 줄) 100개 -> 아이템 1개씩 100번
+	 *     3개월, 1초 간격 아이템(약 800만 줄) 1개  -> 기간을 40 구간으로 나눠 40번
+	 *     하루, 3분 간격 아이템(480줄) 1000개      -> 416개씩 3번
+	 *
+	 * @param array $items  [itemid => ['est_rows' => .., ...]]
+	 *
+	 * @return array  [[아이템 ID 목록, 시작, 끝], ...]
 	 */
-	private function itemsPerQuery(array $plan): int {
-		$rows_per_item = max(1,
-			intdiv(max(0, $plan['time_till'] - $plan['time_from']), $this->config['assumed_interval'])
-		);
+	private function makeQueries(array $items, array $plan): array {
+		$queries = [];
+		$batch = [];
+		$batch_rows = 0;
 
-		return max(1, intdiv(self::ROWS_PER_QUERY, $rows_per_item));
+		foreach ($items as $itemid => $item) {
+			$rows = max(1, $item['est_rows']);
+
+			// 한 아이템만으로 묶음 크기를 넘으면 기간을 나눈다. intdiv 올림: (a + b - 1) / b
+			if ($rows > self::ROWS_PER_QUERY) {
+				$parts = intdiv($rows + self::ROWS_PER_QUERY - 1, self::ROWS_PER_QUERY);
+				$step = intdiv($plan['time_till'] - $plan['time_from'] + $parts, $parts);
+
+				for ($from = $plan['time_from']; $from <= $plan['time_till']; $from += $step) {
+					// 구간이 겹치지 않게 끝은 다음 구간 시작 - 1 초.
+					$queries[] = [[$itemid], $from, min($from + $step - 1, $plan['time_till'])];
+				}
+
+				continue;
+			}
+
+			if ($batch && $batch_rows + $rows > self::ROWS_PER_QUERY) {
+				$queries[] = [$batch, $plan['time_from'], $plan['time_till']];
+				$batch = [];
+				$batch_rows = 0;
+			}
+
+			$batch[] = $itemid;
+			$batch_rows += $rows;
+		}
+
+		if ($batch) {
+			$queries[] = [$batch, $plan['time_from'], $plan['time_till']];
+		}
+
+		return $queries;
+	}
+
+	/**
+	 * 아이템의 수집 간격(초). 줄 수를 어림하는 데 쓴다.
+	 *
+	 *   '1m'              -> 60
+	 *   '5m;wd1-5,9-18'   -> 300   (; 뒤의 "요일별 간격"은 무시하고 기본 간격만 본다)
+	 *   '{$INTERVAL}'     -> 설정의 assumed_interval (매크로는 여기서 풀 수 없다)
+	 *   '0' (트래퍼 등)    -> 설정의 assumed_interval (값이 들어오는 간격을 알 수 없다)
+	 *
+	 * timeUnitToSeconds(): '1m', '30s' 같은 글자를 초로 바꾸는 코어 함수. 바꿀 수 없으면 null.
+	 */
+	private function intervalOf(string $delay): int {
+		$seconds = timeUnitToSeconds(explode(';', $delay)[0]);
+
+		return ($seconds !== null && $seconds > 0) ? (int) $seconds : $this->config['assumed_interval'];
 	}
 
 	/**
