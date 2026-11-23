@@ -17,7 +17,7 @@
  *     │    ├─ fetchAllHosts()          DB 에서 전체 Zabbix 호스트 + 인벤토리 + 인터페이스
  *     │    ├─ ItsmRepository::fetch()  ITSM 서버 목록 (미연동이면 Zabbix 호스트 목록으로 대신한다)
  *     │    ├─ SoftwareResolver::resolve()  행마다 os/web/was/db/duplex 값
- *     │    └─ resolveAgentStatus()     행마다 Agent 설치 상태
+ *     │    └─ applyAgentStatus()       행마다 Agent 설치 상태 (Agent 상태 표 extends_agent 의 최신 기록)
  *     ├─ filter()    필터 입력에 맞는 행만 남긴다
  *     └─ sort()      정렬한다
  *
@@ -94,6 +94,7 @@ class SwInventoryService {
 	 * 선언 없이 $this->xxx = ... 로 쓰면(동적 프로퍼티) PHP 8.2 부터 Deprecated 경고가 난다.
 	 */
 	private ItsmRepository $itsm;
+	private AgentStatusRepository $agent_status;
 	private SoftwareResolver $software;
 
 	/** ITSM 미연동이라 Zabbix 호스트 목록으로 대체했는지 여부. */
@@ -105,9 +106,18 @@ class SwInventoryService {
 	 *   ?ItsmRepository  : 타입 앞의 ? 는 "null 도 허용" 이라는 뜻.
 	 *   $a ?? $b         : $a 가 null 이면 $b 를 쓴다.
 	 */
-	public function __construct(?ItsmRepository $itsm = null, ?SoftwareResolver $software = null) {
+	public function __construct(?ItsmRepository $itsm = null, ?SoftwareResolver $software = null,
+			?AgentStatusRepository $agent_status = null) {
 		$this->itsm = $itsm ?? new ItsmRepository();
 		$this->software = $software ?? new SoftwareResolver();
+		$this->agent_status = $agent_status ?? new AgentStatusRepository();
+	}
+
+	/**
+	 * Agent 상태 표(extends_agent)를 쓸 수 있는가. 없으면 화면에 안내를 띄운다.
+	 */
+	public function isAgentStatusAvailable(): bool {
+		return $this->agent_status->isAvailable();
 	}
 
 	/**
@@ -159,11 +169,13 @@ class SwInventoryService {
 	 */
 	public function getRows(): array {
 		/*
-		 * 1) Zabbix 호스트 조회. 로그인한 사용자의 호스트 권한과 관계없이 전체 호스트를 읽는다. (5버전과 같다)
+		 * 1) Zabbix 호스트 조회. 로그인한 사용자의 호스트 권한과 관계없이 전체 호스트를 읽는다.
+		 *    (주의: 5버전은 API::Host()->get() 이라 사용자 권한이 적용됐다. Super admin 이면 결과가 같다.
+		 *     v5 CControllerSwinventories.php:200-208. 전체로 둘지 권한을 적용할지 확인 대기, 2026-11-24)
 		 *
 		 *    이 화면은 "ITSM 서버 목록 중 Zabbix 에 등록된 것/안 된 것"을 보는 화면이고, ITSM 목록은 권한과 관계없이
 		 *    전부 나온다. Zabbix 호스트만 권한으로 줄이면, 권한 밖 호스트가 실제로는 등록돼 있는데도 "미설치"로 보인다.
-		 *    그래서 Zabbix 호스트도 전체를 읽는다. 결정: 2026-11-23, 5버전 동작 유지.
+		 *    그래서 Zabbix 호스트도 전체를 읽는다. 결정: 2026-11-23.
 		 *
 		 *    단, 코어의 인벤토리 상세 화면 링크는 사용자가 볼 수 있는 호스트에만 단다. (권한 밖이면 코어가 오류를 띄운다)
 		 */
@@ -251,12 +263,16 @@ class SwInventoryService {
 				'name' => $zbx_host !== null ? $zbx_host['name'] : '',
 				'ip' => $ip,
 				'description' => $description,
-				'agent' => $this->resolveAgentStatus($itsm_row, $zbx_host)
+				// Agent 상태는 아래 applyAgentStatus() 에서 한 번에 채운다. 여기서는 자리만 만든다.
+				'agent' => self::AGENT_INSTALLED,
+				'agent_note' => '',
+				// 상태를 사용자가 입력할 수 있는 줄인가. Zabbix 에 등록되지 않은 ITSM 서버만 입력한다. (5버전과 같다)
+				'agent_editable' => $zbx_host === null && !$this->itsm_fallback
 			// 배열 + 배열: 오른쪽 배열의 키(os, web, was, db, duplex)를 왼쪽 배열에 합친다.
 			] + $this->software->resolve($itsm_row, $zbx_host);
 		}
 
-		return $rows;
+		return $this->applyAgentStatus($rows);
 	}
 
 	/**
@@ -342,31 +358,67 @@ class SwInventoryService {
 	}
 
 	/**
-	 * Agent 설치 상태 판정.
+	 * 줄마다 Agent 설치 상태를 채운다. (5버전 Agent 판정 클래스 ...HostAgent.php 와 같은 규칙)
 	 *
-	 * 5버전 규칙: ITSM 호스트명이 Zabbix 에 등록돼 있으면 "설치".
+	 *   Zabbix 에 등록된 서버(ITSM 이름과 Zabbix 호스트 이름이 같다)      -> 설치
+	 *   등록되지 않은 서버: 상태 표(extends_agent)의 가장 최근 기록을 본다
+	 *       기록의 agent 가 2                                           -> 미설치
+	 *       기록의 agent 가 4                                           -> 예외
+	 *       기록의 agent 가 그 밖의 값                                   -> 설치   (5버전 코드 그대로)
+	 *       기록이 없음                                                  -> 미설치
 	 *
-	 * TODO(고객환경): "예외" 기준은 확인하지 못해서 ITSM 행의 agent_exception 값으로 가정했다.
-	 *                 실제 기준(예외 테이블, 호스트 태그, 호스트 그룹 등)에 맞게 이 메소드만 고치면 된다.
-	 *                 "Zabbix 에 등록" 이 아니라 "agent 가 실제 응답 중" 을 설치로 보려면
-	 *                 fetchAllHosts() 의 인터페이스 조회에 available 열을 더해 읽고
-	 *                 여기서 available 값을 본다.
+	 * 미설치/예외 줄에는 마지막 기록의 사유와 입력자/시각을 agent_note 에 담는다. 화면에서 글자에 마우스를 올리면 보인다.
+	 * 상태 표를 쓸 수 없으면(표가 없음) 등록되지 않은 서버는 모두 미설치다.
 	 *
-	 * @param array      $itsm_row  ITSM 행. ItsmRepository::fetch() 의 행 1개.
-	 * @param array|null $zbx_host  같은 이름의 Zabbix 호스트. 없으면 null.
+	 * @param array $rows  getRows() 가 만든 줄. 'rowid', 'agent_editable' 을 쓴다.
 	 *
-	 * @return int  AGENT_INSTALLED(1) / AGENT_NOT_INSTALLED(2) / AGENT_EXCEPTION(4)
+	 * @return array  'agent', 'agent_note' 가 채워진 줄.
 	 */
-	private function resolveAgentStatus(array $itsm_row, ?array $zbx_host): int {
-		if ($zbx_host !== null) {
-			return self::AGENT_INSTALLED;
+	private function applyAgentStatus(array $rows): array {
+		// 상태를 입력하는 줄(등록되지 않은 서버)의 키만 모아 한 번에 읽는다. 키 예) 'itsm_1001'
+		$keys = [];
+
+		foreach ($rows as $row) {
+			if ($row['agent_editable']) {
+				$keys[] = $row['rowid'];
+			}
 		}
 
-		if (!empty($itsm_row['agent_exception'])) {
-			return self::AGENT_EXCEPTION;
-		}
+		$latest = $this->agent_status->latestByKeys($keys);
 
-		return self::AGENT_NOT_INSTALLED;
+		foreach ($rows as &$row) {
+			if (!$row['agent_editable']) {
+				continue;
+			}
+
+			$record = $latest[$row['rowid']] ?? null;
+
+			if ($record === null) {
+				$row['agent'] = self::AGENT_NOT_INSTALLED;
+				continue;
+			}
+
+			switch ($record['agent']) {
+				case AgentStatusRepository::STATUS_NOT_INSTALLED:
+					$row['agent'] = self::AGENT_NOT_INSTALLED;
+					break;
+
+				case AgentStatusRepository::STATUS_EXCEPTION:
+					$row['agent'] = self::AGENT_EXCEPTION;
+					break;
+
+				default:
+					$row['agent'] = self::AGENT_INSTALLED;
+			}
+
+			// 예) "사유 (Admin, 2026-11-23 10:15)"  zbx_date2str: 사용자 시간대로 날짜를 글자로 바꾸는 코어 함수.
+			$row['agent_note'] = trim($record['explanation'].' ('.$record['username'].', '
+				.zbx_date2str(DATE_TIME_FORMAT, $record['clock']).')');
+		}
+		// &$row 로 돈 뒤에는 연결을 끊는다. 안 하면 뒤에서 $row 를 쓸 때 마지막 줄이 바뀐다.
+		unset($row);
+
+		return $rows;
 	}
 
 	/**

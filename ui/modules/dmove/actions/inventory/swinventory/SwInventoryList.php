@@ -16,7 +16,7 @@
  * ── 화면 구성 ──
  *   필터 : ITSM HOST, OS/Version, WEB, WAS, DB, 이중화 (글자 입력. 부분 일치)
  *          Agent 설치 / 미설치 / 예외 (체크박스)
- *   버튼 : CSV 내보내기, Excel 내보내기
+ *   버튼 : CSV 내보내기
  *   표   : 호스트, 표시명, IP, Description, OS, WEB, WAS, DB, 이중화 솔루션, Agent 설치
  *          (열 정의는 아래 getColumns(). 모든 열을 눌러서 정렬할 수 있다)
  *
@@ -259,6 +259,8 @@ class SwInventoryList extends CController {
 			'sortorder' => $sort_order,
 			'agent_labels' => $agent_labels,
 			'itsm_fallback' => $service->isItsmFallback(),
+			// Agent 상태 표(extends_agent)를 쓸 수 있는가. 없으면 뷰가 안내를 띄운다.
+			'agent_status_available' => $service->isAgentStatusAvailable(),
 			'total' => count($rows)
 		];
 

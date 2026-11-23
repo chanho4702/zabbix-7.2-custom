@@ -12,7 +12,7 @@
  *   컨트롤러 : actions/inventory/swinventory/SwInventoryList.php
  *
  * ── 화면 구성 ──
- *   제목 오른쪽 : [CSV 내보내기] [Excel 내보내기]
+ *   제목 오른쪽 : [CSV 내보내기]
  *   필터        : 왼쪽 단에 글자 입력 3개, 오른쪽 단에 글자 입력 3개 + Agent 체크박스(설치 / 미설치 / 예외)
  *   경고 상자   : ITSM 설정이 비어 있어 Zabbix 호스트로 대신 보여 줄 때만 나온다
  *   표          : 열 제목을 누르면 정렬된다. 아래쪽에 페이지 번호가 붙는다
@@ -62,6 +62,11 @@ use Modules\DMove\Includes\SwInventoryService;
  *
  * $this->includeJsFile('swinventory.list.js.php');
  */
+
+/*
+ * 이 화면 전용 스크립트를 불러온다. (Agent 상태 입력 창을 열고 저장하는 코드가 들어 있다)
+ */
+$this->includeJsFile('inventory/swinventory.list.js.php');
 
 // ── 1) 필터 영역 ────────────────────────────────────────────────────────────
 // 입력창 이름(filter_xxx)은 컨트롤러 checkInput() 의 키와 같아야 한다.
@@ -162,6 +167,31 @@ foreach ($data['rows'] as $row) {
 	 *   ZBX_STYLE_WORDBREAK  : 긴 글자를 칸 너비에 맞춰 줄바꿈한다. (설명)
 	 *   CSpan(값)            : 글자에 색 같은 CSS 클래스를 입힐 때 쓰는 <span>.
 	 */
+	/*
+	 * Agent 칸. (5버전과 같다)
+	 *   설치                     : 글자만
+	 *   미설치 / 예외 (입력 가능한 줄) : 누르면 상태 입력 창이 열리는 링크. 마우스를 올리면 마지막 사유가 보인다.
+	 *     js-swinventory-agent : 스크립트(views/js/inventory/swinventory.list.js.php)가 이 링크를 찾는 표시
+	 *     data-key, data-name  : 창에 넘길 줄의 키와 서버 이름
+	 */
+	$agent_label = $data['agent_labels'][$row['agent']];
+
+	if ($row['agent_editable']) {
+		$agent_cell = (new CLinkAction($agent_label))
+			->addClass('js-swinventory-agent')
+			->addClass($agent_styles[$row['agent']])
+			->setAttribute('data-key', $row['rowid'])
+			->setAttribute('data-name', $row['host']);
+
+		if ($row['agent_note'] !== '') {
+			// setHint(내용): 마우스를 올리면 작은 말풍선으로 보인다.
+			$agent_cell->setHint($row['agent_note']);
+		}
+	}
+	else {
+		$agent_cell = (new CSpan($agent_label))->addClass($agent_styles[$row['agent']]);
+	}
+
 	$table->addRow([
 		(new CCol($host))->addClass(ZBX_STYLE_NOWRAP),
 		$row['name'],
@@ -172,7 +202,7 @@ foreach ($data['rows'] as $row) {
 		$row['was'],
 		$row['db'],
 		$row['duplex'],
-		(new CSpan($data['agent_labels'][$row['agent']]))->addClass($agent_styles[$row['agent']])
+		$agent_cell
 	]);
 }
 
@@ -181,9 +211,18 @@ foreach ($data['rows'] as $row) {
 // CHtmlPage: 화면 한 장. 제목, 제목 오른쪽 버튼, 본문(필터, 표)을 차례로 넣고 마지막에 show() 로 출력한다.
 $html_page = (new CHtmlPage())
 	->setTitle(Lang::t('SW inventory'))
-	// 제목 오른쪽 버튼 영역: [CSV 내보내기] [Excel 내보내기]. 현재 저장된 필터/정렬 그대로 내려받는다.
+	// 제목 오른쪽 버튼 영역: [CSV 내보내기]. 현재 저장된 필터/정렬 그대로 내려받는다.
 	->setControls(ExportButtons::create($data['export_action']))
 	->addItem($filter);
+
+if (!$data['itsm_fallback'] && !$data['agent_status_available']) {
+	// Agent 상태 표(extends_agent)가 없으면 Zabbix 에 없는 서버는 모두 "미설치"로 나온다. 이유를 알려 준다.
+	$html_page->addItem(
+		makeMessageBox(ZBX_STYLE_MSG_WARNING, [], Lang::t('The Agent status table does not exist.').' '
+			.Lang::t('Run sql/extends_agent.sql in the Zabbix database, or check conf/swinventory.conf.php.'), false
+		)
+	);
+}
 
 if ($data['itsm_fallback']) {
 	// conf/itsm.conf.php 에 ITSM 스키마/테이블 이름을 채우면 이 경고는 사라진다.
@@ -202,4 +241,16 @@ $html_page
 			->setName('dmove_swinventory')
 			->addItem($table)
 	)
+	->show();
+
+/*
+ * 스크립트에 값을 넘기고 시작시킨다.
+ *   json_encode : PHP 값을 자바스크립트가 읽을 수 있는 글자로 바꾼다.
+ *   setOnDocumentReady : 화면이 다 그려진 뒤에 실행한다.
+ */
+(new CScriptTag('dmoveSwInventoryList.init('.json_encode([
+	'agent_action' => 'swinventory.agent',
+	'save_action' => 'swinventory.agent.save'
+]).');'))
+	->setOnDocumentReady()
 	->show();
