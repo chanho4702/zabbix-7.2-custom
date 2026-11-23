@@ -27,11 +27,16 @@
  *   sort                   현재 정렬 열. 'username', 'name', 'surname', 'user_type' 중 하나
  *   sortorder              현재 정렬 방향. 'ASC' 또는 'DESC'
  *   inactive_days          미접속 기준 일수. 예) 60
+ *   created_check          만든 날짜를 따지는 방식. 'exclude_recent' / 'required' / 'none'
  *   audit_retention_short  true 면 감사 로그 보관 기간이 기준 일수보다 짧다 (경고 상자를 띄운다)
  *   paging                 페이지 번호 줄
  *   rows                   행 1개 = 계정 1개.
  *                          ['username' => 'user01', 'name' => '길동', 'surname' => '홍', 'user_type' => 1,
- *                           'groups' => '그룹A, 그룹B', 'last_access' => '2026-01-02 03:04:05']
+ *                           'groups' => [['usrgrpid' => '7', 'name' => '그룹A', ...]], 'last_access' => '2026-01-02 03:04:05']
+ *                          역할이 없는 유저는 user_type 이 null
+ *   max_in_table           그룹 칸에 보여 줄 그룹 수 한도
+ *   allowed_ui_user_groups true 면 그룹 이름을 그룹 편집 링크로
+ *   session_retention_short true 면 세션 보관 기간이 기준 일수보다 짧다 (경고 상자)
  *                          접속 기록이 없으면 last_access 는 ''
  *
  * ── 관련 파일 ──
@@ -99,6 +104,47 @@ $filter = (new CFilter())
 
 // ── 2) 표 ───────────────────────────────────────────────────────────────────
 
+/**
+ * 그룹 칸을 만든다. 5버전과 코어 유저 목록 화면(administration.user.list.php)과 같은 모양이다.
+ *   - 그룹 이름은 그룹 편집 링크. (그룹 화면 권한이 없으면 글자만)
+ *   - GUI 접근이 막혔거나 그룹이 비활성이면 빨강, 아니면 초록.
+ *   - 그룹이 $max 개를 넘으면 나머지는 "…" 로 줄인다.
+ *
+ * @param array $groups   [['usrgrpid', 'name', 'gui_access', 'users_status'], ...] 이름순
+ * @param int   $max      보여 줄 그룹 수 한도
+ * @param bool  $as_link  그룹 이름을 링크로 만들지
+ */
+function makeDmoveUserGroupList(array $groups, int $max, bool $as_link): array {
+	$items = [];
+
+	foreach ($groups as $i => $group) {
+		if ($i >= $max) {
+			$items[] = [' ', HELLIP()];
+			break;
+		}
+
+		if ($items) {
+			$items[] = ', ';
+		}
+
+		$item = $as_link
+			? (new CLink($group['name'], (new CUrl('zabbix.php'))
+				->setArgument('action', 'usergroup.edit')
+				->setArgument('usrgrpid', $group['usrgrpid'])
+				->getUrl()
+			))->addClass(ZBX_STYLE_LINK_ALT)
+			: new CSpan($group['name']);
+
+		$items[] = $item->addClass(
+			($group['gui_access'] == GROUP_GUI_ACCESS_DISABLED || $group['users_status'] == GROUP_STATUS_DISABLED)
+				? ZBX_STYLE_RED
+				: ZBX_STYLE_GREEN
+		);
+	}
+
+	return $items;
+}
+
 // 제목을 누르면 그 열로 정렬된다. make_sorting_header(제목, 정렬 키, 현재 정렬 키, 현재 방향, 이 화면 주소): 코어 함수.
 $sort_url = (new CUrl('zabbix.php'))->setArgument('action', $data['action'])->getUrl();
 
@@ -115,11 +161,19 @@ $table = (new CTableInfo())
 
 foreach ($data['rows'] as $row) {
 	$table->addRow([
-		(new CCol($row['username']))->addClass(ZBX_STYLE_NOWRAP),
+		// 아이디를 누르면 그 유저의 편집 화면으로 간다. (5버전과 같다)
+		(new CCol(new CLink($row['username'],
+			(new CUrl('zabbix.php'))
+				->setArgument('action', 'user.edit')
+				->setArgument('userid', $row['userid'])
+				->getUrl()
+		)))->addClass(ZBX_STYLE_NOWRAP),
 		$row['name'],
 		$row['surname'],
-		user_type2str($row['user_type']),
-		(new CCol($row['groups']))->addClass(ZBX_STYLE_WORDBREAK),
+		// 역할이 없는 유저는 종류가 없다.
+		$row['user_type'] !== null ? user_type2str($row['user_type']) : '-',
+		(new CCol(makeDmoveUserGroupList($row['groups'], $data['max_in_table'], $data['allowed_ui_user_groups'])))
+			->addClass(ZBX_STYLE_WORDBREAK),
 		// 접속 기록이 한 번도 없는 계정은 '-' 로 표시한다. 모두 장기 미접속이라 5버전처럼 빨간색이다.
 		(new CCol($row['last_access'] !== '' ? $row['last_access'] : '-'))
 			->addClass(ZBX_STYLE_NOWRAP)
@@ -141,14 +195,24 @@ $html_page->addItem(
 		->addClass(ZBX_STYLE_RED)
 );
 
-// 감사 로그 보관 기간이 기준 일수보다 짧으면 목록이 비게 되므로 이유를 알려 준다. (컨트롤러 isAuditRetentionShorterThan)
+/*
+ * 감사 로그 보관 기간이 기준 일수보다 짧으면 결과가 틀릴 수 있어 이유를 알려 준다. (컨트롤러 isAuditRetentionShorterThan)
+ * 만든 날짜를 따지는 방식(created_check)에 따라 틀리는 방향이 달라서 문구도 다르다.
+ */
 if ($data['audit_retention_short']) {
-	$html_page->addItem(
-		makeMessageBox(ZBX_STYLE_MSG_WARNING, [],
-			sprintf(Lang::t('The audit log is kept for less than %1$d days, so account creation dates cannot be checked and the list may be empty. Check conf/userunconnect.conf.php.'), $data['inactive_days']),
-			false
-		)
-	);
+	$message = $data['created_check'] === 'required'
+		? Lang::t('The audit log is kept for less than %1$d days, so account creation dates cannot be checked and the list may be empty. Check conf/userunconnect.conf.php.')
+		: Lang::t('The audit log is kept for less than %1$d days, so recently created accounts that never logged in may also be listed. Set the audit log storage period to at least %1$d days.');
+
+	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_WARNING, [], sprintf($message, $data['inactive_days']), false));
+}
+
+// 세션 보관 기간이 짧으면 최근 접속 기록이 지워져, 최근에 접속한 계정도 미접속으로 나온다.
+if ($data['session_retention_short']) {
+	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_WARNING, [],
+		sprintf(Lang::t('Sessions are kept for less than %1$d days, so accounts that logged in recently may also be listed. Set the session storage period to at least %1$d days.'), $data['inactive_days']),
+		false
+	));
 }
 
 $html_page

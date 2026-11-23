@@ -77,6 +77,7 @@ use CHousekeepingHelper;
 use CPagerHelper;
 use CProfile;
 use CRoleHelper;
+use CSettingsHelper;
 use CUrl;
 use Modules\DMove\Includes\Lang;
 
@@ -212,8 +213,9 @@ class UserUnconnectList extends CController {
 			'output' => ['usrgrpid', 'name'],
 			'preservekeys' => true
 		]);
+		// API 가 실패하면 false 를 돌려준다. 빈 목록으로 바꿔 아래 array_column 이 멈추지 않게 한다.
 		// array_column(배열, 값 키, 색인 키): [usrgrpid => name] 형태로 뽑는다.
-		$user_groups = array_column($user_groups, 'name', 'usrgrpid');
+		$user_groups = array_column($user_groups ?: [], 'name', 'usrgrpid');
 		// 이름순 정렬. natcasesort 는 키(usrgrpid)를 유지한다.
 		natcasesort($user_groups);
 
@@ -228,8 +230,20 @@ class UserUnconnectList extends CController {
 			'sort' => $sort_field,
 			'sortorder' => $sort_order,
 			'inactive_days' => $config['inactive_days'],
-			// 감사 로그 보관 기간이 기준 일수보다 짧으면 뷰가 경고를 띄운다.
-			'audit_retention_short' => $config['created_check'] === self::CREATED_REQUIRED
+			/*
+			 * 감사 로그 보관 기간이 기준 일수보다 짧으면 뷰가 경고를 띄운다. 만든 날짜를 따지는 두 방식 모두 영향을 받는다.
+			 *   required       : 만든 기록이 지워진 계정이 빠져서 목록이 비거나 줄어든다.
+			 *   exclude_recent : 최근에 만든 계정의 기록이 지워지면, 방금 만든 계정이 미접속으로 잘못 나온다.
+			 *                    예) 보관 31일, 기준 60일: 40일 전에 만든 뒤 한 번도 접속하지 않은 계정이 목록에 나온다.
+			 */
+			'created_check' => $config['created_check'],
+			// 그룹 칸에 보여 줄 그룹 수의 한도 (관리 > 일반 > GUI 의 "Max number of columns..." 와 같은 값). 넘으면 "…"
+			'max_in_table' => (int) CSettingsHelper::get(CSettingsHelper::MAX_IN_TABLE),
+			// 그룹 이름을 그룹 편집 링크로 만들지. "유저 > 유저 그룹" 화면을 볼 수 있을 때만.
+			'allowed_ui_user_groups' => $this->checkAccess(CRoleHelper::UI_ADMINISTRATION_USER_GROUPS),
+			// 감사 로그와 별도로, 세션 보관 기간이 짧아도 최근 접속 기록이 지워져 미접속으로 잘못 나온다.
+			'session_retention_short' => self::isSessionRetentionShorterThan($config['inactive_days']),
+			'audit_retention_short' => $config['created_check'] !== self::CREATED_NONE
 				&& self::isAuditRetentionShorterThan($config['inactive_days'])
 		];
 
@@ -279,8 +293,22 @@ class UserUnconnectList extends CController {
 	 * "만든 지 N일이 넘은 계정"은 감사 로그의 유저 추가 기록으로 판단한다.
 	 * 그런데 감사 로그를 N일보다 짧게 보관하면 그 기록이 이미 지워져서 목록이 항상 비게 된다.
 	 *
-	 *   관리 > 하우스키핑 > 감사 > "내부 하우스키핑 사용" 이 꺼져 있으면 지우지 않으므로 문제없다.
+	 *   관리 > 감사 로그 > "내부 하우스키핑 사용" 이 꺼져 있으면 지우지 않으므로 문제없다.
 	 *   timeUnitToSeconds('31d') : '31d', '12h' 같은 글자를 초로 바꾸는 코어 함수.
+	 */
+	private static function isSessionRetentionShorterThan(int $days): bool {
+		// 세션 하우스키핑이 꺼져 있으면 세션이 지워지지 않는다.
+		if (CHousekeepingHelper::get(CHousekeepingHelper::HK_SESSIONS_MODE) != 1) {
+			return false;
+		}
+
+		$retention = timeUnitToSeconds(CHousekeepingHelper::get(CHousekeepingHelper::HK_SESSIONS));
+
+		return $retention !== null && $retention < $days * SEC_PER_DAY;
+	}
+
+	/**
+	 * 감사 로그 보관 기간이 $days 일보다 짧은지. (관리 > 감사 로그)
 	 */
 	private static function isAuditRetentionShorterThan(int $days): bool {
 		if (CHousekeepingHelper::get(CHousekeepingHelper::HK_AUDIT_MODE) != 1) {
@@ -341,15 +369,23 @@ class UserUnconnectList extends CController {
 		 *
 		 * 기본은 exclude_recent 다. (2026-11-23 결정. 이유는 이 파일 머리말과 conf/userunconnect.conf.php 의 created_check 설명)
 		 */
-		$created_records = 'SELECT a.resourcename FROM auditlog a'.
-			' WHERE a.action='.CAudit::ACTION_ADD.
+		/*
+		 * 감사 기록과 계정은 아이디(resourceid = userid)로 잇는다.
+		 * 5버전은 이름(resourcename = alias)으로 이었는데, 그러면 두 가지가 틀린다.
+		 *   - 이름을 바꾼 계정(대소문자만 바꿔도)은 자기 기록을 못 찾는다. 방금 만든 계정이 미접속으로 나올 수 있다.
+		 *   - 지운 계정과 같은 이름으로 새로 만들면 지운 계정의 기록이 새 계정에 붙는다.
+		 * 7.0 감사 로그의 유저 추가 기록은 resourceid 에 만든 계정의 userid 를 넣는다. (코어 CAudit::log)
+		 */
+		$created_records = 'SELECT NULL FROM auditlog a'.
+			' WHERE a.resourceid=u.userid'.
+				' AND a.action='.CAudit::ACTION_ADD.
 				' AND a.resourcetype='.CAudit::RESOURCE_USER;
 
 		if ($config['created_check'] === self::CREATED_REQUIRED) {
-			$sql .= ' AND u.username IN ('.$created_records.' AND a.clock<'.$threshold.')';
+			$sql .= ' AND EXISTS ('.$created_records.' AND a.clock<'.$threshold.')';
 		}
 		elseif ($config['created_check'] === self::CREATED_EXCLUDE_RECENT) {
-			$sql .= ' AND u.username NOT IN ('.$created_records.' AND a.clock>='.$threshold.')';
+			$sql .= ' AND NOT EXISTS ('.$created_records.' AND a.clock>='.$threshold.')';
 		}
 
 		$result = DBselect($sql);
@@ -376,7 +412,7 @@ class UserUnconnectList extends CController {
 	 *     'name'        => '길동',
 	 *     'surname'     => '홍',
 	 *     'user_type'   => 1,                      // USER_TYPE_ZABBIX_USER(1) / ADMIN(2) / SUPER_ADMIN(3)
-	 *     'groups'      => '그룹A, 그룹B',
+	 *     'groups'      => [['usrgrpid' => '7', 'name' => '그룹A', 'gui_access' => '0', 'users_status' => '0'], ...],
 	 *     'last_access' => '2026-01-02 03:04:05'   // 접속 기록이 없으면 ''
 	 *   ]
 	 */
@@ -406,7 +442,8 @@ class UserUnconnectList extends CController {
 				'surname' => $filter['surname'] !== '' ? $filter['surname'] : null
 			],
 			'usrgrpids' => $filter['usrgrpid'] != 0 ? [$filter['usrgrpid']] : null,
-			'selectUsrgrps' => ['name'],
+			// 그룹 상태(gui_access, users_status)는 5버전처럼 빨강/초록으로 칠하는 데 쓴다.
+			'selectUsrgrps' => ['usrgrpid', 'name', 'gui_access', 'users_status'],
 			'selectRole' => ['type'],
 			'preservekeys' => true
 		]);
@@ -433,17 +470,20 @@ class UserUnconnectList extends CController {
 		$rows = [];
 
 		foreach ($users as $userid => $user) {
-			// 역할이 없는 유저는 종류를 알 수 없다. 가장 낮은 User 로 표시한다.
-			$user_type = (int) ($user['role']['type'] ?? USER_TYPE_ZABBIX_USER);
+			/*
+			 * 역할이 없는 유저(예: 외부 인증으로 만든 뒤 역할이 지워진 계정)는 종류가 없다. null 로 두고 화면에 '-' 로 보인다.
+			 * 예전에는 "User" 로 보여서 종류 필터 "User" 에도 걸렸다.
+			 */
+			$user_type = isset($user['role']['type']) ? (int) $user['role']['type'] : null;
 
 			// 유저 종류 필터. (API 가 역할의 type 으로는 걸러 주지 않아서 여기서 거른다)
-			if ($filter['user_type'] != self::USER_TYPE_ANY && $user_type != $filter['user_type']) {
+			if ($filter['user_type'] != self::USER_TYPE_ANY && $user_type !== (int) $filter['user_type']) {
 				continue;
 			}
 
-			// 그룹 이름을 이름순으로 정렬해서 "A, B" 로 잇는다.
-			$group_names = array_column($user['usrgrps'], 'name');
-			natcasesort($group_names);
+			// 그룹을 이름순으로 정렬한다. (5버전과 코어 유저 목록 화면과 같다)
+			$groups = $user['usrgrps'];
+			CArrayHelper::sort($groups, ['name']);
 
 			$clock = $last_access[$userid] ?? 0;
 
@@ -453,7 +493,8 @@ class UserUnconnectList extends CController {
 				'name' => $user['name'],
 				'surname' => $user['surname'],
 				'user_type' => $user_type,
-				'groups' => implode(', ', $group_names),
+				// 그룹 목록. 뷰가 링크와 색을 만든다. [['usrgrpid', 'name', 'gui_access', 'users_status'], ...]
+				'groups' => array_values($groups),
 				// zbx_date2str(형식, 시각): 사용자 시간대와 언어에 맞춰 날짜를 글자로 바꾸는 코어 함수.
 				'last_access' => $clock != 0 ? zbx_date2str(DATE_TIME_FORMAT_SECONDS, $clock) : ''
 			];
