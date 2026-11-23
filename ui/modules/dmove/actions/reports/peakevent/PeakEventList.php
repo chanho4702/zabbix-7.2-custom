@@ -11,7 +11,7 @@
  *          기간 선택(코어의 시간 선택기. 기본 "최신 1 시간")
  *   표   : 호스트, IP 주소, Description, Peak이벤트 유형(트리거 이름), 심각도, 상태 변경 횟수
  *          상태 변경 횟수가 많은 순서로 정렬
- *   이 모듈에서 더한 것: [CSV 내보내기] [Excel 내보내기] 버튼
+ *   이 모듈에서 더한 것: [CSV 내보내기] 버튼
  *          (zabbix.php?action=peakevent.export&format=csv 또는 xlsx)
  *
  * ── 이 화면이 하는 일 ──

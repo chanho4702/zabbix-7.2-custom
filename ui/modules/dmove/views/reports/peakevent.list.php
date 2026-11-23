@@ -11,7 +11,7 @@
  *   화면 : zabbix.php?action=peakevent.list
  *
  * ── 화면 구성 ──
- *   제목 오른쪽 : [CSV 내보내기] [Excel 내보내기]
+ *   제목 오른쪽 : [CSV 내보내기]
  *   필터        : 호스트 그룹, 호스트, Peak이벤트 유형(트리거 이름의 일부), 심각도 + 시간 선택기 (조회 기간)
  *   표          : 호스트, IP, Description, 트리거 이름, 심각도, 횟수   (정렬 헤더와 페이지 나누기는 없다)
  *
@@ -41,6 +41,14 @@
 use Modules\DMove\Includes\Export\ExportButtons;
 use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\Lang;
+
+/*
+ * 시간 선택기에 필요한 코어 스크립트. 코어 보고서 화면(reports.auditlog.list.php)과 같다.
+ *   gtlc.js            : 시간 선택기 동작(timeControl). 없으면 기간 버튼을 눌러도 아무 일도 일어나지 않는다.
+ *   class.calendar.js  : 날짜 입력칸 옆 달력.
+ */
+$this->addJsFile('gtlc.js');
+$this->addJsFile('class.calendar.js');
 
 // ── 1) 필터 영역: 필터 탭(호스트 그룹, 호스트, Peak이벤트 유형, 심각도) + 시간 선택기 ──────────
 
