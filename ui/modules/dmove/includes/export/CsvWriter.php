@@ -9,6 +9,17 @@
  * 엑셀 서식이 들어간 파일은 XlsxWriter 가 만든다.
  *
  * TODO(고객환경): 5버전 공통 CSV 모듈에 구분자/인코딩(EUC-KR 변환 등) 규칙이 따로 있었다면 여기 한 곳만 고친다.
+ *
+ * ── 데이터 흐름 ──
+ *   [CSV 내보내기] 버튼 -> 컨트롤러 setExportResponse() -> views/export/layout.file.php
+ *     -> CsvWriter::toCsv(제목 줄, 행들)
+ *          ├─ sanitizeRow() : 값을 글자로 바꾸고, 수식으로 실행될 수 있는 값 앞에 ' 를 붙인다
+ *          └─ zbx_toCSV()   : 코어 함수가 쉼표와 따옴표를 처리해 CSV 글로 만든다
+ *
+ * ── 관련 파일 ──
+ *   views/export/layout.file.php       이 클래스를 부르는 곳
+ *   includes/export/ExportTrait.php    컨트롤러용 내보내기 플러그인 (사용법)
+ *   includes/export/XlsxWriter.php     엑셀 쪽 작성기
  */
 
 namespace Modules\DMove\Includes\Export;
@@ -22,6 +33,8 @@ class CsvWriter {
 	private const WITH_BOM = true;
 
 	/**
+	 * 제목 줄과 데이터 줄을 CSV 글 하나로 만든다.
+	 *
 	 * @param array $header  ['컬럼1', '컬럼2', ...]
 	 * @param array $rows    [['값1', '값2', ...], ...]
 	 *
@@ -38,12 +51,19 @@ class CsvWriter {
 		}
 
 		// zbx_toCSV: 코어 함수 (ui/include/func.inc.php). 큰따옴표 이스케이프와 줄 구분을 처리한다.
+		// "\xEF\xBB\xBF": UTF-8 BOM 3바이트. "이 파일은 UTF-8 이다"라고 알려 주는 표시다.
 		return (self::WITH_BOM ? "\xEF\xBB\xBF" : '').zbx_toCSV($csv);
 	}
 
 	/**
 	 * 한 줄의 모든 값을 안전한 문자열로 바꾼다.
 	 * array_map(함수, 배열): 배열의 각 값에 함수를 적용한 새 배열을 만든다.
+	 *
+	 * 예) ['web01', null, '=1+1', '-5', '-'] -> ['web01', '', "'=1+1", '-5', '-']
+	 *
+	 * @param array $row  한 줄의 값들. 키는 무시하고 순서만 쓴다.
+	 *
+	 * @return array  글자로 바뀐 값들. 키는 0 부터 다시 매긴다.
 	 */
 	private static function sanitizeRow(array $row): array {
 		return array_map(static function ($value): string {
@@ -58,6 +78,7 @@ class CsvWriter {
 			 */
 			$is_plain = is_numeric($value) || $value === '-';
 
+			// $value[0] : 문자열의 첫 글자. (빈 문자열이면 오류가 나므로 앞에서 '' 인지 먼저 본다)
 			if ($value !== '' && !$is_plain && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
 				$value = "'".$value;
 			}

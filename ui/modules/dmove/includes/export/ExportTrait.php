@@ -52,6 +52,19 @@
  *
  * trait 이란: 클래스에 메소드 묶음을 끼워 넣는 PHP 문법이다. "use ExportTrait;" 한 줄을 적으면
  * 아래 메소드들이 그 컨트롤러의 메소드가 된다. ($this->isExportRequest() 처럼 부를 수 있다)
+ *
+ * ── 지금 이 플러그인을 쓰는 컨트롤러 ──
+ *   actions/inventory/swinventory/SwInventoryList.php, actions/reports/winpatch/WinPatchList.php,
+ *   actions/reports/peakevent/PeakEventList.php, actions/reports/serverusage/ServerUsageController.php,
+ *   (CPU/Memory 전체 사용률 추출은 줄 수가 많아 이 플러그인 대신 views/export/layout.stream.php 를 쓴다)
+ *   (새 화면용 견본: template/actions/sample/SampleList.php)
+ *
+ * ── 관련 파일 ──
+ *   includes/export/ExportButtons.php   뷰에 다는 버튼
+ *   includes/export/ExportFormat.php    형식 목록 (csv, xlsx)
+ *   includes/export/CsvWriter.php       CSV 파일 내용 만들기
+ *   includes/export/XlsxWriter.php      엑셀 파일 내용 만들기
+ *   views/export/layout.file.php        파일을 만들어 브라우저로 내려보내는 레이아웃
  */
 
 namespace Modules\DMove\Includes\Export;
@@ -63,6 +76,11 @@ trait ExportTrait {
 	/**
 	 * checkInput() 의 규칙 배열에 더할 내보내기용 규칙.
 	 * format 파라미터로 csv 또는 xlsx 만 받는다.
+	 *
+	 * 컨트롤러의 checkInput() 에서 기존 규칙 배열에 + 로 더해 쓴다.
+	 *   $fields = [ ... ] + self::exportInputFields();
+	 *
+	 * @return array  ['format' => 'in csv,xlsx']
 	 */
 	protected static function exportInputFields(): array {
 		return [
@@ -72,6 +90,11 @@ trait ExportTrait {
 
 	/**
 	 * 지금 요청이 내보내기 액션인지. 액션 이름이 ".export" 로 끝나면 내보내기다.
+	 *
+	 * 화면 액션과 내보내기 액션이 같은 컨트롤러를 쓰기 때문에, doAction() 안에서 이 값으로 둘을 구분한다.
+	 * 예) action=swinventory.list -> false,  action=swinventory.export -> true
+	 *
+	 * @return bool  내보내기 요청이면 true.
 	 */
 	protected function isExportRequest(): bool {
 		// str_ends_with: PHP 8.0 부터 있는 함수. 문자열이 주어진 글자로 끝나는지 검사한다.
@@ -80,6 +103,9 @@ trait ExportTrait {
 
 	/**
 	 * 내보내기 응답을 지정한다. 이 뒤에 doAction() 에서 바로 return 하면 된다.
+	 *
+	 * 여기서 파일을 만들지는 않는다. 형식, 제목, 열 정의, 행을 응답 객체에 담아 두기만 한다.
+	 * 실제 파일은 그 뒤에 views/export/layout.file.php 가 이 값을 받아서 만든다.
 	 *
 	 * @param string $title        시트 이름과 브라우저 제목으로 쓴다.
 	 * @param string $file_prefix  파일명 앞부분(영문/숫자/밑줄). 예) 'sw_inventory' -> sw_inventory_20260102_030405.xlsx
@@ -91,6 +117,7 @@ trait ExportTrait {
 		$format = $this->getInput('format', ExportFormat::CSV);
 
 		// 파일명에 위험한 글자가 섞이지 않게 영문/숫자/밑줄/하이픈만 남긴다.
+		// [^A-Za-z0-9_-] : 대괄호 안 맨 앞의 ^ 는 "이 글자들이 아닌 것". 그런 글자를 모두 지운다. 다 지워져 비면 'export'.
 		$file_prefix = preg_replace('/[^A-Za-z0-9_-]/', '', $file_prefix) ?: 'export';
 
 		$response = new CControllerResponseData([
@@ -103,6 +130,7 @@ trait ExportTrait {
 			]
 		]);
 		$response->setTitle($title);
+		// 파일명 예) sw_inventory_20260102_030405.xlsx  (date('Ymd_His') = 연월일_시분초)
 		$response->setFileName($file_prefix.'_'.date('Ymd_His').'.'.$format);
 
 		$this->setResponse($response);
@@ -110,6 +138,17 @@ trait ExportTrait {
 
 	/**
 	 * 두 가지 열 정의 형태를 [['key' => .., 'label' => .., 'type' => ..], ...] 하나로 맞춘다.
+	 *
+	 * 컨트롤러는 열을 짧게('host' => '호스트') 또는 자세히('used' => ['label' => .., 'type' => 'number']) 적을 수 있다.
+	 * 파일을 만드는 쪽이 두 형태를 따로 처리하지 않도록 여기서 한 가지 모양으로 바꾼다.
+	 *
+	 * 예) ['host' => '호스트', 'used' => ['label' => '사용량', 'type' => 'number']]
+	 *     -> [['key' => 'host', 'label' => '호스트', 'type' => 'text'],
+	 *         ['key' => 'used', 'label' => '사용량', 'type' => 'number']]
+	 *
+	 * @param array $columns  컨트롤러가 넘긴 열 정의.
+	 *
+	 * @return array  type 은 'number' 가 아니면 모두 'text' 가 된다. label 이 없으면 키 이름을 제목으로 쓴다.
 	 */
 	private static function normalizeExportColumns(array $columns): array {
 		$normalized = [];

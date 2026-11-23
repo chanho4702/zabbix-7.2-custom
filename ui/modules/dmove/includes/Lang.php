@@ -28,6 +28,18 @@
  * 코어에 이미 있는 문구(Filter, Hosts, Host groups, Name ...)는 지금처럼 코어의 _() 를 그대로 쓴다.
  *
  * 뷰 파일(네임스페이스 없음)에서는 맨 위에 use Modules\DMove\Includes\Lang; 을 적고 쓴다.
+ *
+ * ── 누가 쓰는가 ──
+ *   모듈의 거의 모든 컨트롤러와 뷰, 그리고 Module.php(메뉴 이름)와 내보내기 버튼.
+ *
+ * ── 데이터 흐름 ──
+ *   Lang::t('영어 문구')
+ *     ├─ (요청에서 처음 불릴 때만) load() : 사용자 언어 코드 -> lang/<언어>.php 를 읽어 번역 표를 만든다
+ *     ├─ 번역 표에서 영어 문구를 찾는다. 없으면 영어 문구를 그대로 쓴다
+ *     └─ 인자가 있으면 %1$s 자리에 값을 채워서 돌려준다
+ *
+ * ── 관련 파일 ──
+ *   lang/ko.php   한국어 번역 표. ['영어 문구' => '한국어 문구', ...] 를 return 하는 파일.
  */
 
 namespace Modules\DMove\Includes;
@@ -44,8 +56,16 @@ class Lang {
 	 *
 	 * @param string $text     영어 원문. lang/<언어>.php 의 키와 글자 하나까지 같아야 한다.
 	 * @param mixed  ...$args  %1$s, %2$s ... 자리에 넣을 값. ("..." 는 인자를 몇 개든 받는다는 뜻)
+	 *
+	 * @return string  번역된 문구. 번역 표에 없으면 영어 원문 그대로.
+	 *
+	 * 사용 예: (한국어 사용자일 때)
+	 *   Lang::t('Installed')                             -> '설치'
+	 *   Lang::t('%1$d days, %2$s', 158, '13:38:45')      -> '158 일, 13:38:45'
+	 *   Lang::t('Text that is not in the table')         -> 'Text that is not in the table'
 	 */
 	public static function t(string $text, ...$args): string {
+		// self::$messages : static 프로퍼티. 객체가 아니라 클래스에 하나만 있는 값이라, 한 번 읽어 두면 다음 호출에서 다시 쓴다.
 		if (self::$messages === null) {
 			self::$messages = self::load();
 		}
@@ -58,12 +78,16 @@ class Lang {
 
 	/**
 	 * 현재 사용자 언어의 번역 표를 읽는다. 파일이 없으면(영어 등) 빈 배열 -> 원문 그대로 출력된다.
+	 *
+	 * @return array  ['영어 문구' => '번역 문구', ...]. 예) ['Installed' => '설치', ...]
+	 *                언어 코드가 이상하거나, 파일이 없거나, 파일 내용이 배열이 아니면 빈 배열.
 	 */
 	private static function load(): array {
 		// CWebUser::getLang(): 사용자 언어 코드의 앞부분. ko_KR -> 'ko', en_US -> 'en'
 		$lang = (string) CWebUser::getLang();
 
 		// 언어 코드는 영문 소문자만 허용한다. (파일 경로에 들어가는 값이므로 검사한다)
+		// 정규식 /^[a-z]{2,3}$/ : 처음부터 끝까지 영문 소문자 2~3글자.
 		if (preg_match('/^[a-z]{2,3}$/', $lang) !== 1) {
 			return [];
 		}
@@ -74,6 +98,7 @@ class Lang {
 			return [];
 		}
 
+		// 번역 파일은 "return [ ... ];" 형태다. require 가 그 배열을 그대로 돌려준다.
 		$messages = require $file;
 
 		return is_array($messages) ? $messages : [];

@@ -28,7 +28,9 @@
  * │ ③ doAction() : 저장된 값 읽기 -> 데이터 조회에 사용                     │
  * │     $host_filter = HostFilter::load(self::PROFILE_PREFIX);              │
  * │     // $host_filter['groupids'], $host_filter['hostids']  (ID 배열)     │
- * │     $hosts = API::Host()->get(HostFilter::toApiOptions($host_filter)    │
+ * │     // 조건은 API 호출 "앞"에서 변수에 담는다. (이유: toApiOptions 설명)│
+ * │     $host_options = HostFilter::toApiOptions($host_filter);             │
+ * │     $hosts = API::Host()->get($host_options                             │
  * │         + ['output' => ['hostid', 'host', 'name']]);                    │
  * │                                                                         │
  * │ ④ doAction() : 뷰로 넘길 값                                             │
@@ -42,6 +44,18 @@
  * └─────────────────────────────────────────────────────────────────────────┘
  *
  * 사용 예: actions/reports/uptime/UptimeList.php, views/reports/uptime.list.php
+ *
+ * ── 지금 이 필터를 쓰는 화면 ──
+ *   서버 시간 확인(uptime), 저사용/고사용 서버(serverusage), 윈도우즈 패치 현황(winpatch),
+ *   usageexport 화면의 컨트롤러와 뷰. 그리고 includes/WinPatchService.php.
+ *
+ * ── 데이터 흐름 ──
+ *   [적용] 클릭 -> 주소에 filter_groupids[], filter_hostids[] 가 온다
+ *     -> save()         사용자 프로파일에 저장 (다음에 화면을 열어도 남아 있다)
+ *     -> load()         저장된 ID 를 읽는다               ['groupids' => [...], 'hostids' => [...]]
+ *     -> toApiOptions() API 조건으로 바꾼다 (데이터 조회용)
+ *     -> toViewData()   ID 에 이름을 붙인다 (선택창 표시용)
+ *     -> addRows()      뷰가 필터 폼에 두 줄을 그린다
  */
 
 namespace Modules\DMove\Includes\Filter;
@@ -66,7 +80,12 @@ class HostFilter {
 	/**
 	 * 선택 값을 사용자 프로파일에 저장한다.
 	 *
+	 * 프로파일은 "사용자별 화면 설정 저장소"다. 여기에 넣어 두면 페이지를 넘기거나 다시 로그인해도 필터가 유지된다.
+	 * 저장 이름은 접두어 + 'filter.groupids' / 'filter.hostids' 다. 예) 'web.dmove.uptime.filter.groupids'
+	 *
 	 * @param string $profile_prefix  화면의 프로파일 접두어. 예) 'web.dmove.uptime.'
+	 * @param array  $groupids        선택한 호스트 그룹 ID. 예) ['2', '4']  선택하지 않았으면 [].
+	 * @param array  $hostids         선택한 호스트 ID. 예) ['10084']  선택하지 않았으면 [].
 	 */
 	public static function save(string $profile_prefix, array $groupids, array $hostids): void {
 		// 배열 값은 updateArray 로 저장한다. PROFILE_TYPE_ID = ID 값.
@@ -74,7 +93,13 @@ class HostFilter {
 		CProfile::updateArray($profile_prefix.'filter.hostids', $hostids, PROFILE_TYPE_ID);
 	}
 
-	/** 저장된 선택 값을 지운다. ([리셋] 버튼) */
+	/**
+	 * 저장된 선택 값을 지운다. ([리셋] 버튼)
+	 *
+	 * 지운 뒤에 load() 를 부르면 두 값 모두 빈 배열이 나온다. (= 조건 없음)
+	 *
+	 * @param string $profile_prefix  화면의 프로파일 접두어. 예) 'web.dmove.uptime.'
+	 */
 	public static function reset(string $profile_prefix): void {
 		CProfile::deleteIdx($profile_prefix.'filter.groupids');
 		CProfile::deleteIdx($profile_prefix.'filter.hostids');
@@ -82,6 +107,8 @@ class HostFilter {
 
 	/**
 	 * 저장된 선택 값을 읽는다.
+	 *
+	 * @param string $profile_prefix  화면의 프로파일 접두어. 예) 'web.dmove.uptime.'
 	 *
 	 * @return array  ['groupids' => [ID, ...], 'hostids' => [ID, ...]]  선택하지 않았으면 빈 배열.
 	 */
@@ -98,6 +125,18 @@ class HostFilter {
 	 *   - 아무것도 선택하지 않으면 조건이 없다(= 사용자가 볼 수 있는 전체 호스트).
 	 *   - 그룹을 선택하면 그 하위 그룹(예: "서버" 를 고르면 "서버/운영")의 호스트도 포함한다. 코어 화면과 같은 동작이다.
 	 *
+	 * 사용 예: (배열 + 배열 로 다른 옵션과 합친다)
+	 *   $host_options = HostFilter::toApiOptions($host_filter);
+	 *   $hosts = API::Host()->get($host_options + ['output' => ['hostid', 'name']]);
+	 *
+	 * ★ 주의: 반드시 위처럼 API 호출 "앞"에서 변수에 담아 둔다. 아래처럼 괄호 안에 직접 쓰면 안 된다.
+	 *     API::Host()->get(HostFilter::toApiOptions($host_filter) + [...]);   // 잘못된 예
+	 *   코어의 API::Host(), API::Item() 등은 같은 객체 하나를 돌려쓰면서 "지금 부를 API 이름"만 바꾼다.
+	 *   괄호 안의 이 메소드가 호스트 그룹을 조회하면(getSubGroups -> API::HostGroup()) 그 이름이 hostgroup 으로 바뀌어,
+	 *   바깥의 get() 이 hostgroup.get 으로 실행된다. 호스트 그룹 필터를 골랐을 때만 오류가 난다.
+	 *
+	 * @param array $host_filter  load() 의 결과. ['groupids' => [...], 'hostids' => [...]]
+	 *
 	 * @return array  ['groupids' => [...]|null, 'hostids' => [...]|null]
 	 */
 	public static function toApiOptions(array $host_filter): array {
@@ -105,6 +144,7 @@ class HostFilter {
 			// getSubGroups(): 코어 함수. 선택한 그룹 + 그 하위 그룹의 ID 를 돌려준다. (ui/include/hostgroups.inc.php)
 			// API 에 null 을 주면 그 조건은 없는 것으로 처리된다. 빈 배열을 주면 "결과 없음"이 되므로 주의.
 			'groupids' => $host_filter['groupids'] ? getSubGroups($host_filter['groupids']) : null,
+			// a ?: b : a 가 비어 있으면(빈 배열 등) b 를 쓴다.
 			'hostids' => $host_filter['hostids'] ?: null
 		];
 	}
@@ -115,7 +155,10 @@ class HostFilter {
 	 *
 	 * 사용자가 볼 권한이 없는 그룹/호스트는 API 가 돌려주지 않으므로 자동으로 빠진다.
 	 *
+	 * @param array $host_filter  load() 의 결과. ['groupids' => [...], 'hostids' => [...]]
+	 *
 	 * @return array  ['groups' => [...], 'hosts' => [...]]
+	 *                예) ['groups' => [['id' => '2', 'name' => 'Linux servers']], 'hosts' => []]
 	 */
 	public static function toViewData(array $host_filter): array {
 		$groups = [];
@@ -156,6 +199,11 @@ class HostFilter {
 		 *   popup        : [선택] 팝업 설정. srctbl 이 팝업 종류, dstfrm 은 필터 폼 이름(항상 'zbx_filter'),
 		 *                  dstfld1 은 name 에서 [] 를 _ 로 바꾼 값이다.
 		 * 라벨의 두 번째 인자('filter_groupids__ms')는 name 에서 [] 를 뺀 것 + '__ms' 이다. 라벨을 누르면 입력창에 커서가 간다.
+		 *
+		 * 호스트 그룹 팝업에만 있는 옵션:
+		 *   with_hosts           : 호스트가 들어 있는 그룹만 보여 준다.
+		 *   enrich_parent_groups : 하위 그룹에 호스트가 있으면 그 상위 그룹도 목록에 넣는다.
+		 * _('Host groups'), _('Hosts') 는 코어에 있는 문구라 코어 번역 함수 _() 를 쓴다.
 		 */
 		return $form
 			->addRow(new CLabel(_('Host groups'), 'filter_groupids__ms'),

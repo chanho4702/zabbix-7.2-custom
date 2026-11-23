@@ -6,12 +6,20 @@
  *   1) 여기에 상수와 CONTENT_TYPES 한 줄을 추가하고
  *   2) views/export/layout.file.php 의 switch 에 만드는 코드를 추가하고
  *   3) ExportButtons::create() 에 버튼을 추가한다.
+ *
+ * 이 클래스에는 메소드가 없다. 상수만 모아 둔 곳이다. ExportFormat::CSV 처럼 읽어 쓴다.
+ *
+ * 어디에 쓰이는가
+ *   ExportTrait::exportInputFields()   주소의 format 값으로 ALL 에 있는 것만 받는다
+ *   ExportButtons::create()            형식마다 버튼을 하나씩 만든다
+ *   views/export/layout.file.php       형식에 따라 파일을 만들고, CONTENT_TYPES 로 응답 헤더를 정한다
  */
 
 namespace Modules\DMove\Includes\Export;
 
 class ExportFormat {
 
+	/** 형식 이름. 주소의 format 값이자 파일 확장자다. 예) ...&format=xlsx -> 파일명.xlsx */
 	public const CSV = 'csv';
 	public const XLSX = 'xlsx';
 

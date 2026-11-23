@@ -4,6 +4,22 @@
  *
  * 컨트롤러: actions/reports/sample/SampleList.php  (여기서 넘긴 값을 $data['키'] 로 읽는다)
  *
+ * ── 이 뷰가 그리는 것 ──
+ *   위에서부터 제목 줄(오른쪽에 내보내기 버튼) -> 필터(호스트, 이름) -> 표(호스트, 이름) -> 페이지 이동 줄.
+ *   이 파일은 값을 계산하지 않는다. 컨트롤러가 준 값을 화면 부품에 넣어서 출력만 한다.
+ *
+ * ── 컨트롤러가 넘겨 주는 값 ($data) ──
+ *   action         이 화면의 액션 이름. 예) 'sample.list'   (필터/정렬 링크의 주소에 쓴다)
+ *   export_action  내보내기 액션 이름. 예) 'sample.export'
+ *   title          화면 제목
+ *   columns        열 제목. ['host' => '호스트', 'name' => '이름']
+ *   filter         필터 입력창에 다시 채울 값. ['host' => 'web', 'name' => '']
+ *   active_tab     필터 영역이 펼쳐져 있는지 (1 = 펼침)
+ *   sort           지금 정렬 중인 열. 예) 'host'
+ *   sortorder      정렬 방향. 'ASC' 또는 'DESC'
+ *   paging         페이지 이동 줄 (컨트롤러가 CPagerHelper::paginate() 로 만든 것)
+ *   rows           현재 페이지의 행. [['hostid' => '10084', 'host' => .., 'name' => ..], ...]
+ *
  * 뷰 파일 규칙
  *   - 경로 = views/ + manifest.json 액션의 "view" 값 + ".php".  예) "view": "reports/sample.list"
  *     사이드바 카테고리 폴더(views/reports/ 등) 아래에 둔다.
@@ -32,6 +48,8 @@ use Modules\DMove\Includes\Lang;
 //   드롭다운     : views/users/userunconnect.list.php
 //   호스트/호스트 그룹 선택창 : views/reports/uptime.list.php
 
+// CFormList: "라벨 + 입력창" 줄을 세로로 쌓는 틀. addRow(라벨, 입력창) 한 번이 한 줄이다.
+// CTextBox(이름, 현재 값): 한 줄 글자 입력창. setWidth 로 너비(픽셀)를 정한다.
 $filter_form = (new CFormList())
 	->addRow(_('Host'),
 		(new CTextBox('filter_host', $data['filter']['host']))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH)
@@ -40,6 +58,7 @@ $filter_form = (new CFormList())
 		(new CTextBox('filter_name', $data['filter']['name']))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH)
 	);
 
+// CFilter: 접었다 펼 수 있는 필터 상자. [적용] / [리셋] 버튼은 CFilter 가 알아서 붙인다.
 $filter = (new CFilter())
 	// [리셋] 버튼이 이동할 주소. CFilter 가 filter_rst=1 을 붙여 준다.
 	->setResetUrl((new CUrl('zabbix.php'))->setArgument('action', $data['action']))
@@ -58,6 +77,7 @@ $view_url = (new CUrl('zabbix.php'))
 	->setArgument('action', $data['action'])
 	->getUrl();
 
+// CTableInfo: 코어의 목록 표. 행이 하나도 없으면 "데이터가 없습니다" 문구를 알아서 보여 준다.
 $table = (new CTableInfo())
 	// [바꿀 곳] 표 제목 줄.
 	//   make_sorting_header(라벨, 정렬키, ...) : 클릭하면 정렬되는 제목. 정렬키는 컨트롤러 SORT_FIELDS 에 있어야 한다.
@@ -67,6 +87,7 @@ $table = (new CTableInfo())
 		make_sorting_header($data['columns']['host'], 'host', $data['sort'], $data['sortorder'], $view_url),
 		make_sorting_header($data['columns']['name'], 'name', $data['sort'], $data['sortorder'], $view_url)
 	])
+	// 표 아래에 페이지 이동 줄을 붙인다.
 	->setPageNavigation($data['paging']);
 
 foreach ($data['rows'] as $row) {
@@ -81,6 +102,7 @@ foreach ($data['rows'] as $row) {
 }
 
 // ── 3) 페이지 조립 ──────────────────────────────────────────────────────────
+// CHtmlPage: 화면 한 장. addItem() 한 순서대로 위에서 아래로 놓인다. 마지막의 show() 가 실제로 출력한다.
 
 (new CHtmlPage())
 	->setTitle($data['title'])

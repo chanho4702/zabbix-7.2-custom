@@ -10,8 +10,28 @@
  *   화면 : zabbix.php?action=sample.list
  *   내보내기 : zabbix.php?action=sample.export&format=csv 또는 xlsx
  *
+ * ── 이 템플릿이 만드는 화면 ──
+ *   필터 : 호스트(입력), 이름(입력)   글자가 들어 있는 줄만 남긴다. 대소문자는 가리지 않는다.
+ *   버튼 : CSV 내보내기, Excel 내보내기
+ *   표   : 호스트, 이름   (두 열 모두 눌러서 정렬할 수 있다)
+ *
+ * ── 데이터 흐름 ──
+ *   doAction()
+ *     ├─ 필터 저장/읽기 (CProfile)
+ *     ├─ getRows()           host.get API 로 호스트를 읽어 행을 만든다   <- 새 화면에서는 여기를 바꾼다
+ *     ├─ applyTextFilters()  필터에 맞는 행만 남긴다
+ *     ├─ 정렬
+ *     ├─ 액션이 sample.export 면 -> 전체 행을 CSV / Excel 파일로 내려 주고 끝
+ *     └─ 아니면 -> 페이징한 뒤 뷰(views/reports/sample.list.php)로 넘긴다
+ *
  * 컨트롤러는 코어가 아래 순서로 호출한다. (ui/include/classes/mvc/CController.php)
  *   init() -> checkInput() -> checkPermissions() -> doAction()
+ *   앞 단계가 false 를 돌려주면 뒤 단계는 실행되지 않는다.
+ *
+ * ── 같이 복사하는 파일 ──
+ *   template/actions/sample/SampleList.php   컨트롤러 템플릿 (이 파일)
+ *   template/views/sample.list.php           화면 뷰 템플릿
+ *   template/README.md                       복사 방법, 바꿀 곳 표
  */
 
 /*
@@ -50,6 +70,7 @@ class SampleList extends CController {
 	/** 필터/정렬 값을 사용자별로 저장하는 프로파일 키 접두어. 'web.dmove.<화면>.' 형식으로 짓는다. */
 	private const PROFILE_PREFIX = 'web.dmove.sample.';
 
+	/** 화면 액션과 내보내기 액션의 이름. manifest.json 의 "actions" 에 적은 키와 글자 하나까지 같아야 한다. */
 	private const LIST_ACTION = 'sample.list';
 	private const EXPORT_ACTION = 'sample.export';
 
@@ -62,6 +83,15 @@ class SampleList extends CController {
 		'name' => 'name'
 	];
 
+	/**
+	 * 컨트롤러가 만들어질 때 코어가 한 번 부른다. 다른 단계(checkInput 등)보다 먼저 실행된다.
+	 * 여기서는 CSRF 토큰 검사를 끄는 일만 한다.
+	 *
+	 * CSRF 토큰: "이 요청이 우리 화면에서 보낸 것이 맞다"를 확인하는 숨은 값이다.
+	 * 값을 바꾸지 않고 보기만 하는 화면은 주소만으로 열려야 하므로 검사를 끈다.
+	 *
+	 * @return void  돌려주는 값이 없다.
+	 */
 	protected function init(): void {
 		/*
 		 * 조회 전용 화면(GET)이라 CSRF 토큰 검사를 끈다. (5버전의 disableSIDValidation() 에 해당)
@@ -79,17 +109,28 @@ class SampleList extends CController {
 	 *   'ge 1'        1 이상 정수
 	 *   'id'          숫자 ID 하나
 	 *   'array_id'    숫자 ID 배열 (호스트/호스트 그룹 선택창. 사용 예: actions/reports/uptime/UptimeList.php)
+	 *
+	 * 이 화면이 받는 값
+	 *   page                      페이지 번호. 예) 2
+	 *   filter_set / filter_rst   [적용] / [리셋] 버튼을 눌렀다는 표시. 값은 1.
+	 *   sort / sortorder          정렬할 열과 방향. 예) sort=name&sortorder=DESC
+	 *   filter_host, filter_name  필터 입력값 (TEXT_FILTERS 의 키마다 하나씩)
+	 *   format                    내보내기 형식. csv 또는 xlsx
+	 *
+	 * @return bool  모든 값이 규칙에 맞으면 true. 하나라도 틀리면 false 이고 오류 화면이 나온다.
 	 */
 	protected function checkInput(): bool {
 		$fields = [
 			'page' =>		'ge 1',
 			'filter_set' =>	'in 1',
 			'filter_rst' =>	'in 1',
+			// implode(',', ['host', 'name']) = 'host,name'. 그래서 규칙은 'in host,name' 이 된다.
 			'sort' =>		'in '.implode(',', self::SORT_FIELDS),
 			'sortorder' =>	'in '.ZBX_SORT_UP.','.ZBX_SORT_DOWN
-		// [내보내기] format 파라미터 규칙을 더한다.
+		// [내보내기] format 파라미터 규칙을 더한다. 배열 + 배열 = 두 배열을 합친다.
 		] + self::exportInputFields();
 
+		// 텍스트 필터마다 'filter_<키>' => 'string' 규칙을 넣는다. 예) filter_host, filter_name
 		foreach (array_keys(self::TEXT_FILTERS) as $key) {
 			$fields['filter_'.$key] = 'string';
 		}
@@ -107,18 +148,44 @@ class SampleList extends CController {
 	/**
 	 * [바꿀 곳 ③] 접근 권한. true 를 돌려준 사용자만 화면을 볼 수 있다.
 	 *
-	 *   로그인한 모든 사용자(게스트 제외) : // isGuest(): 로그인하지 않고 들어온 게스트 계정. 게스트도 사용자 유형은 User 라서 따로 막는다.
-		return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
+	 *   로그인한 모든 사용자(게스트 제외) : return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
 	 *   관리자 이상                        : return $this->getUserType() >= USER_TYPE_ZABBIX_ADMIN;
 	 *   Super admin 만                     : return $this->getUserType() == USER_TYPE_SUPER_ADMIN;
 	 *   코어 화면 권한을 따라가기          : return $this->checkAccess(\CRoleHelper::UI_INVENTORY_HOSTS);
 	 *                                        (상수 목록: ui/include/classes/helpers/CRoleHelper.php)
+	 *
+	 * 어느 호스트가 보이는지는 여기서 정하지 않는다. getRows() 의 API 가 사용자 권한에 맞게 걸러 준다.
+	 *
+	 * @return bool  볼 수 있으면 true. false 면 코어가 "접근 권한 없음" 화면을 보여 준다.
 	 */
 	protected function checkPermissions(): bool {
 		// isGuest(): 로그인하지 않고 들어온 게스트 계정. 게스트도 사용자 유형은 User 라서 따로 막는다.
 		return $this->getUserType() >= USER_TYPE_ZABBIX_USER && !CWebUser::isGuest();
 	}
 
+	/**
+	 * 화면을 만드는 본체. 입력 검사와 권한 검사를 통과하면 코어가 부른다.
+	 * 화면(sample.list)과 내보내기(sample.export) 두 액션이 이 메소드를 같이 쓴다.
+	 *
+	 * 하는 일 (아래 코드의 번호와 같다)
+	 *   1) [적용]/[리셋]을 눌렀으면 필터를 저장하거나 지운다. 그 다음 저장된 필터를 읽는다.
+	 *   2) 정렬할 열과 방향을 정한다. 주소에 없으면 지난번 값을 쓴다.
+	 *   3) 행을 만들고 -> 필터로 거르고 -> 정렬한다.
+	 *   4) 내보내기 요청이면 파일로 응답하고 끝낸다.
+	 *   5) 화면이면 페이지 분량만 잘라서 뷰로 넘긴다.
+	 *
+	 * 뷰로 넘기는 $data 의 키
+	 *   action, export_action   화면 / 내보내기 액션 이름
+	 *   title                   화면 제목
+	 *   columns                 열 정의. ['host' => '호스트', 'name' => '이름']   (getColumns())
+	 *   filter                  필터 값. ['host' => 'web', 'name' => '']
+	 *   active_tab              필터 영역이 펼쳐져 있는지 (1 = 펼침)
+	 *   sort, sortorder         정렬 열, 방향('ASC' / 'DESC')
+	 *   paging                  페이지 이동 줄
+	 *   rows                    현재 페이지의 행들
+	 *
+	 * @return void  돌려주는 값은 없다. 결과는 $this->setResponse() 로 코어에 넘긴다.
+	 */
 	protected function doAction(): void {
 		// ── 1) 필터 저장/초기화 ([적용] -> filter_set=1, [리셋] -> filter_rst=1) ──
 		if ($this->hasInput('filter_set')) {
@@ -145,6 +212,7 @@ class SampleList extends CController {
 		}
 
 		// ── 2) 정렬 값 (헤더를 클릭하면 sort / sortorder 가 넘어온다. 마지막 값을 기억한다) ──
+		// getInput('이름', 기본값): 요청에 값이 없으면 기본값. 여기서는 기본값이 "지난번에 저장한 정렬"이다.
 		$sort_field = $this->getInput('sort', CProfile::get(self::PROFILE_PREFIX.'sort', self::SORT_FIELDS[0]));
 		$sort_order = $this->getInput('sortorder', CProfile::get(self::PROFILE_PREFIX.'sortorder', ZBX_SORT_UP));
 
@@ -154,6 +222,7 @@ class SampleList extends CController {
 		// ── 3) 데이터 조회 -> 필터 -> 정렬 ──
 		$rows = $this->getRows();
 		$rows = $this->applyTextFilters($rows, $filter);
+		// 코어의 정렬 도우미. $rows 를 직접 바꾼다. 대소문자를 무시하고 숫자가 섞인 이름(web2 < web10)도 자연스럽게 정렬한다.
 		CArrayHelper::sort($rows, [['field' => $sort_field, 'order' => $sort_order]]);
 
 		// [바꿀 곳 ④] 화면 제목. 영어로 적고 lang/ko.php 에 한국어를 넣는다.
@@ -200,6 +269,8 @@ class SampleList extends CController {
 	 *
 	 *   키 = 행 배열의 키,  값 = 제목
 	 *   숫자 열은 'used' => ['label' => '사용량', 'type' => 'number'] 처럼 적으면 엑셀에 숫자로 들어간다.
+	 *
+	 * @return array  [행의 키 => 제목]. 예) ['host' => '호스트', 'name' => '이름']
 	 */
 	private static function getColumns(): array {
 		return [
@@ -220,8 +291,16 @@ class SampleList extends CController {
 	 *          dbConditionId('컬럼', $id배열) 을 쓴다. (사용 예: includes/ItsmRepository.php)
 	 *
 	 * 로직이 길어지면 includes/ 에 클래스를 만들어 옮긴다. (예: includes/SwInventoryService.php)
+	 *
+	 * @return array  행 1개 = 호스트 1대.
+	 *   [
+	 *     'hostid' => '10084',
+	 *     'host'   => 'web-server-01',     // 호스트 이름(기술 이름)
+	 *     'name'   => '웹 서버 1호기'      // 표시 이름
+	 *   ]
 	 */
 	private function getRows(): array {
+		// host.get 의 output: 받을 필드만 적는다. 적지 않으면 모든 필드가 와서 느려진다.
 		$hosts = API::Host()->get([
 			'output' => ['hostid', 'host', 'name']
 		]);
@@ -241,6 +320,14 @@ class SampleList extends CController {
 
 	/**
 	 * 텍스트 필터 적용. 입력한 글자가 해당 컬럼에 "포함"되어 있으면 남긴다. (대소문자 무시)
+	 * 필터를 여러 개 입력하면 모두 만족하는 행만 남는다. 빈 필터는 건너뛴다.
+	 *
+	 * 예) $filter = ['host' => 'web', 'name' => '']  ->  host 에 'web' 이 들어 있는 행만 남는다. ('WEB-01' 도 남는다)
+	 *
+	 * @param array $rows    getRows() 의 결과.
+	 * @param array $filter  [필터 키 => 입력한 글자]. 키는 TEXT_FILTERS 의 키와 같다.
+	 *
+	 * @return array  남은 행. 번호는 0 부터 다시 매겨진다.
 	 */
 	private function applyTextFilters(array $rows, array $filter): array {
 		foreach (self::TEXT_FILTERS as $key => $column) {
