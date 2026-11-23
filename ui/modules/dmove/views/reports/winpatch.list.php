@@ -1,8 +1,44 @@
 <?php declare(strict_types = 0);
 /*
- * 윈도우즈 패치 현황 화면.
+ * 윈도우즈 패치 현황 화면의 뷰. (화면을 그리는 파일)
  *
  * 컨트롤러: actions/reports/winpatch/WinPatchList.php
+ *
+ * ── 이 파일이 하는 일 ──
+ *   컨트롤러가 조회해서 넘긴 값($data)으로 필터와 표를 조립해서 화면에 출력한다.
+ *   여기서는 DB 나 API 를 읽지 않는다.
+ *
+ *   화면 : zabbix.php?action=winpatch.list
+ *
+ * ── 화면 구성 ──
+ *   제목 오른쪽 : [CSV 내보내기] [Excel 내보내기]
+ *   필터        : 호스트 그룹, 호스트 (선택창), HotFix ID(입력), 수집월(날짜 입력 + 달력)
+ *   경고 상자   : 아이템 키 설정(conf/winpatch.conf.php)이 비어 있을 때만 나온다
+ *   표          : 호스트(정렬 가능), IP, Description, 패치 파일명("상세보기" 링크)
+ *                 "상세보기" 를 누르면 그 호스트의 패치 상세정보 팝업이 뜬다
+ *
+ * ── 받는 값 ($data) ──
+ *   action          이 화면의 액션 이름. 'winpatch.list'
+ *   export_action   내보내기 액션 이름. 'winpatch.export'
+ *   detail_action   상세보기 팝업의 액션 이름. 'winpatch.detail'
+ *   title           화면 제목
+ *   columns         열 제목. ['name' => .., 'ip' => .., 'description' => ..]
+ *   active_tab      필터가 펼쳐져 있는지 (지난번 상태)
+ *   host_filter     호스트 그룹/호스트 선택창에 표시할 값. HostFilter::toViewData() 의 결과
+ *   filter          ['hotfixid' => '', 'month' => '2026-10-01']
+ *   sort            현재 정렬 열
+ *   sortorder       현재 정렬 방향. 'ASC' 또는 'DESC'
+ *   config_missing  true 면 아이템 키 설정이 비어 있다 (경고 상자를 띄운다)
+ *   paging          페이지 번호 줄
+ *   rows            [['hostid' => .., 'name' => .., 'ip' => .., 'description' => ..], ...]
+ *
+ * ── 관련 파일 ──
+ *   actions/reports/winpatch/WinPatchList.php     컨트롤러
+ *   views/js/reports/winpatch.list.js.php         "상세보기" 를 누르면 팝업을 여는 스크립트
+ *   actions/reports/winpatch/WinPatchDetail.php   상세보기 팝업 컨트롤러
+ *   views/reports/winpatch.detail.php             상세보기 팝업 내용
+ *   includes/filter/HostFilter.php                호스트 그룹/호스트 선택 필터 (여러 화면 공용)
+ *   conf/winpatch.conf.php                        아이템 키, 열 이름 설정
  *
  * @var CView $this
  * @var array $data
@@ -38,19 +74,26 @@ $filter_form = HostFilter::addRows(new CFormList(), $data['host_filter'])
 			->setPlaceholder(_('YYYY-MM-DD'))
 	);
 
+// CFilter: 화면 위쪽의 접었다 펼 수 있는 필터 상자. [적용] / [초기화] 버튼은 CFilter 가 만들어 준다.
 $filter = (new CFilter())
+	// [초기화] 버튼이 이동할 주소. CFilter 가 filter_rst=1 을 붙여 준다.
 	->setResetUrl((new CUrl('zabbix.php'))->setArgument('action', $data['action']))
+	// 필터 접힘/펼침 상태를 저장할 프로파일 키. 컨트롤러의 PROFILE_PREFIX.'filter' 와 같아야 한다.
 	->setProfile('web.dmove.winpatch.filter')
 	->setActiveTab($data['active_tab'])
+	// [적용] 을 눌렀을 때 같은 액션으로 돌아오도록 숨은 값으로 넣는다.
 	->addVar('action', $data['action'])
 	->addFilterTab(_('Filter'), [$filter_form]);
 
 // ── 2) 표 ───────────────────────────────────────────────────────────────────
 
+// 정렬 헤더가 만들 링크의 기준 주소. 예) zabbix.php?action=winpatch.list
 $view_url = (new CUrl('zabbix.php'))
 	->setArgument('action', $data['action'])
 	->getUrl();
 
+// make_sorting_header(제목, 정렬 키, 현재 정렬 키, 현재 방향, 이 화면 주소): 코어 함수. 누르면 정렬되는 제목 칸을 만든다.
+// 앞의 세 열 제목은 컨트롤러 getColumns() 의 값을 쓴다. 내보내기 파일도 같은 제목을 쓴다.
 $table = (new CTableInfo())
 	->setHeader([
 		make_sorting_header($data['columns']['name'], 'name', $data['sort'], $data['sortorder'], $view_url),
@@ -84,6 +127,8 @@ $html_page = (new CHtmlPage())
 	->setControls(ExportButtons::create($data['export_action']))
 	->addItem($filter);
 
+// 설정이 비어 있으면 노란 경고 상자로 어느 파일을 채워야 하는지 알려 준다.
+// makeMessageBox(종류, 상세 목록, 제목 글자, 닫기 버튼 여부): 코어 함수.  %1$s 자리에 파일 이름이 들어간다.
 if ($data['config_missing']) {
 	$html_page->addItem(
 		makeMessageBox(ZBX_STYLE_MSG_WARNING, [], Lang::t('Settings are required: %1$s', 'conf/winpatch.conf.php'),

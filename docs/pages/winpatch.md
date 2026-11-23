@@ -106,7 +106,8 @@ WIN-A02    | 10.0.0.2 | 백업 서버       | 상세보기
    1. `isConfigured()` 가 거짓(아이템 키가 빈 문자열)이면 바로 빈 배열.
    2. **패치 아이템 찾기.**
       ```php
-      $items = API::Item()->get(HostFilter::toApiOptions($host_filter) + [
+      $host_options = HostFilter::toApiOptions($host_filter);   // API 호출 앞에서 변수에 담는다
+      $items = API::Item()->get($host_options + [
           'output' => ['itemid', 'hostid', 'value_type'],
           'filter' => ['key_' => $this->config['item_key']]
       ]);
@@ -244,12 +245,20 @@ http://support.microsoft.com/?kbid=4601060  WIN-A01  Update                     
 | 값 읽기 | 윈도우 트레잇(`...Windows.php`)이 `history_str` / `history_text` 테이블을 SQL 로 직접 읽었다. 아이템ID를 글자로 이어 붙인 `IN (...)`, 파일/버전 쿼리는 기간 조건도 없이 그 아이템의 이력 **전부**를 읽었다 | `history.get` API, 호스트 1개당 1건(`limit 1`) | 직접 SQL 제거, 권한 적용, 느려짐 방지. 7버전은 이력 저장소가 바뀔 수 있어(TimescaleDB 등) API 가 안전 |
 | 그 달의 어느 값 | 그 달 이력을 `[clock => 값]` 으로 모은 뒤 `$str[0]` (첫 번째). 정렬 조건이 없어 DB 가 준 순서의 첫 값이다 (보통 가장 오래된 값으로 보이나 확인 필요) | 그 달의 **가장 최근** 값 | "그 달 말 기준 설치 상태"가 업무 의미에 맞다고 보았다. 한 달에 여러 번 수집하면 5버전과 다른 값이 나올 수 있다 |
 | 기간 끝 | `clock < 그달 말일 23:59:59` (마지막 1초 빠짐) | `time_till` = 그달 말일 23:59:59 포함 | 사소한 경계 오류 수정 |
-| 상세 표 만들기 | 빈칸으로 나눠서 빈 열이 있으면 값이 앞으로 당겨졌다 (InstalledBy 가 빈 줄은 날짜가 InstallDate 열에 표시) | 제목 줄의 열 위치로 잘라 제 열에 넣는다 | 표시 오류 수정 |
+| 상세 표 만들기 | 빈칸을 밑줄로 바꾼 뒤 긴 밑줄 묶음을 구분자로 바꾸고, 줄을 뒤집어 한 번 더 처리하는 방식으로 열을 나눴다. 빈 열이 있으면 값이 앞으로 당겨졌다 (InstalledBy 가 빈 줄은 날짜가 InstallDate 열에 표시) | 제목 줄의 열 위치로 잘라 제 열에 넣는다 | 표시 오류 수정 |
 | [상세보기] 링크 | 그 달 값이 있을 때만 "상세보기", 없으면 빨간 "없음" + 풍선 도움말 "호스트(ID)에 item이 없습니다." | 모든 줄이 "상세보기". 값이 없으면 팝업 표가 빈다 | 목록에서 값을 미리 읽지 않기 위해서 (8장 제안 참고) |
 | 팝업 호출 | `PopUp("popup.windows", {hostid, itemid, from}, null, this)` (화면의 onclick 속성) | `PopUp('winpatch.detail', {hostid, month}, {...})` (화면 전용 스크립트) | itemid 를 받지 않고 서버에서 다시 찾는다. 주소를 조작해 남의 아이템을 보는 일을 막는다. 7버전 `PopUp()` 의 세 번째 인자가 옵션 객체로 바뀌었다 |
 | IP | `API::HostInterface()->get()` 의 첫 번째 인터페이스 IP (인터페이스가 없으면 PHP 경고) | `HostHelper::mainIp()` : 에이전트 기본 인터페이스 우선 | 대표 IP 를 일정하게, 경고 없이 |
 | 설명 | ITSM 설명 (`itsm_description()`) | ITSM 설명, 없으면 Zabbix 호스트 설명 | 빈칸 줄이기 |
-| HotFix ID, 수집월 기본값 | 컨트롤러 소스 미확인 | 그 달 값에 글자가 들어 있는 호스트 / 지난달 1일 | 가정 (7장) |
+| 수집월 기본값 | 지난달 1일 (`first day of -1 month`). 컨트롤러에서 확인 (2026-11-23) | 지난달 1일 | 같음 |
+| HotFix ID 필터 | 필터 트레잇의 `filtering("hotfixid", 'patch', ...)` 로 행의 `patch` 열을 부분 일치로 걸렀다. `patch` 열에 무엇이 들어 있는지는 윈도우 트레잇을 받아야 안다 | 그 달의 가장 최근 값(패치 목록 글 전체)에 입력 글자가 들어 있는 호스트 | 부분 일치인 것은 같다. 비교 대상 열은 미확인 (7장) |
+| 목록에 나오는 호스트 | 필터에 맞는 호스트 중 **인벤토리 OS 에 windows 가 들어간 호스트** (`host_inventory` 를 직접 조회, 대소문자 무시) | **패치 아이템을 가진 호스트** | 7버전 방식은 인벤토리가 비어 있어도 나온다. 반대로 패치 아이템이 없는 윈도우 서버는 5버전에서는 "없음"으로 나왔지만 7버전에서는 목록에 없다 (8장 제안) |
+| 목록 정렬 | `name`, `patchfile`, `patch` | 호스트 이름 | 5버전의 `patchfile`, `patch` 열 값은 윈도우 트레잇을 받아야 안다 |
+| 목록의 열 구성 | 규칙 파일 `conf/rules/windows.json` 에서 읽었다 (받지 못함) | 뷰에 직접 | - |
+| 팝업이 읽는 값 | `history_text` 에서 그 달의 **값이 비어 있지 않은 가장 최근 1건** (`order by clock desc limit 1`). 컨트롤러에서 확인 (2026-11-23) | 그 달의 가장 최근 1건 | 같음. 목록 쪽(위 "그 달의 어느 값" 줄)만 첫 번째 값이었다. 빈 값이 가장 최근이면 7버전은 빈 표가 나온다 (드문 경우) |
+| 팝업의 쿼리 | 주소로 받은 `itemid` 를 검사 없이 SQL 에 이어 붙였고, 스키마 이름이 고정이었다 | `history.get` API, itemid 를 받지 않음 | SQL 인젝션과 스키마 의존 제거 |
+| 팝업 표의 순서 | `InstalledOn` 열로 내림차순 정렬 (글자 비교라서 `월/일/년` 형식에서는 날짜순이 아니다) | 파일에 적힌 순서 그대로 | 5버전 정렬이 날짜순이 아니어서 옮기지 않았다. 필요하면 날짜로 바꿔 정렬 (8장) |
+| 팝업 제목 | "Windows 패치 상세정보" | "Windows 패치 상세정보: 호스트 이름" | 어느 서버인지 보이게 |
 | 내보내기 | CSV | CSV, Excel | 공통 개선 |
 
 ## 6. 설정
@@ -272,13 +281,13 @@ http://support.microsoft.com/?kbid=4601060  WIN-A01  Update                     
 | 항목 | 지금 구현 (가정) | 확인할 5버전 파일 | 다르면 고칠 곳 |
 |---|---|---|---|
 | `TODO(고객환경)` 아이템 키 | 빈 값 | 키 클래스 `patchFile()`, 고객 서버의 아이템 | `conf/winpatch.conf.php` |
-| HotFix ID 필터의 의미 | 그 달의 가장 최근 값 안에 입력 글자가 (대소문자 무시) 들어 있는 호스트만 | 윈도우 패치 컨트롤러 | `WinPatchService::getRows()` 2) |
-| 수집월 기본값 | 지난달 1일 | 같은 컨트롤러 | `WinPatchList::doAction()` 2) |
-| 목록에 나오는 호스트 | 패치 아이템이 있는 호스트 전부 (그 달 값이 없어도) | 같은 컨트롤러 | `WinPatchService::getRows()` |
+| HotFix ID 필터의 의미 | 그 달의 가장 최근 값 안에 입력 글자가 (대소문자 무시) 들어 있는 호스트만. 5버전도 부분 일치였으나 비교 대상(`patch` 열)의 내용은 미확인 | 윈도우 트레잇(`...Windows.php`)의 `middle_patchFile()` 등, 필터 트레잇(`...Filter.php`) | `WinPatchService::getRows()` 2) |
+| 수집월 기본값 | 지난달 1일. 5버전 컨트롤러와 같음 (확인 끝, 2026-11-23) | - | - |
+| 목록에 나오는 호스트 | 패치 아이템이 있는 호스트 전부 (그 달 값이 없어도). 5버전은 인벤토리 OS 에 windows 가 들어간 호스트였다 (5장). 어느 쪽으로 할지 합의 필요 | - | `WinPatchService::getRows()` |
 | 값의 형식 | 첫 줄이 `Caption CSName Description ...` 인 칸 맞춤 표 | 고객 서버의 최신 데이터 화면에서 그 아이템 값 열어 보기 | `conf/winpatch.conf.php` 의 `columns`, `WinPatchService::parse()` |
 | 글자 폭 | 열 위치를 **글자 수**로 센다 (`mb_substr`). 값 안에 한글이 있고 파일이 바이트 기준으로 줄 맞춤되어 있으면 어긋날 수 있다 (확인 필요) | 위와 같음 | `parse()` |
 
-5버전 트레잇에 있던 `middle_patchVersion`(패치 버전), `patch_version` 은 5버전 화면 열에 없어서 옮기지 않았다. 5버전 "윈도우 전체"(`windowsall`, `popup.windows.all`) 화면은 아예 없다 (`UNIMPLEMENTED.md` 4장).
+5버전 트레잇에 있던 `middle_patchVersion`(패치 버전), `patch_version` 은 5버전 화면 열에 없어서 옮기지 않았다. 5버전 "윈도우 전체"(`windowsall`, `popup.windows.all`) 화면은 아예 없다. 5버전 액션 목록에 "임시 라우터"라고 적혀 있고, 팝업은 기간 조건 없이 아이템 값 1건을 보여 준다. 쓰는 화면인지부터 확인한다 (`UNIMPLEMENTED.md` 2장).
 
 ## 8. 개선점
 

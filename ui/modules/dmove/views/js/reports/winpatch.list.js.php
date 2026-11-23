@@ -4,6 +4,20 @@
  *
  * 불러오는 곳: views/reports/winpatch.list.php 의 $this->includeJsFile('reports/winpatch.list.js.php')
  *
+ * 하는 일: 표의 "상세보기" 링크를 누르면 그 호스트의 패치 상세정보 팝업을 연다.
+ *
+ * ── 동작 순서 ──
+ *   1) 뷰가 화면 맨 끝에서 dmoveWinPatchList.init({detail_action: 'winpatch.detail', month: '필터의 수집월'}) 을 부른다.
+ *   2) init() 이 화면 전체에 클릭 감시를 건다.
+ *   3) 사용자가 상세보기 링크를 누른다. 링크의 data-hostid 값(호스트 ID)을 읽는다.
+ *   4) 코어 함수 PopUp() 이 zabbix.php?action=winpatch.detail&hostid=..&month=.. 를 호출한다.
+ *   5) 응답(JSON 의 header, body, buttons)으로 팝업 창이 그려진다.
+ *
+ * ── 관련 파일 ──
+ *   views/reports/winpatch.list.php               링크를 그리고 init() 을 부르는 뷰
+ *   actions/reports/winpatch/WinPatchDetail.php   팝업 컨트롤러
+ *   views/reports/winpatch.detail.php             팝업 내용(JSON)을 만드는 뷰
+ *
  * 화면 전용 스크립트 파일 규칙
  *   - 위치: views/js/<카테고리>/  파일 이름: <뷰 이름>.js.php
  *   - 내용 전체를 <script> 태그로 감싼다. 이 파일의 내용이 화면 HTML 안에 그대로 들어간다.
@@ -20,6 +34,8 @@
 		 *
 		 * @param {string} detail_action  상세보기 팝업의 액션 이름. (winpatch.detail)
 		 * @param {string} month          필터의 수집월 날짜. (YYYY-MM-DD)
+		 *
+		 * init({detail_action, month}) 의 중괄호: 객체로 넘어온 인자에서 두 값만 꺼내 쓰는 자바스크립트 문법이다.
 		 */
 		init({detail_action, month}) {
 			/*
@@ -37,6 +53,8 @@
 				/*
 				 * PopUp(액션, 넘길 값, 옵션): 코어 함수. 액션을 호출해서 받은 내용을 팝업 창으로 띄운다.
 				 *   link.dataset.hostid : 링크의 data-hostid 속성 값.
+				 *   month               : init() 이 받은 수집월. 화면의 필터와 같은 달의 패치를 보여 주기 위해 같이 넘긴다.
+				 *   dialogue_class      : 팝업 창에 붙일 CSS 클래스. modal-popup-generic 은 코어의 일반 팝업 모양이다.
 				 *   trigger_element     : 팝업을 닫았을 때 커서(포커스)를 돌려줄 요소.
 				 */
 				PopUp(detail_action, {hostid: link.dataset.hostid, month: month}, {
