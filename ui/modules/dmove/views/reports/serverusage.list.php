@@ -15,7 +15,7 @@
  *          zabbix.php?action=highserver.list   (고사용 서버)
  *
  * ── 화면 구성 ──
- *   제목 오른쪽 : [CSV 내보내기] [Excel 내보내기]
+ *   제목 오른쪽 : [CSV 내보내기] [기준설정]
  *   필터 왼쪽   : 호스트 그룹, 호스트 (선택창)
  *   필터 오른쪽 : 시작일, 종료일, 시간대(업무시간 / 업무 외 시간 / 전체 시간)
  *   경고 상자   : 아이템 키 설정(conf/serverusage.conf.php)이 비어 있을 때만 나온다
@@ -55,10 +55,15 @@
  * @var array $data
  */
 
-use Modules\DMove\Includes\Export\ExportButtons;
 use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\Lang;
 use Modules\DMove\Includes\ServerUsageService;
+
+/*
+ * 이 화면 전용 스크립트를 불러온다. ([기준설정] 창을 열고 저장하는 코드가 들어 있다)
+ * 스크립트 파일은 views/js/ 아래에 두고, 그 폴더를 기준으로 한 경로를 적는다.
+ */
+$this->includeJsFile('reports/serverusage.list.js.php');
 
 // ── 1) 필터 영역 ────────────────────────────────────────────────────────────
 
@@ -164,8 +169,29 @@ foreach ($data['rows'] as $row) {
 
 $html_page = (new CHtmlPage())
 	->setTitle($data['title'])
-	// 제목 오른쪽: [CSV 내보내기] [Excel 내보내기]. 현재 필터/정렬 그대로 전체 행을 내려받는다.
-	->setControls(ExportButtons::create($data['export_action']))
+	/*
+	 * 제목 오른쪽: [CSV 내보내기] [기준설정]. (5버전 화면과 같은 구성)
+	 *   CSV 내보내기 : 현재 필터/정렬 그대로 전체 행을 내려받는다.
+	 *   기준설정     : 누르면 스크립트(views/js/reports/serverusage.list.js.php)가 "수집기준 설정" 창을 연다.
+	 *                  js-serverusage-threshold 는 스크립트가 이 버튼을 찾는 표시다.
+	 *
+	 * 다른 화면은 ExportButtons::create() 로 내보내기 버튼만 만든다. 이 화면은 버튼이 하나 더 있어서
+	 * 같은 모양(<nav><ul>버튼들</ul></nav>)을 직접 만든다.
+	 *   CRedirectButton : 누르면 주어진 주소로 이동하는 버튼. 응답이 파일이라 화면은 그대로 있고 다운로드만 된다.
+	 *   CSimpleButton   : 누르면 스크립트가 처리하는 일반 버튼.
+	 */
+	->setControls(
+		(new CTag('nav', true, (new CList())
+			->addItem(
+				(new CRedirectButton(_('Export to CSV'),
+					(new CUrl('zabbix.php'))
+						->setArgument('action', $data['export_action'])
+						->setArgument('format', 'csv')
+				))->setId('export_csv')
+			)
+			->addItem((new CSimpleButton(Lang::t('Criteria settings')))->addClass('js-serverusage-threshold'))
+		))->setAttribute('aria-label', _('Content controls'))
+	)
 	->addItem($filter);
 
 if ($data['config_missing']) {
@@ -186,4 +212,16 @@ $html_page
 	// 표 위 오른쪽의 판정 기준 안내문. dm-criteria 는 assets/css/dmove.css 에 있다.
 	->addItem((new CDiv($data['criteria']))->addClass('dm-criteria')->addClass(ZBX_STYLE_RED))
 	->addItem($table)
+	->show();
+
+/*
+ * 스크립트에 값을 넘기고 시작시킨다.
+ *   json_encode : PHP 값을 자바스크립트가 읽을 수 있는 글자로 바꾼다.
+ *   setOnDocumentReady : 화면이 다 그려진 뒤에 실행한다.
+ */
+(new CScriptTag('dmoveServerUsageList.init('.json_encode([
+	'threshold_action' => 'serverusage.threshold',
+	'save_action' => 'serverusage.threshold.save'
+]).');'))
+	->setOnDocumentReady()
 	->show();

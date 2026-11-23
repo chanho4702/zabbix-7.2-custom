@@ -35,9 +35,9 @@
  *
  * ── 5버전과 달라진 점 ──
  *   - 평균/Peak 계산을 추가 테이블 없이 한다. (includes/ServerUsageService.php 머리말 참고)
- *   - [기준설정] 버튼은 옮기지 않았다. 기준 값은 conf/serverusage.conf.php 에 있다.
+ *   - [기준설정] 버튼은 사용자별 값으로 옮겼다 (includes/ServerUsageThresholds.php). 값이 없으면 conf/serverusage.conf.php 의 기본값.
  *   - Description 은 ITSM 값을 먼저 쓰고, 없으면 Zabbix 호스트 설명을 쓴다. (5버전은 ITSM 값만 썼다)
- *   - Excel 내보내기가 추가됐다.
+ *   - 내보내기는 CSV 만 (5버전과 같다).
  *
  * ── 이 화면들에 속한 파일 ──
  *   actions/reports/serverusage/ServerUsageController.php   공통 컨트롤러 (이 파일)
@@ -67,6 +67,7 @@ use Modules\DMove\Includes\HostHelper;
 use Modules\DMove\Includes\ItsmRepository;
 use Modules\DMove\Includes\Lang;
 use Modules\DMove\Includes\ServerUsageService;
+use Modules\DMove\Includes\ServerUsageThresholds;
 
 abstract class ServerUsageController extends CController {
 
@@ -205,7 +206,11 @@ abstract class ServerUsageController extends CController {
 
 		// 인자 없이 만들면 CPU 사용률을 집계한다. (includes/ServerUsageService.php)
 		$service = new ServerUsageService();
-		$thresholds = $service->getThresholds();
+		/*
+		 * 판정 기준값. 사용자가 [기준설정] 창에서 바꾼 값이 있으면 그 값, 없으면 설정 파일의 기본값이다.
+		 * (5버전도 사용자별 프로파일에서 읽고, 없으면 기본값을 썼다. includes/ServerUsageThresholds.php)
+		 */
+		$thresholds = ServerUsageThresholds::get($service->getThresholds());
 
 		// 날짜를 입력했는데 형식이 틀리면 true. 조회하지 않고 화면에 이유를 보여 준다. (저장값은 비워서 다음부터는 기본 기간)
 		$invalid_date = false;
