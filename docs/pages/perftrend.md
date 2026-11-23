@@ -46,7 +46,7 @@
 | 제목 오른쪽 | [CSV 내보내기] |
 | 표 | 없음 |
 
-이 구성은 Zabbix 5.0 대시보드 "그래프" 위젯(코어 `svggraph`)의 설정 폼과 같다. 5버전은 위젯 설정 폼을 독립 화면으로 꺼내고 CSV 내보내기를 붙인 것으로 보인다.
+이 구성은 Zabbix 5.0 대시보드 "그래프" 위젯(코어 `svggraph`)의 설정 폼과 같다. 5버전 소스에서 확인한 결과(2026-11-23), 코어의 대시보드/위젯 컨트롤러를 복사해 독립 화면으로 만들고 CSV 내보내기를 붙인 것이 맞다 (5장).
 
 ```
 데이터 추세 분석                                         [CSV 내보내기]
@@ -120,7 +120,8 @@ API 호출, SQL, 계산이 없다.
 |---|---|---|---|
 | 화면 | 그래프 + 데이터 셋 편집기 + 기간 탭 | 빈 페이지 | 방향 결정 전 |
 | 그래프 | 5.0 그래프 위젯과 같은 SVG 그래프 | 없음 | (가) 를 고르면 7버전 그래프 위젯이 같은 일을 한다 |
-| CSV 내보내기 | 있음 (열 구성 확인 못 함) | 없음 | |
+| CSV 내보내기 | 있음. 같은 컨트롤러(`CControllerDataAnalysis`)가 `data.analysis.csv` 액션으로도 불린다. 화면에서 넘어온 데이터 셋 설정으로 아이템을 찾고 이력/트렌드 표를 SQL 로 직접 읽어 CSV 를 만든다 | 없음 | 요청값으로 SQL 을 만드는 방식이라 그대로 옮기면 안 된다 |
+| 구조 | 액션 4개: `data.analysis`(화면), `data.analysis.edit`(코어 위젯 편집 컨트롤러 재사용), `widget.data.analysis.svggraph.view`(그래프 그리기, 코어 그래프 위젯 컨트롤러 복사본), `data.analysis.csv`. 화면 컨트롤러 안에는 코어 대시보드 불러오기 코드가 주석 처리된 채 남아 있다 | 빈 페이지 1개 | 5.0 코어 코드를 복사한 것이라 7.0 에서는 그대로 쓸 수 없다 (위젯이 모듈 구조로 바뀜) |
 | 설정 항목 | 호스트/아이템 패턴, 색, 형식, 너비, 투명도, 채우기, 결손 데이터, Y축, 타임 시프트, 집계 | 없음 | 7버전 그래프 위젯에 모두 있다 |
 | 액션 이름 | `data.analysis` | `perftrend.list` | 5버전 주소를 다른 곳에서 링크하고 있으면 맞춰야 한다 (CHECKLIST 6-6) |
 
@@ -133,9 +134,9 @@ API 호출, SQL, 계산이 없다.
 | 구분 | 내용 | 확인할 5버전 파일 / 정보 | 고칠 곳 |
 |---|---|---|---|
 | 방향 결정 | 대시보드 "그래프" 위젯으로 대체할지(권장), 독립 화면으로 만들지 | 사용자에게 CSV 가 꼭 필요한지, 무엇을 보는 데 쓰는지 | `actions/reports/perftrend/PerfTrendList.php` 머리말 TODO (UNIMPLEMENTED 2장, CHECKLIST 3-4) |
-| 독립 화면이면 | 컨트롤러, CSV 열 구성, 집계 방식, [기간] 탭 내용, 설정 저장 방식 | `data.analysis` 컨트롤러와 뷰 | `PerfTrendList::doAction()`, `views/reports/perftrend.list.php` 의 TODO |
+| 독립 화면이면 | 컨트롤러와 뷰 소스는 받았다 (2026-11-23). 5.0 코어 위젯 코드에 기대고 있어 7.0 용으로 새로 짜야 한다. CSV 열 구성과 집계 방식은 받은 소스를 기준으로 다시 정리해야 한다 | `CControllerDataAnalysis.php`, `monitoring.data.analysis.php`, `CControllerWidgetSvgGraphView.php` (받음) | `PerfTrendList::doAction()`, `views/reports/perftrend.list.php` 의 TODO |
 | TODO(고객환경) | 권한 정책 | 5버전 메뉴 권한 (`src/menu.inc.php`) | `PerfTrendList::checkPermissions()` |
-| 가정 | 5버전 화면은 그래프 위젯 폼을 꺼낸 것 | 화면 구성으로 판단. 소스는 확인 못 함 | - |
+| 확인됨 | 5버전 화면은 코어 그래프 위젯 코드를 복사해 독립 화면으로 만든 것 | 5버전 소스에서 확인 (2026-11-23) | - |
 
 ## 8. 개선점
 
