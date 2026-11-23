@@ -233,7 +233,8 @@ class WinPatchService {
 
 		return [
 			'host' => $hosts[0]['name'],
-			'rows' => $value !== null ? $this->parse($value) : []
+			// 5버전 팝업처럼 설치일(InstalledOn) 최근 순으로 정렬한다.
+			'rows' => $value !== null ? self::sortByInstalledOn($this->parse($value)) : []
 		];
 	}
 
@@ -265,6 +266,29 @@ class WinPatchService {
 		]);
 
 		return $history ? (string) $history[0]['value'] : null;
+	}
+
+	/**
+	 * 상세 표의 줄을 설치일(InstalledOn) 최근 순으로 정렬한다. (5버전 popup.windows.php: order_result($info, "InstalledOn", "desc"))
+	 *
+	 * 5버전은 "10/13/2026" 같은 글자를 글자 순서로 정렬해서 월/일이 섞여 틀렸다. (예: 9/30 이 10/13 보다 뒤로 감)
+	 * 여기서는 날짜로 바꿔 비교한다. 날짜로 읽을 수 없는 값(빈칸 등)은 맨 뒤로 보낸다.
+	 *
+	 *   strtotime('10/13/2026') : 미국식 월/일/년 날짜를 유닉스 초로 바꾼다. 읽을 수 없으면 false.
+	 *   usort + <=>              : 큰 값(최근)이 앞으로 오게 비교한다.
+	 *
+	 * @param array $rows  parse() 의 결과. [['InstalledOn' => '10/13/2026', ...], ...]
+	 */
+	private static function sortByInstalledOn(array $rows): array {
+		$time = static function (array $row): int {
+			$ts = strtotime(trim((string) ($row['InstalledOn'] ?? '')));
+
+			return $ts === false ? PHP_INT_MIN : $ts;
+		};
+
+		usort($rows, static fn(array $a, array $b): int => $time($b) <=> $time($a));
+
+		return $rows;
 	}
 
 	/**

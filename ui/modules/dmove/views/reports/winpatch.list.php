@@ -11,7 +11,7 @@
  *   화면 : zabbix.php?action=winpatch.list
  *
  * ── 화면 구성 ──
- *   제목 오른쪽 : [CSV 내보내기] [Excel 내보내기]
+ *   제목 오른쪽 : [CSV 내보내기]
  *   필터        : 호스트 그룹, 호스트 (선택창), HotFix ID(입력), 수집월(날짜 입력 + 달력)
  *   경고 상자   : 아이템 키 설정(conf/winpatch.conf.php)이 비어 있을 때만 나온다
  *   표          : 호스트(정렬 가능), IP, Description, 패치 파일명("상세보기" 링크)
