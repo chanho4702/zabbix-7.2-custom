@@ -2,6 +2,15 @@
 /*
  * OS / WEB / WAS / DB / 이중화 솔루션 값을 결정한다.
  *
+ * ── 이 파일이 하는 일 ──
+ *   SW 인벤토리 화면의 한 행에 표시할 다섯 가지 값(os, web, was, db, duplex)을 정한다.
+ *   ITSM 행에 값이 있으면 그것을 쓰고, 없으면 Zabbix 호스트 인벤토리의 값을 쓴다.
+ *
+ * ── 누가 쓰는가 ──
+ *   includes/SwInventoryService.php 한 곳.
+ *     getInventoryFields()  DB 에서 읽을 인벤토리 열을 정할 때
+ *     resolve()             행을 만들 때 (행마다 한 번)
+ *
  * 5버전 대응: 인벤토리 트레잇(...Inventoris.php)의 middle_inventory()
  *
  * 값의 출처는 Zabbix 호스트 인벤토리다. 어느 컬럼이 어느 인벤토리 필드인지는 아래 INVENTORY_FIELDS 에 있다.
@@ -42,7 +51,15 @@ class SoftwareResolver {
 	];
 
 	/**
-	 * host.get 의 selectInventory 에 넘길 인벤토리 필드 목록.
+	 * 읽어야 하는 인벤토리 필드 이름 목록. INVENTORY_FIELDS 의 오른쪽 값만 모은 것이다.
+	 *
+	 * SwInventoryService::fetchAllHosts() 가 이 목록으로 host_inventory 표에서 읽을 열을 정한다.
+	 * (host.get 을 쓴다면 selectInventory 옵션에 그대로 넘길 수 있는 형태다)
+	 *
+	 *   array_unique : 같은 필드가 두 번 있으면 하나만 남긴다.
+	 *   array_values : 키를 0 부터 다시 매긴다.
+	 *
+	 * @return array  ['os', 'software_app_a', 'software_app_b', 'software_app_c', 'software_app_d']
 	 */
 	public function getInventoryFields(): array {
 		return array_values(array_unique(self::INVENTORY_FIELDS));
@@ -51,15 +68,19 @@ class SoftwareResolver {
 	/**
 	 * 한 행의 os/web/was/db/duplex 값을 만든다.
 	 *
+	 * 값마다 순서대로 찾는다: 1순위 ITSM 행의 값 -> 2순위 Zabbix 호스트 인벤토리 -> 둘 다 없으면 빈 문자열.
+	 *
+	 * 예) ITSM 행에 os 가 없고 호스트 인벤토리의 os 가 'Linux' 이면 -> ['os' => 'Linux', 'web' => '', ...]
+	 *
 	 * @param array      $itsm_row  ItsmRepository::fetch() 의 행.
-	 * @param array|null $zbx_host  매칭된 Zabbix 호스트(host.get 결과). 매칭이 안 됐으면 null.
+	 * @param array|null $zbx_host  매칭된 Zabbix 호스트(host.get 결과와 같은 모양). 매칭이 안 됐으면 null.
 	 *
 	 * @return array  ['os' => '', 'web' => '', 'was' => '', 'db' => '', 'duplex' => '']
 	 */
 	public function resolve(array $itsm_row, ?array $zbx_host): array {
 		$values = [];
 
-		// 인벤토리가 비활성인 호스트는 host.get 이 inventory 를 빈 배열로 준다.
+		// 인벤토리가 비활성인 호스트는 inventory 가 빈 배열이다. (host.get 도, SwInventoryService::fetchAllHosts() 도 그렇게 준다)
 		$inventory = ($zbx_host !== null && is_array($zbx_host['inventory'] ?? null)) ? $zbx_host['inventory'] : [];
 
 		foreach (self::INVENTORY_FIELDS as $column => $inventory_field) {

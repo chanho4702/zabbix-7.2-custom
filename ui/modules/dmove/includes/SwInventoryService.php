@@ -2,11 +2,36 @@
 /*
  * SW 인벤토리 화면의 데이터 처리(조회 -> 매칭 -> 필터 -> 정렬).
  *
+ * ── 이 파일이 하는 일 ──
+ *   ITSM 서버 목록과 Zabbix 호스트 목록을 호스트명으로 맞춰 보고, 표의 행을 만든다.
+ *   행마다 OS / WEB / WAS / DB / 이중화 솔루션 값과 Agent 설치 상태(설치 / 미설치 / 예외)를 붙인다.
+ *   화면을 그리지 않는다. 행 배열만 만들어 컨트롤러에 돌려준다.
+ *
+ * ── 누가 쓰는가 ──
+ *   actions/inventory/swinventory/SwInventoryList.php   SW 인벤토리 화면 (zabbix.php?action=swinventory.list)
+ *   views/inventory/swinventory.list.php                필터 이름과 Agent 상태 상수를 읽는다
+ *
+ * ── 데이터 흐름 ──
+ *   컨트롤러
+ *     ├─ getRows()   전체 행을 만든다
+ *     │    ├─ fetchAllHosts()          DB 에서 전체 Zabbix 호스트 + 인벤토리 + 인터페이스
+ *     │    ├─ ItsmRepository::fetch()  ITSM 서버 목록 (미연동이면 Zabbix 호스트 목록으로 대신한다)
+ *     │    ├─ SoftwareResolver::resolve()  행마다 os/web/was/db/duplex 값
+ *     │    └─ resolveAgentStatus()     행마다 Agent 설치 상태
+ *     ├─ filter()    필터 입력에 맞는 행만 남긴다
+ *     └─ sort()      정렬한다
+ *
  * 5버전 대응: CControllerSwinventories::doAction() 의 데이터 부분 +
  *            C*Filter 트레잇(isFilter / filtering)
  *
  * 컨트롤러(actions/)에는 "요청/응답" 만 두고, 데이터 로직은 이 클래스에 둔다.
- * 화면(list)과 CSV 가 같은 로직을 쓰기 때문이다.
+ * 화면(list)과 내보내기 파일(CSV / Excel)이 같은 로직을 쓰기 때문이다.
+ *
+ * ── 관련 파일 ──
+ *   includes/ItsmRepository.php     ITSM 서버 목록 조회
+ *   includes/SoftwareResolver.php   OS / WEB / WAS / DB / 이중화 값 결정
+ *   includes/HostHelper.php         대표 IP 고르기
+ *   conf/itsm.conf.php              ITSM 테이블 위치 설정
  */
 
 namespace Modules\DMove\Includes;
@@ -51,7 +76,10 @@ class SwInventoryService {
 		'duplex' => 'duplex'
 	];
 
-	/** Agent 체크박스 필터 키 => 상태 값. */
+	/**
+	 * Agent 체크박스 필터 키 => 상태 값.
+	 * 왼쪽 키에 'filter_' 를 붙인 것이 화면 체크박스 이름이다. 예) 'agent_install' -> 체크박스 filter_agent_install
+	 */
 	public const AGENT_FILTERS = [
 		'agent_install' => self::AGENT_INSTALLED,
 		'agent_uninstall' => self::AGENT_NOT_INSTALLED,
@@ -82,10 +110,26 @@ class SwInventoryService {
 		$this->software = $software ?? new SoftwareResolver();
 	}
 
+	/**
+	 * ITSM 을 쓸 수 없어서 Zabbix 호스트 목록으로 대신했는지 알려 준다.
+	 *
+	 * getRows() 를 부른 "뒤에" 불러야 맞는 값이 나온다. getRows() 가 ITSM 목록을 읽어 보고 이 값을 정하기 때문이다.
+	 * 컨트롤러는 이 값을 뷰에 넘기고, 뷰는 true 일 때 화면 위에 "ITSM 미연동" 경고를 띄운다.
+	 *
+	 * @return bool  ITSM 미연동(설정이 비었거나 테이블이 없음)이면 true.
+	 */
 	public function isItsmFallback(): bool {
 		return $this->itsm_fallback;
 	}
 
+	/**
+	 * Agent 상태 값을 화면에 보여 줄 글자로 바꾸는 표.
+	 *
+	 * 행의 'agent' 에는 숫자(1 / 2 / 4)가 들어 있다. 화면과 내보내기 파일에는 숫자 대신 이 글자를 쓴다.
+	 * static 메소드라서 객체를 만들지 않고 SwInventoryService::getAgentStatusLabels() 로 부른다.
+	 *
+	 * @return array  [상태 값 => 글자]. 한국어 사용자라면 예) [1 => '설치', 2 => '미설치', 4 => '예외']
+	 */
 	public static function getAgentStatusLabels(): array {
 		return [
 			self::AGENT_INSTALLED => Lang::t('Installed'),
@@ -96,6 +140,13 @@ class SwInventoryService {
 
 	/**
 	 * 필터/정렬 전의 전체 행 목록을 만든다.
+	 *
+	 * 행 1개 = ITSM 서버 1대다. 같은 이름(대소문자 무시)의 Zabbix 호스트가 있으면 그 호스트의 값을 붙인다.
+	 * ITSM 미연동이면 Zabbix 호스트 1대가 행 1개가 된다. (isItsmFallback() 이 true 가 된다)
+	 *
+	 * @return array  행 목록. 예) [['rowid' => '10084', 'hostid' => '10084', 'has_inventory' => true,
+	 *                'host' => 'web-server-01', 'name' => 'web-server-01', 'ip' => '10.0.0.1', 'description' => '...',
+	 *                'agent' => 1, 'os' => 'Linux', 'web' => '', 'was' => '', 'db' => '', 'duplex' => ''], ...]
 	 *
 	 * 행 형식:
 	 *   rowid       화면용 고유키
@@ -117,6 +168,7 @@ class SwInventoryService {
 		 *    단, 코어의 인벤토리 상세 화면 링크는 사용자가 볼 수 있는 호스트에만 단다. (권한 밖이면 코어가 오류를 띄운다)
 		 */
 		$zbx_hosts = $this->fetchAllHosts();
+		// 사용자가 볼 수 있는 호스트의 ID. preservekeys 라서 배열의 키가 hostid 다. (아래에서 array_key_exists 로 찾는다)
 		$visible_hostids = API::Host()->get([
 			'output' => ['hostid'],
 			'preservekeys' => true
@@ -174,12 +226,14 @@ class SwInventoryService {
 			 * 5버전 버그 수정: 매칭이 안 된 행에서 $host_name 을 초기화하지 않아
 			 * 바로 앞 행의 표시명이 그대로 표시됐다. 여기서는 매칭이 안 되면 빈 값이다.
 			 */
+			// IP: ITSM 값을 먼저 쓰고, 비어 있으면 Zabbix 호스트의 대표 IP 를 쓴다.
 			$ip = trim((string) ($itsm_row['ip_address'] ?? ''));
 
 			if ($ip === '' && $zbx_host !== null) {
 				$ip = HostHelper::mainIp($zbx_host['interfaces']);
 			}
 
+			// Description: ITSM 값을 먼저 쓰고, 비어 있으면 Zabbix 호스트 설명을 쓴다.
 			$description = trim((string) ($itsm_row['description'] ?? ''));
 
 			if ($description === '' && $zbx_host !== null) {
@@ -187,6 +241,7 @@ class SwInventoryService {
 			}
 
 			$rows[] = [
+				// 매칭된 행은 hostid 를, 매칭이 안 된 행은 'itsm_' + ITSM ID(없으면 호스트명)를 고유키로 쓴다.
 				'rowid' => $zbx_host !== null ? $zbx_host['hostid'] : 'itsm_'.($itsm_row['id'] ?? $ci_name),
 				'hostid' => $zbx_host !== null ? $zbx_host['hostid'] : null,
 				// 인벤토리가 켜져 있고 사용자가 볼 수 있는 호스트만 코어의 인벤토리 상세 화면으로 링크한다.
@@ -223,16 +278,19 @@ class SwInventoryService {
 		 * 인벤토리 필드 이름은 host_inventory 표의 열 이름이다. (SoftwareResolver::INVENTORY_FIELDS)
 		 * 쿼리에 이어 붙이므로 영문자/숫자/밑줄로 된 이름만 쓴다.
 		 */
+		// 정규식 /^[a-z_][a-z0-9_]*$/ : 첫 글자는 영문 소문자나 밑줄, 그 뒤는 영문 소문자/숫자/밑줄만. ^ 는 처음, $ 는 끝.
 		$inventory_fields = array_values(array_filter($this->software->getInventoryFields(),
 			static fn($field): bool => preg_match('/^[a-z_][a-z0-9_]*$/', (string) $field) === 1
 		));
 
 		$inventory_columns = '';
 
+		// 예) ',hi.os AS inv_os,hi.software_app_a AS inv_software_app_a'. 호스트 표의 열과 이름이 겹치지 않게 inv_ 를 붙인다.
 		foreach ($inventory_fields as $field) {
 			$inventory_columns .= ',hi.'.$field.' AS inv_'.$field;
 		}
 
+		// COALESCE(a, b): a 가 NULL 이면 b. 인벤토리 줄이 없는 호스트는 inventory_mode 가 -1(꺼짐)이 된다.
 		$result = DBselect(
 			'SELECT h.hostid,h.host,h.name,h.description,'.
 				'COALESCE(hi.inventory_mode,'.HOST_INVENTORY_DISABLED.') AS inventory_mode'.$inventory_columns.
@@ -265,6 +323,7 @@ class SwInventoryService {
 			];
 		}
 
+		// 인터페이스를 한 번에 읽어 호스트별로 붙인다. (대표 IP 를 고르는 HostHelper::mainIp() 가 쓴다)
 		if ($hosts) {
 			$result = DBselect(
 				'SELECT hostid,ip,main,type FROM interface WHERE '.dbConditionId('hostid', array_keys($hosts))
@@ -290,8 +349,13 @@ class SwInventoryService {
 	 * TODO(고객환경): "예외" 기준은 확인하지 못해서 ITSM 행의 agent_exception 값으로 가정했다.
 	 *                 실제 기준(예외 테이블, 호스트 태그, 호스트 그룹 등)에 맞게 이 메소드만 고치면 된다.
 	 *                 "Zabbix 에 등록" 이 아니라 "agent 가 실제 응답 중" 을 설치로 보려면
-	 *                 getRows() 의 host.get 에 'selectInterfaces' => ['ip', 'main', 'available'] 를 주고
+	 *                 fetchAllHosts() 의 인터페이스 조회에 available 열을 더해 읽고
 	 *                 여기서 available 값을 본다.
+	 *
+	 * @param array      $itsm_row  ITSM 행. ItsmRepository::fetch() 의 행 1개.
+	 * @param array|null $zbx_host  같은 이름의 Zabbix 호스트. 없으면 null.
+	 *
+	 * @return int  AGENT_INSTALLED(1) / AGENT_NOT_INSTALLED(2) / AGENT_EXCEPTION(4)
 	 */
 	private function resolveAgentStatus(array $itsm_row, ?array $zbx_host): int {
 		if ($zbx_host !== null) {
@@ -306,10 +370,18 @@ class SwInventoryService {
 	}
 
 	/**
-	 * 필터 적용.
+	 * 필터 적용. 필터 입력에 맞는 행만 남긴다.
 	 *
-	 * @param array $rows
+	 *   글자 필터(호스트, OS, WEB ...) : 입력한 글자가 그 열에 들어 있는 행만. 대소문자 무시. 여러 개면 모두 맞아야 한다.
+	 *   Agent 체크박스                : 체크한 상태 중 하나에 해당하는 행만. 하나도 체크하지 않으면 전체.
+	 *
+	 * 예) $filter = ['os' => 'linux', 'agent_install' => 1]
+	 *     -> OS 에 'linux' 가 들어 있고 Agent 가 "설치"인 행만 남는다.
+	 *
+	 * @param array $rows    getRows() 의 결과.
 	 * @param array $filter  ['itsm' => '', 'os' => '', ..., 'agent_install' => 1, 'agent_uninstall' => 1, ...]
+	 *
+	 * @return array  남은 행. 키는 0 부터 다시 매긴다.
 	 */
 	public function filter(array $rows, array $filter): array {
 		// 텍스트 필터: 대소문자 무시, 부분 일치. 여러 조건은 AND.
@@ -341,6 +413,7 @@ class SwInventoryService {
 			}
 		}
 
+		// & (비트 AND): 행의 상태가 $mask 에 들어 있으면 0 이 아닌 값이 나온다. 예) 4 & 5 = 4 (남김), 2 & 5 = 0 (뺌)
 		if ($mask != 0) {
 			$rows = array_filter($rows, static fn(array $row): bool => ($row['agent'] & $mask) != 0);
 		}
@@ -352,10 +425,14 @@ class SwInventoryService {
 	/**
 	 * 정렬. 화면의 컬럼 헤더를 클릭하면 컨트롤러가 이 메소드에 정렬 컬럼과 방향을 넘긴다.
 	 *
-	 * @param string $sort_field  SORT_FIELDS 중 하나.
+	 * @param array  $rows        filter() 의 결과.
+	 * @param string $sort_field  SORT_FIELDS 중 하나. 목록에 없는 값이면 'host' 로 정렬한다.
 	 * @param string $sort_order  ZBX_SORT_UP('ASC') 또는 ZBX_SORT_DOWN('DESC').
+	 *
+	 * @return array  정렬된 행. 키는 0 부터 다시 매긴다.
 	 */
 	public function sort(array $rows, string $sort_field, string $sort_order): array {
+		// in_array(값, 배열, true): 배열에 그 값이 있는지. 세 번째 true 는 타입까지 같아야 한다는 뜻.
 		if (!in_array($sort_field, self::SORT_FIELDS, true)) {
 			$sort_field = 'host';
 		}

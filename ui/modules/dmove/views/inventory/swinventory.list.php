@@ -1,8 +1,40 @@
 <?php declare(strict_types = 0);
 /*
- * SW 인벤토리 화면.
+ * SW 인벤토리 화면의 뷰. (화면을 그리는 파일)
  *
  * 5버전 대응: 커스텀 폴더의 views/inventory/swinventories.php
+ *
+ * ── 이 파일이 하는 일 ──
+ *   컨트롤러가 조회해서 넘긴 값($data)으로 필터와 표를 조립해서 화면에 출력한다.
+ *   여기서는 DB 나 API 를 읽지 않는다. 조회는 모두 컨트롤러가 끝낸다.
+ *
+ *   화면     : zabbix.php?action=swinventory.list
+ *   컨트롤러 : actions/inventory/swinventory/SwInventoryList.php
+ *
+ * ── 화면 구성 ──
+ *   제목 오른쪽 : [CSV 내보내기] [Excel 내보내기]
+ *   필터        : 왼쪽 단에 글자 입력 3개, 오른쪽 단에 글자 입력 3개 + Agent 체크박스(설치 / 미설치 / 예외)
+ *   경고 상자   : ITSM 설정이 비어 있어 Zabbix 호스트로 대신 보여 줄 때만 나온다
+ *   표          : 열 제목을 누르면 정렬된다. 아래쪽에 페이지 번호가 붙는다
+ *
+ * ── 받는 값 ($data) ──
+ *   action         이 화면의 액션 이름. 'swinventory.list'  (필터, 정렬 링크의 주소에 쓴다)
+ *   export_action  내보내기 액션 이름. 'swinventory.export'
+ *   columns        열 정의. [정렬 키 => 제목]
+ *   filter         현재 필터 값. ['itsm' => '', 'os' => '', ..., 'agent_install' => 1, ...]
+ *   active_tab     필터가 펼쳐져 있는지 (지난번 상태)
+ *   sort           현재 정렬 열
+ *   sortorder      현재 정렬 방향. 'ASC' 또는 'DESC'
+ *   agent_labels   [Agent 상태 값 => 화면에 표시할 글자]
+ *   itsm_fallback  true 면 ITSM 대신 Zabbix 호스트를 보여 주는 중이다 (경고 상자를 띄운다)
+ *   paging         페이지 번호 줄 (컨트롤러가 CPagerHelper 로 만든 것)
+ *   rows           표의 행. 현재 페이지 분량만 들어 있다
+ *
+ * ── 관련 파일 ──
+ *   actions/inventory/swinventory/SwInventoryList.php   컨트롤러
+ *   includes/SwInventoryService.php                     행 조회, Agent 상태 상수
+ *   includes/export/ExportButtons.php                   내보내기 버튼
+ *   conf/itsm.conf.php                                  ITSM 설정
  *
  * 뷰 파일 규칙
  *   - 파일명 = manifest.json 액션의 "view" 값 + ".php"
@@ -45,10 +77,13 @@ $text_filter_labels = [
 ];
 
 // 필터는 좌/우 2단으로 배치한다. 왼쪽 3개, 오른쪽 3개 + Agent 체크박스.
+// CFormList: "라벨 + 입력창" 줄을 차례로 쌓는 폼. addRow(라벨, 입력창) 으로 한 줄을 넣는다.
 $filter_columns = [new CFormList(), new CFormList()];
 $index = 0;
 
 foreach ($text_filter_labels as $key => $label) {
+	// $index < 3 ? 0 : 1 : 앞의 3개는 왼쪽 단(0), 나머지는 오른쪽 단(1)에 넣는다.
+	// CTextBox(입력 이름, 현재 값): 한 줄 글자 입력창. 입력 이름은 filter_itsm, filter_os ... 가 된다.
 	$filter_columns[$index < 3 ? 0 : 1]->addRow($label,
 		(new CTextBox('filter_'.$key, $data['filter'][$key]))->setWidth(ZBX_TEXTAREA_FILTER_STANDARD_WIDTH)
 	);
@@ -64,13 +99,16 @@ $agent_filter_labels = [
 $agent_checkboxes = [];
 
 foreach ($agent_filter_labels as $key => $label) {
+	// CCheckBox(입력 이름): 체크박스. 저장된 필터 값이 1 이면 체크된 상태로 그린다.
 	$agent_checkboxes[] = (new CCheckBox('filter_'.$key))
 		->setLabel($label)
 		->setChecked($data['filter'][$key] == 1);
 }
 
+// CHorList: 항목을 가로로 나란히 배치한다. 체크박스 3개가 한 줄에 놓인다.
 $filter_columns[1]->addRow('Agent', new CHorList($agent_checkboxes));
 
+// CFilter: 화면 위쪽의 접었다 펼 수 있는 필터 상자. [적용] / [초기화] 버튼은 CFilter 가 만들어 준다.
 $filter = (new CFilter())
 	// [초기화] 버튼이 이동할 주소. CFilter 가 filter_rst=1 을 붙여 준다.
 	->setResetUrl((new CUrl('zabbix.php'))->setArgument('action', $data['action']))
@@ -98,8 +136,10 @@ foreach ($columns as $sort_key => $label) {
 	$header[] = make_sorting_header($label, $sort_key, $data['sort'], $data['sortorder'], $view_url);
 }
 
+// CTableInfo: 코어의 목록 표. 행이 하나도 없으면 "데이터 없음" 안내 줄을 스스로 표시한다.
 $table = (new CTableInfo())
 	->setHeader($header)
+	// 표 아래에 페이지 번호 줄을 붙인다.
 	->setPageNavigation($data['paging']);
 
 // Agent 상태별 글자색. 코어 테마 클래스를 써서 어떤 테마(blue/dark)에서도 맞게 나온다.
@@ -115,6 +155,13 @@ foreach ($data['rows'] as $row) {
 		? new CLink($row['host'], (new CUrl('hostinventories.php'))->setArgument('hostid', $row['hostid']))
 		: $row['host'];
 
+	/*
+	 * 표에 한 줄을 넣는다. 배열의 순서가 열의 순서다.
+	 *   CCol(값)             : 표의 한 칸. CSS 클래스를 붙이고 싶을 때만 쓴다. 그냥 값만 넣어도 칸이 된다.
+	 *   ZBX_STYLE_NOWRAP     : 칸 안에서 줄바꿈을 하지 않는다. (호스트 이름, IP)
+	 *   ZBX_STYLE_WORDBREAK  : 긴 글자를 칸 너비에 맞춰 줄바꿈한다. (설명)
+	 *   CSpan(값)            : 글자에 색 같은 CSS 클래스를 입힐 때 쓰는 <span>.
+	 */
 	$table->addRow([
 		(new CCol($host))->addClass(ZBX_STYLE_NOWRAP),
 		$row['name'],
@@ -131,6 +178,7 @@ foreach ($data['rows'] as $row) {
 
 // ── 3) 페이지 조립 ──────────────────────────────────────────────────────────
 
+// CHtmlPage: 화면 한 장. 제목, 제목 오른쪽 버튼, 본문(필터, 표)을 차례로 넣고 마지막에 show() 로 출력한다.
 $html_page = (new CHtmlPage())
 	->setTitle(Lang::t('SW inventory'))
 	// 제목 오른쪽 버튼 영역: [CSV 내보내기] [Excel 내보내기]. 현재 저장된 필터/정렬 그대로 내려받는다.
@@ -139,6 +187,7 @@ $html_page = (new CHtmlPage())
 
 if ($data['itsm_fallback']) {
 	// conf/itsm.conf.php 에 ITSM 스키마/테이블 이름을 채우면 이 경고는 사라진다.
+	// makeMessageBox(종류, 상세 목록, 제목 글자, 닫기 버튼 여부): 코어 함수. 노란 경고 상자를 만든다.
 	$html_page->addItem(
 		makeMessageBox(ZBX_STYLE_MSG_WARNING, [], Lang::t('ITSM table is not configured (conf/itsm.conf.php). Showing Zabbix hosts instead.'),
 			false
@@ -146,6 +195,7 @@ if ($data['itsm_fallback']) {
 	);
 }
 
+// 표를 <form> 으로 감싸서 넣고 화면을 출력한다. show() 를 부르지 않으면 아무것도 나오지 않는다.
 $html_page
 	->addItem(
 		(new CForm('get'))

@@ -2,14 +2,36 @@
 /*
  * SW 인벤토리 화면 + 내보내기(CSV / Excel) 컨트롤러.
  *
+ * ── 이 화면이 하는 일 ──
+ *   ITSM 에 등록된 서버 목록을 한 줄씩 보여 주고, 각 서버가 Zabbix 에 등록되어 있는지(Agent 설치 여부)와
+ *   그 서버의 OS / WEB / WAS / DB / 이중화 솔루션을 함께 보여 준다.
+ *   ITSM 을 연결하지 않은 환경에서는 Zabbix 호스트 목록을 대신 쓴다. (그때는 화면에 안내가 뜬다)
+ *
  *   화면 : zabbix.php?action=swinventory.list
  *   내보내기 : zabbix.php?action=swinventory.export&format=csv 또는 xlsx
+ *   메뉴 : 인벤토리 > SW 인벤토리   (Module.php 의 INVENTORY_MENUS)
  *
  * 5버전 대응: 커스텀 폴더의 controllers/CControllerSwinventories.php, CControllerSWInventCSV
  *
+ * ── 화면 구성 ──
+ *   필터 : ITSM HOST, OS/Version, WEB, WAS, DB, 이중화 (글자 입력. 부분 일치)
+ *          Agent 설치 / 미설치 / 예외 (체크박스)
+ *   버튼 : CSV 내보내기, Excel 내보내기
+ *   표   : 호스트, 표시명, IP, Description, OS, WEB, WAS, DB, 이중화 솔루션, Agent 설치
+ *          (열 정의는 아래 getColumns(). 모든 열을 눌러서 정렬할 수 있다)
+ *
+ * ── 데이터 흐름 ──
+ *   doAction()
+ *     ├─ 필터 저장/읽기 (CProfile)  updateProfiles() / deleteProfiles() / getFilter()
+ *     ├─ SwInventoryService::getRows()   ITSM 목록과 Zabbix 호스트를 맞춰서 전체 행을 만든다
+ *     ├─ SwInventoryService::filter()    필터에 맞는 행만 남긴다
+ *     ├─ SwInventoryService::sort()      정렬한다
+ *     ├─ 액션이 swinventory.export 면 -> 전체 행을 CSV / Excel 파일로 내려 주고 끝
+ *     └─ 아니면 -> 페이징한 뒤 뷰(views/inventory/swinventory.list.php)로 넘긴다
+ *
  * 새 페이지를 추가하는 방법은 ui/modules/dmove/template/README.md 에 있다. (복사해서 쓰는 템플릿 포함)
  *
- * 이 화면에 속한 파일
+ * ── 이 화면에 속한 파일 ──
  *   actions/inventory/swinventory/SwInventoryList.php   컨트롤러 (이 파일. 화면과 내보내기 두 액션이 같이 쓴다)
  *   views/inventory/swinventory.list.php          화면 뷰
  *   includes/export/                          내보내기 플러그인 (사용법: includes/export/ExportTrait.php)
@@ -19,6 +41,7 @@
  *
  * 컨트롤러는 코어가 아래 순서로 호출한다. (ui/include/classes/mvc/CController.php)
  *   init() -> checkInput() -> checkPermissions() -> doAction()
+ *   앞 단계가 false 를 돌려주면 뒤 단계는 실행되지 않는다.
  */
 
 /*
@@ -66,6 +89,15 @@ class SwInventoryList extends CController {
 	 */
 	use ExportTrait;
 
+	/**
+	 * 컨트롤러가 만들어질 때 코어가 한 번 부른다. 다른 단계(checkInput 등)보다 먼저 실행된다.
+	 * 여기서는 CSRF 토큰 검사를 끄는 일만 한다.
+	 *
+	 * CSRF 토큰: "이 요청이 우리 화면에서 보낸 것이 맞다"를 확인하는 숨은 값이다.
+	 * 값을 바꾸지 않고 보기만 하는 화면은 주소만으로 열려야 하므로 검사를 끈다.
+	 *
+	 * @return void  돌려주는 값이 없다.
+	 */
 	protected function init(): void {
 		/*
 		 * 조회 전용 화면(GET)이라 CSRF 토큰 검사를 끈다.
@@ -84,6 +116,15 @@ class SwInventoryList extends CController {
 	 *   'ge 1'          1 이상 정수
 	 *   'array_db hosts.hostid'   DB 컬럼 형식의 ID 배열 (멀티셀렉트용)
 	 * 규칙 전체 목록: ui/include/classes/validators/CNewValidator.php
+	 *
+	 * 이 화면이 받는 값
+	 *   page                    페이지 번호. 예) 2
+	 *   filter_set / filter_rst [적용] / [초기화] 버튼을 눌렀다는 표시. 값은 1.
+	 *   sort / sortorder        정렬할 열과 방향. 예) sort=os&sortorder=DESC
+	 *   filter_<이름>           필터 입력값. 예) filter_os=linux, filter_agent_install=1
+	 *   format                  내보내기 형식. csv 또는 xlsx. (ExportTrait 가 더해 준다)
+	 *
+	 * @return bool  모든 값이 규칙에 맞으면 true. 하나라도 틀리면 false 이고 오류 화면이 나온다.
 	 */
 	protected function checkInput(): bool {
 		$fields = [
@@ -125,12 +166,39 @@ class SwInventoryList extends CController {
 	 *
 	 * TODO(고객환경): 고객 권한 정책이 다르면 조건을 바꾼다.
 	 *   예) 관리자 이상만: return $this->getUserType() >= USER_TYPE_ZABBIX_ADMIN;
+	 *
+	 * @return bool  볼 수 있으면 true. false 면 코어가 "접근 권한 없음" 화면을 보여 준다.
 	 */
 	protected function checkPermissions(): bool {
+		// checkAccess(권한 이름): 로그인한 사용자의 역할에 그 권한이 켜져 있으면 true.
 		// isGuest(): 로그인하지 않고 들어온 게스트 계정은 막는다.
 		return $this->checkAccess(CRoleHelper::UI_INVENTORY_HOSTS) && !CWebUser::isGuest();
 	}
 
+	/**
+	 * 화면을 만드는 본체. 입력 검사와 권한 검사를 통과하면 코어가 부른다.
+	 *
+	 * 하는 일 (아래 코드의 번호와 같다)
+	 *   1) [적용]/[초기화]를 눌렀으면 필터를 저장하거나 지운다.
+	 *   2) 정렬할 열과 방향을 정한다. 주소에 없으면 지난번 값을 쓴다.
+	 *   3) 전체 행을 만들고 -> 필터로 거르고 -> 정렬한다.
+	 *   4) 내보내기 액션(swinventory.export)이면 파일로 응답하고 끝낸다.
+	 *   5) 화면 액션(swinventory.list)이면 페이지 분량만 잘라서 뷰로 넘긴다.
+	 *
+	 * 뷰로 넘기는 $data 의 키
+	 *   action, export_action   화면 / 내보내기 액션 이름
+	 *   columns                 열 정의. ['host' => '호스트', ...]   (getColumns())
+	 *   filter                  필터 값. ['os' => 'linux', ..., 'agent_install' => 1, ...]
+	 *   active_tab              필터 영역이 펼쳐져 있는지 (1 = 펼침)
+	 *   sort, sortorder         정렬 열, 방향('ASC' / 'DESC')
+	 *   agent_labels            Agent 상태 값 => 글자. [1 => '설치', 2 => '미설치', 4 => '예외']
+	 *   itsm_fallback           ITSM 대신 Zabbix 호스트 목록을 썼으면 true (뷰가 안내를 띄운다)
+	 *   total                   필터를 적용한 뒤의 전체 줄 수
+	 *   paging                  페이지 이동 줄
+	 *   rows                    현재 페이지의 행들
+	 *
+	 * @return void  돌려주는 값은 없다. 결과는 $this->setResponse() 로 코어에 넘긴다.
+	 */
 	protected function doAction(): void {
 		// ── 1) 필터 저장/초기화 ─────────────────────────────────────────────
 		// [적용] 버튼 -> filter_set=1, [초기화] 버튼 -> filter_rst=1 이 넘어온다.
@@ -162,6 +230,7 @@ class SwInventoryList extends CController {
 		$rows = $service->filter($rows, $filter);
 		$rows = $service->sort($rows, $sort_field, $sort_order);
 
+		// Agent 상태 값 => 화면에 보일 글자. [1 => '설치', 2 => '미설치', 4 => '예외']
 		$agent_labels = SwInventoryService::getAgentStatusLabels();
 
 		// ── 4) 내보내기 요청이면 여기서 끝낸다 (이 컨트롤러는 액션 2개 list, export 에 등록되어 있다) ──
@@ -216,6 +285,8 @@ class SwInventoryList extends CController {
 	 *
 	 *   키   = 행 배열의 키 (정렬 키로도 쓴다)
 	 *   값   = 제목. _('Host') 는 코어 번역, Lang::t() 는 모듈 번역(lang/ko.php).
+	 *
+	 * @return array  [행의 키 => 제목]. 예) ['host' => '호스트', 'name' => '표시명', ...]
 	 */
 	private static function getColumns(): array {
 		return [
@@ -235,6 +306,12 @@ class SwInventoryList extends CController {
 	/**
 	 * 프로파일에 저장된 필터 값을 읽는다.
 	 * Agent 체크박스는 처음 들어왔을 때(저장된 값 없음) 3개 모두 체크된 상태다. (5버전과 동일)
+	 *
+	 *   CProfile::get(키, 기본값): 저장된 값이 없으면 기본값을 돌려준다.
+	 *   글자 필터의 기본값은 ''(조건 없음), 체크박스의 기본값은 1(체크)이다.
+	 *
+	 * @return array  예) ['itsm' => '', 'os' => 'linux', 'web' => '', 'was' => '', 'db' => '', 'duplex' => '',
+	 *                     'agent_install' => 1, 'agent_uninstall' => 1, 'agent_exception' => 0]
 	 */
 	private function getFilter(): array {
 		$filter = [];
@@ -253,6 +330,11 @@ class SwInventoryList extends CController {
 	/**
 	 * [적용] 을 눌렀을 때 입력값을 프로파일에 저장한다.
 	 * CProfile::update(키, 값, 타입): 타입은 문자열이면 PROFILE_TYPE_STR, 정수면 PROFILE_TYPE_INT.
+	 *
+	 * 저장되는 키 예) web.dmove.swinventory.filter.os = 'linux'
+	 * 값은 로그인한 사용자별로 따로 저장된다. trim() 으로 앞뒤 빈칸을 뗀 뒤 저장한다.
+	 *
+	 * @return void
 	 */
 	private function updateProfiles(): void {
 		foreach (array_keys(SwInventoryService::TEXT_FILTERS) as $key) {
@@ -271,8 +353,13 @@ class SwInventoryList extends CController {
 
 	/**
 	 * [초기화] 를 눌렀을 때 저장된 필터를 지운다. 지우면 getFilter() 의 기본값으로 돌아간다.
+	 *
+	 *   CProfile::deleteIdx(키): 그 키로 저장된 값을 지운다.
+	 *
+	 * @return void
 	 */
 	private function deleteProfiles(): void {
+		// 배열 + 배열: 글자 필터 키와 체크박스 필터 키를 한 목록으로 합쳐서 한 번에 돈다.
 		foreach (array_keys(SwInventoryService::TEXT_FILTERS + SwInventoryService::AGENT_FILTERS) as $key) {
 			CProfile::deleteIdx(self::PROFILE_PREFIX.'filter.'.$key);
 		}
