@@ -50,6 +50,8 @@ namespace Modules\DMove;
  */
 use APP;
 use CMenuItem;
+use CRoleHelper;
+use CWebUser;
 use Modules\DMove\Includes\Lang;
 use Zabbix\Core\CModule;
 
@@ -87,7 +89,7 @@ class Module extends CModule {
 		'Server time check' =>				['uptime.list', []],
 		'Low usage servers' =>				['lowserver.list', ['lowserver.export']],
 		'High usage servers' =>				['highserver.list', ['highserver.export']],
-		'Performance trend analysis' =>		['perftrend.list', []],
+		'Performance trend analysis' =>		['perftrend.list', ['perftrend.export']],
 		'Daily check' =>					['dailycheck.list', []],
 		'Peak event analysis' =>			['peakevent.list', ['peakevent.export']],
 		'Windows patch status' =>			['winpatch.list', ['winpatch.export']],
@@ -105,6 +107,36 @@ class Module extends CModule {
 	];
 
 	/**
+	 * 시간 선택기를 쓰는 화면의 기간 저장 이름(프로파일 키). 화면 뷰의 CFilter::setProfile() 값과 같다.
+	 */
+	private const TIME_SELECTOR_PROFILES = [
+		'web.dmove.peakevent.filter',
+		'web.dmove.usageexport.filter',
+		'web.dmove.perftrend.filter'
+	];
+
+	/**
+	 * 이 모듈 화면의 시간 선택기를 코어에 등록한다.
+	 *
+	 * 시간 선택기에서 "어제", "지난주" 같은 기간을 누르거나 < > 로 옮기면, 브라우저가 코어 액션
+	 * timeselector.update 를 불러 새 기간을 저장한다. 그런데 이 코어 액션은 미리 정한 이름(대시보드, 장애 화면 등)만
+	 * 받고 나머지는 거부한다. 그래서 이 모듈 화면의 이름을 그 목록에 더해 준다.
+	 * 이 등록이 없으면 기간 버튼을 눌러도 화면이 바뀌지 않는다. (주소에 from/to 를 직접 넣으면 동작한다)
+	 *
+	 *   CControllerTimeSelectorUpdate::$profiles : 코어가 받아 주는 이름 목록. public static 이라 더할 수 있다.
+	 *   (ui/app/controllers/CControllerTimeSelectorUpdate.php)
+	 *
+	 * init() 은 요청마다 불리므로 같은 이름이 두 번 들어가지 않게 확인한다.
+	 */
+	private static function registerTimeSelectors(): void {
+		foreach (self::TIME_SELECTOR_PROFILES as $profile) {
+			if (!in_array($profile, \CControllerTimeSelectorUpdate::$profiles, true)) {
+				\CControllerTimeSelectorUpdate::$profiles[] = $profile;
+			}
+		}
+	}
+
+	/**
 	 * 사이드바에 이 모듈의 메뉴를 붙인다. 모듈이 켜져 있으면 코어가 화면 요청마다 한 번 부른다.
 	 *
 	 * 하는 일
@@ -120,6 +152,8 @@ class Module extends CModule {
 	 * @return void
 	 */
 	public function init(): void {
+		self::registerTimeSelectors();
+
 		/*
 		 * ── 메뉴가 만들어지는 원리 ──────────────────────────────────────────
 		 *
@@ -166,6 +200,14 @@ class Module extends CModule {
 
 			// $label = 메뉴 라벨(영어), $action = 대표 액션, $aliases = 같은 메뉴로 표시할 다른 액션들.
 			foreach ($entries as $label => [$action, $aliases]) {
+				/*
+				 * 유저 메뉴(장기 미접속 계정)는 "유저 > 유저" 화면 권한이 있을 때만 넣는다. 컨트롤러도 같은 권한을 본다.
+				 * 권한 없이 메뉴만 보이면 눌렀을 때 "접근 거부"가 난다.
+				 */
+				if ($menus === self::USER_MENUS && !CWebUser::checkAccess(CRoleHelper::UI_ADMINISTRATION_USERS)) {
+					continue;
+				}
+
 				// Lang::t(): 사용자 언어가 한국어면 한국어 라벨로 바꾼다.
 				$item = (new CMenuItem(Lang::t($label)))
 					->setAction($action)

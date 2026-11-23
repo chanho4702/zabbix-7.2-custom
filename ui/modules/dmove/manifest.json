@@ -12,6 +12,15 @@
 			"view": "inventory/swinventory.list",
 			"layout": "layout.htmlpage"
 		},
+		"swinventory.agent": {
+			"class": "Inventory/SwInventory/AgentEdit",
+			"view": "inventory/swinventory.agent",
+			"layout": "layout.json"
+		},
+		"swinventory.agent.save": {
+			"class": "Inventory/SwInventory/AgentSave",
+			"layout": "layout.json"
+		},
 		"swinventory.export": {
 			"class": "Inventory/SwInventory/SwInventoryList",
 			"layout": "export/layout.file"
@@ -43,6 +52,19 @@
 			"class": "Reports/PerfTrend/PerfTrendList",
 			"view": "reports/perftrend.list",
 			"layout": "layout.htmlpage"
+		},
+		"serverusage.threshold": {
+			"class": "Reports/ServerUsage/ThresholdEdit",
+			"view": "reports/serverusage.threshold",
+			"layout": "layout.json"
+		},
+		"serverusage.threshold.save": {
+			"class": "Reports/ServerUsage/ThresholdSave",
+			"layout": "layout.json"
+		},
+		"perftrend.export": {
+			"class": "Reports/PerfTrend/PerfTrendList",
+			"layout": "layout.csv"
 		},
 		"dailycheck.list": {
 			"class": "Reports/DailyCheck/DailyCheckList",

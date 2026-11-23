@@ -56,7 +56,6 @@ class ItsmRepository {
 	 *
 	 * 행에 아래 키를 더 넣으면 SwInventoryService / SoftwareResolver 가 알아서 사용한다. (지금은 넣지 않는다)
 	 *   'os', 'web', 'was', 'db', 'duplex'  : 넣으면 Zabbix 인벤토리 값보다 우선한다.
-	 *   'agent_exception' => true           : Agent 설치 "예외" 대상으로 표시한다.
 	 *
 	 * @return array|null  ITSM 을 쓸 수 없으면(설정이 비었거나 테이블이 없으면) null.
 	 */

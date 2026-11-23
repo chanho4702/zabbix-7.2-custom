@@ -45,3 +45,27 @@
 	margin: 0 0 6px;
 	text-align: right;
 }
+
+/*
+ * 성능 데이터 추세 분석 화면. (views/reports/perftrend.list.php)
+ *   .dm-graph     : 그래프 영역. 흰 바탕에 여백을 주고, 화면이 좁으면 가로로 스크롤한다.
+ *   .dm-ds-table  : 데이터 셋 줄. 칸 사이 여백.
+ *   .dm-ds-color  : 색 고르는 칸의 크기.
+ */
+.dm-graph {
+	margin: 0 0 10px;
+	padding: 10px;
+	overflow-x: auto;
+	background-color: #ffffff;
+	border: 1px solid #dfe4e7;
+}
+
+.dm-ds-table td {
+	padding: 3px 6px 3px 0;
+}
+
+.dm-ds-color {
+	width: 32px;
+	height: 24px;
+	padding: 0;
+}

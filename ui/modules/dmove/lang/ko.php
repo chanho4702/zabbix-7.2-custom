@@ -58,6 +58,18 @@ return [
 	'Installed' => '설치',
 	'Not installed' => '미설치',
 	'Exception' => '예외',
+	'Agent status' => 'Agent 상태',
+	'Reason' => '사유',
+	'Entered by' => '입력자',
+	'Recent records' => '최근 기록',
+	'Saved.' => '저장했습니다.',
+	'Save' => '저장',
+	'Cannot save.' => '저장하지 못했습니다.',
+	'Invalid server key.' => '서버 키가 올바르지 않습니다.',
+	'The reason can be up to %1$d characters.' => '사유는 %1$d자까지 입력할 수 있습니다.',
+	'The Agent status table does not exist.' => 'Agent 상태 표가 없습니다.',
+	'Run sql/extends_agent.sql in the Zabbix database, or check conf/swinventory.conf.php.' =>
+		'Zabbix DB 에서 sql/extends_agent.sql 을 실행하거나 conf/swinventory.conf.php 를 확인하세요.',
 	'ITSM table is not configured (conf/itsm.conf.php). Showing Zabbix hosts instead.' =>
 		'ITSM 테이블이 설정되지 않아(conf/itsm.conf.php) Zabbix 호스트 목록 기준으로 표시 중입니다.',
 
@@ -78,6 +90,19 @@ return [
 	'Average CPU usage (%)' => '평균CPU사용률(%)',
 	'* Low usage criteria: average usage %1$s%% or less / Peak %2$s%% or less' =>
 		'※저사용 기준: 평균사용률 %1$s%% 이하 / Peak %2$s%% 이하',
+	'Criteria settings' => '기준설정',
+	'Collection criteria settings' => '수집기준 설정',
+	'Low usage average CPU usage (%)' => '저사용 평균 CPU 사용률(%)',
+	'Low usage Peak criterion' => '저사용 Peak기준',
+	'High usage average CPU usage (%)' => '고사용 평균 CPU 사용률(%)',
+	'High usage Peak criterion' => '고사용 Peak기준',
+	'% or less' => '% 이하',
+	'% or more' => '% 이상',
+	'Enter numbers between %1$d and %2$d only.' => '%1$d~%2$d 사이의 숫자만 입력해 주세요.',
+	'All fields are required.' => '모든 항목은 필수입력값입니다.',
+	'Set' => '설정',
+	'Enter numbers between %1$d and %2$d in all fields.' => '모든 항목에 %1$d~%2$d 사이의 숫자를 입력해 주세요.',
+	'The criteria have been saved.' => '기준을 저장했습니다.',
 	'* High usage criteria: average usage %1$s%% or more / Peak %2$s%% or more' =>
 		'※고사용 기준: 평균사용률 %1$s%% 이상 / Peak %2$s%% 이상',
 
@@ -88,6 +113,30 @@ return [
 	'Total disk' => '전체 Disk',
 	'Allocated disk' => '할당 Disk',
 	'Latest data' => '최근 데이터',
+
+	// ── 성능 데이터 추세 분석 ──
+	'Data set' => '데이터 셋',
+	'Host pattern' => '호스트 패턴',
+	'Item pattern' => '아이템 패턴',
+	'host pattern' => '호스트 패턴',
+	'item pattern' => '아이템 패턴',
+	'Graph type' => '그래프 형식',
+	'Line' => '선',
+	'Points' => '포인트',
+	'Staircase' => '계단',
+	'Bar' => '막대 그래프',
+	'Add new data set' => '+ 새로운 데이터 셋을 추가',
+	'Separate several patterns with commas. * matches any text. Example: web-*, db-01' =>
+		'여러 개는 쉼표로 나눕니다. * 는 아무 글자를 뜻합니다. 예) web-*, db-01',
+	'Enter a host pattern and an item pattern in the data set and press Apply.' =>
+		'데이터 셋에 호스트 패턴과 아이템 패턴을 넣고 [적용] 을 누르세요.',
+	'No items match the data sets.' => '데이터 셋에 맞는 아이템이 없습니다.',
+	'Collected at' => '수집시간',
+	'Value' => '값(value)',
+	'Aggregated at' => '집계시간',
+	'Min' => '최소',
+	'Avg' => '평균',
+	'Max' => '최대',
 
 	// ── 일일점검 ──
 	'CPU usage Top 10' => 'CPU 사용률 Top 10',
@@ -117,6 +166,8 @@ return [
 	'Hours' => '시간',
 	'Business hours (%1$s:00 ~ %2$s:00)' => '업무시간 (%1$s:00 ~ %2$s:00)',
 	'The period can be up to %1$d days. Choose a shorter period.' => '기간은 최대 %1$d일까지 고를 수 있습니다. 기간을 줄여 주세요.',
+	'* A database error occurred. The file is incomplete.' => '※ DB 조회 오류로 파일이 끝까지 만들어지지 않았습니다.',
+	'* Stopped at the row limit (%1$s rows). The file is incomplete.' => '※ 줄 수 한도(%1$s줄)에 닿아 여기서 멈췄습니다. 파일이 끝까지 만들어지지 않았습니다.',
 	'Preview: the first %1$d rows. Download the file to get all rows.' => '미리보기: 앞에서 %1$d줄만 표시합니다. 전체는 파일로 내려받으세요.',
 	'There are no CPU/Memory items for the selected hosts.' => '선택한 호스트에 CPU/Memory 아이템이 없습니다.',
 	'About %1$s rows are expected, which exceeds the limit of %2$s rows. Choose fewer hosts or a shorter period.' =>
@@ -137,6 +188,10 @@ return [
 	'Last access' => '최근접속일시',
 	'* Accounts that have not logged in for %1$d days or more.' => '※ %1$d일 이상 접속하지 않은 계정입니다.',
 	'The audit log is kept for less than %1$d days, so account creation dates cannot be checked and the list may be empty. Check conf/userunconnect.conf.php.' => '감사 로그 보관 기간이 %1$d일보다 짧아 계정을 만든 날짜를 확인할 수 없습니다. 목록이 비어 있을 수 있습니다. conf/userunconnect.conf.php 의 created_check 설명을 확인하세요.',
+	'The audit log is kept for less than %1$d days, so recently created accounts that never logged in may also be listed. Set the audit log storage period to at least %1$d days.' =>
+		'감사 로그 보관 기간이 %1$d일보다 짧아, 최근에 만들고 아직 접속하지 않은 계정도 목록에 나올 수 있습니다. 관리 > 감사 로그에서 보관 기간을 %1$d일 이상으로 늘리세요.',
+	'Sessions are kept for less than %1$d days, so accounts that logged in recently may also be listed. Set the session storage period to at least %1$d days.' =>
+		'세션 보관 기간이 %1$d일보다 짧아, 최근에 접속한 계정도 목록에 나올 수 있습니다. 관리 > 하우스키핑 > 세션에서 보관 기간을 %1$d일 이상으로 늘리세요.',
 
 	// ── 공통 오류 ──
 	'Invalid date. Enter the date as YYYY-MM-DD.' => '날짜 형식이 올바르지 않습니다. YYYY-MM-DD 형식으로 입력하세요.',

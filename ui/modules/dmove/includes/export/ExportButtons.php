@@ -38,12 +38,13 @@ class ExportButtons {
 	 * 내보내기 버튼 묶음을 만든다. 형식마다 버튼 하나씩이다.
 	 *
 	 * @param string $export_action  manifest.json 에 등록한 내보내기 액션 이름. 예) 'swinventory.export'
-	 * @param array  $formats        표시할 버튼. 기본은 CSV 와 Excel 둘 다.
+	 * @param array  $formats        표시할 버튼. 기본은 CSV 하나다. (5버전 화면에는 [CSV 내보내기] 만 있었다)
+	 *                               Excel 버튼도 보이려면 ExportFormat::ALL 을 넘긴다. Excel 파일을 만드는 코드는 그대로 있다.
 	 *                               CSV 만: ExportButtons::create('x.export', [ExportFormat::CSV])
 	 *
 	 * @return CTag  CHtmlPage::setControls() 에 그대로 넘길 수 있는 버튼 묶음.
 	 */
-	public static function create(string $export_action, array $formats = ExportFormat::ALL): CTag {
+	public static function create(string $export_action, array $formats = [ExportFormat::CSV]): CTag {
 		$labels = [
 			// _('Export to CSV') 는 코어에 있는 문구라 코어 번역을 쓴다.
 			ExportFormat::CSV => _('Export to CSV'),

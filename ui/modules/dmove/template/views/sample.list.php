@@ -106,7 +106,7 @@ foreach ($data['rows'] as $row) {
 
 (new CHtmlPage())
 	->setTitle($data['title'])
-	// [내보내기] 제목 오른쪽에 [CSV 내보내기] [Excel 내보내기] 버튼. 필요 없으면 이 줄을 지운다.
+	// [내보내기] 제목 오른쪽에 [CSV 내보내기] 버튼. 필요 없으면 이 줄을 지운다.
 	->setControls(ExportButtons::create($data['export_action']))
 	->addItem($filter)
 	->addItem($table)
