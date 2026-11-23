@@ -96,7 +96,7 @@ web-01   CPU utilization   2026-11-22 09:03:00   13.1
 4. **기간 읽기** - `doAction()` 1번 블록. `updateTimeSelectorPeriod()` 로 저장하고 `getTimeSelectorPeriod()` 로 읽는다. 결과의 `from_ts` / `to_ts` 가 유닉스 초다.
 5. **필터 저장/읽기** - `HostFilter::save()` / `load()`, 항목/시간은 `CProfile`. 내보내기도 저장된 값을 읽으므로 화면과 같은 조건으로 파일이 만들어진다.
 6. **계획 만들기** - `UsageExportService::buildPlan()`. 값은 아직 읽지 않는다.
-   1. 호스트: `$host_options = HostFilter::toApiOptions($host_filter)` 를 먼저 구한 뒤 `API::Host()->get($host_options + [...])`. 사용자가 볼 수 있는 호스트만 나온다. (조건을 먼저 변수에 담는 이유: `../HANDBOOK.md` 2.3 의 주의)
+   1. 호스트: `$host_options = HostFilter::toApiOptions($host_filter)` 를 먼저 구한 뒤 `API::Host()->get($host_options + [...])`. 사용자가 볼 수 있는 호스트만 나온다. (조건을 먼저 변수에 담는 이유: `../01_시작하기/해설집.md` 2.3 의 주의)
    2. 아이템: 고른 항목마다 `ServerUsageService::findItems()` 로 찾는다. 키는 `conf/serverusage.conf.php` 의 `cpu_item_keys` / `memory_item_keys` 다. 그 뒤 `item.get` 으로 이름과 값 형식을 읽고, 소수(0)와 정수(3) 형식만 남긴다.
    3. 예상 줄 수 = `기간(초) / 180 x 아이템 수`. 한도(1000만)를 넘으면 `too_large` 가 `true` 다. (5버전과 같은 계산)
 7. **내보낼 수 없는 이유 찾기** - `findProblem()`. 기간 초과 → 대상 없음 → 줄 수 초과 순서로 본다.
@@ -165,7 +165,7 @@ web-01   CPU utilization   2026-11-22 09:03:00   13.1
 
 | 구분 | 내용 | 확인할 것 | 고칠 곳 |
 |---|---|---|---|
-| **이력 보관 기간** | 이력 표에는 아이템마다 정한 "이력 보관 기간" 만큼만 값이 있다. 3개월치를 받으려면 CPU/메모리 아이템의 이력 보관 기간이 3개월 이상이어야 한다. 보관 기간보다 오래된 날짜를 고르면 그 구간은 파일에 나오지 않는다 | 데이터 수집 > 호스트 > 아이템 > 이력 보관 기간 (`../CUSTOMER_ENV_CHECKLIST.md` 1-9) | 아이템(또는 템플릿)의 이력 보관 기간을 늘린다. DB 용량이 늘어난다 |
+| **이력 보관 기간** | 이력 표에는 아이템마다 정한 "이력 보관 기간" 만큼만 값이 있다. 3개월치를 받으려면 CPU/메모리 아이템의 이력 보관 기간이 3개월 이상이어야 한다. 보관 기간보다 오래된 날짜를 고르면 그 구간은 파일에 나오지 않는다 | 데이터 수집 > 호스트 > 아이템 > 이력 보관 기간 (`../04_남은_작업/고객환경_체크리스트.md` 1-9) | 아이템(또는 템플릿)의 이력 보관 기간을 늘린다. DB 용량이 늘어난다 |
 | 가정 | 파일을 하나로 내려보낸다 | 5버전이 파일을 나누던 기준. `export_csv.sh` (받지 못함) | `UsageExportService::stream()` |
 | 가정 | `ITEM` 열 = 아이템 이름 | 5버전 복사 표의 `item` 열이 이름인지 키인지 (미확인) | `UsageExportService::buildPlan()` 의 `'name'` |
 | 가정 | 예상 줄 수는 수집 간격을 180초로 보고 계산한다 (5버전과 같음) | 고객 서버의 실제 수집 간격 | `conf/usageexport.conf.php` 의 `assumed_interval` |
@@ -219,7 +219,7 @@ web-01   CPU utilization   2026-11-22 09:03:00   13.1
 7. `conf/usageexport.conf.php` 의 `max_rows` 를 잠깐 100 으로 낮춘다.
    - 기대: "예상 줄 수가 약 3,840줄로 한도(100줄)를 넘습니다." 안내, 버튼 없음. (설정 변경이 반영되기까지 몇 초 걸릴 수 있다) 확인 후 되돌린다.
 8. 호스트 그룹을 고른 상태에서 저사용 서버, 윈도우즈 패치 현황, 서버 시간 확인, Peak 이벤트 분석도 연다.
-   - 기대: 오류 없이 열린다. (호스트 그룹 필터에서 API 가 잘못 호출되던 버그를 같은 날 고쳤다. `../HANDBOOK.md` 2.3)
+   - 기대: 오류 없이 열린다. (호스트 그룹 필터에서 API 가 잘못 호출되던 버그를 같은 날 고쳤다. `../01_시작하기/해설집.md` 2.3)
 9. 끝나면 설정 파일을 되돌리고 시험 호스트와 넣은 이력 값을 지운다.
 
 브라우저에서 버튼을 직접 눌러 파일이 저장되는지는 확인하지 않았다. 내보내기 주소를 호출해 응답 헤더(`Content-Type: text/csv`, `Content-Disposition: attachment`)와 내용을 확인했다.

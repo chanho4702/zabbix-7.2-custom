@@ -209,7 +209,7 @@ db02   |        | .. | ...         |    |     |     |    |               | 미�
 | 목록 기준 | ITSM 에 있는 서버만 표시. Zabbix 에만 있는 호스트는 나오지 않는다 (5버전도 ITSM 기준으로 행을 만든 것으로 보이나 확인 필요) | `CControllerSwinventories.php` 289행 이후 | `SwInventoryService::getRows()` |
 | 5버전 "호스트" 열 | 5버전 규칙 파일의 열 함수 순서상 "호스트" 열과 "표시명" 열에 어느 필드가 들어갔는지 확실하지 않다. 7버전은 호스트 = ITSM `ci_name`, 표시명 = Zabbix 표시 이름 | 5버전 화면과 비교 | 뷰의 `addRow` |
 
-`UNIMPLEMENTED.md` 3장, `CUSTOMER_ENV_CHECKLIST.md` 1-1, 1-6, 2-6 과 같은 내용이다.
+`../04_남은_작업/미구현_목록.md` 3장, `../04_남은_작업/고객환경_체크리스트.md` 1-1, 1-6, 2-6 과 같은 내용이다.
 
 ## 8. 개선점
 

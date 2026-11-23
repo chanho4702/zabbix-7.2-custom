@@ -10,7 +10,7 @@
 
 경로는 모두 `ui/` 아래다.
 
-로그인 관련 파일(`index.php`, `general.login.php`, `index_mfa.php`, `CWebUser.php`, `CUser.php`)의 해설은 `LOGIN_CUSTOMIZATION.md` 2장에 있다.
+로그인 관련 파일(`index.php`, `general.login.php`, `index_mfa.php`, `CWebUser.php`, `CUser.php`)의 해설은 `../03_5버전_분석/로그인_커스텀.md` 2장에 있다.
 
 읽는 순서: 1장(요청 흐름) → 2장(모듈) → 3장(메뉴) → 필요할 때 4장 이후.
 

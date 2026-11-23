@@ -39,7 +39,7 @@ $fields = [
 ];
 // [DM 해설] 로그인 화면의 진입 파일(옛 방식 페이지). 로그인 폼 표시와 로그인 처리(POST)를 모두 여기서 한다.
 // [DM 해설] 위 $fields 가 로그인 폼에서 받을 수 있는 값 목록이다. 폼에 입력창(OTP 번호 등)을 추가하면 여기에도 추가해야 getRequest() 로 읽힌다.
-// [DM 해설] 주의: 로그인하기 전에는 모듈이 로드되지 않는다. 그래서 이 화면 자체는 모듈로 바꿀 수 없다. (docs/LOGIN_CUSTOMIZATION.md)
+// [DM 해설] 주의: 로그인하기 전에는 모듈이 로드되지 않는다. 그래서 이 화면 자체는 모듈로 바꿀 수 없다. (docs/03_5버전_분석/로그인_커스텀.md)
 check_fields($fields);
 
 if (hasRequest('reconnect') && CWebUser::isLoggedIn()) {
