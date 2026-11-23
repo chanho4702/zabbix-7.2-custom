@@ -2,6 +2,25 @@
 /*
  * DMove 커스텀 모듈 진입점.
  *
+ * ── 이 파일이 하는 일 ──
+ *   Zabbix 가 모듈을 읽어 들일 때 가장 먼저 실행하는 파일이다.
+ *   하는 일은 하나다. 왼쪽 사이드바에 이 모듈의 메뉴(SW 인벤토리, 보고서 9개, 장기 미접속 계정 현황)를 붙인다.
+ *   메뉴를 누른 뒤 열리는 화면은 이 파일이 아니라 actions/ 의 컨트롤러와 views/ 의 뷰가 만든다.
+ *
+ * ── 처리 흐름 ──
+ *   화면 요청이 들어온다
+ *     ├─ 코어가 manifest.json 을 읽는다 (모듈 이름, 액션 목록, CSS)
+ *     ├─ 코어가 이 클래스의 init() 을 부른다  ->  메뉴가 붙는다
+ *     └─ 주소의 action 값에 맞는 컨트롤러를 manifest.json 에서 찾아 실행한다
+ *
+ * ── 관련 파일 ──
+ *   manifest.json        모듈 등록 정보. 액션 이름 -> 컨트롤러 클래스 / 뷰 / 레이아웃
+ *   Module.php           메뉴 등록 (이 파일)
+ *   lang/ko.php          메뉴 라벨의 한국어 번역
+ *   includes/Lang.php    번역 함수 Lang::t()
+ *   actions/             화면별 컨트롤러
+ *   views/               화면별 뷰
+ *
  * ┌─────────────────────────────────────────────────────────────────────────┐
  * │ [사이드바 메뉴는 이 파일에서 추가한다]                                  │
  * │                                                                         │
@@ -53,6 +72,8 @@ class Module extends CModule {
 	 *   - 대표 액션: 메뉴를 클릭하면 zabbix.php?action=<대표 액션> 으로 이동한다.
 	 *               manifest.json 의 "actions" 키와 글자 하나까지 같아야 한다.
 	 *   - 다른 액션: 그 화면에 딸린 액션(내보내기 등). 이 액션이 실행 중일 때도 메뉴가 선택된 것으로 표시된다.
+	 *
+	 * 예) 아래 한 줄은 "인벤토리 아래에 'SW 인벤토리' 메뉴를 만들고, 누르면 swinventory.list 화면으로 간다"는 뜻이다.
 	 */
 	private const INVENTORY_MENUS = [
 		'SW inventory' => ['swinventory.list', ['swinventory.export']]
@@ -60,6 +81,7 @@ class Module extends CModule {
 
 	/**
 	 * 보고서(Reports) 아래에 추가할 메뉴. 적은 순서대로 코어 메뉴 뒤에 붙는다. (5버전 화면의 순서와 같다)
+	 * 형식은 위의 INVENTORY_MENUS 와 같다. 두 번째 칸이 [] 인 줄은 딸린 액션(내보내기)이 없는 화면이다.
 	 */
 	private const REPORT_MENUS = [
 		'Server time check' =>				['uptime.list', []],
@@ -69,9 +91,7 @@ class Module extends CModule {
 		'Daily check' =>					['dailycheck.list', []],
 		'Peak event analysis' =>			['peakevent.list', ['peakevent.export']],
 		'Windows patch status' =>			['winpatch.list', ['winpatch.export']],
-		'CPU/Memory usage export' =>		['usageexport.list', []],
-		// TODO(고객환경): 5버전에서 이 화면이 있던 메뉴 위치를 확인한다. (확인 전이라 보고서 맨 끝에 두었다)
-		'Box usage' =>						['hostbox.list', ['hostbox.export']]
+		'CPU/Memory usage export' =>		['usageexport.list', ['usageexport.export']]
 	];
 
 	/**
@@ -85,7 +105,19 @@ class Module extends CModule {
 	];
 
 	/**
+	 * 사이드바에 이 모듈의 메뉴를 붙인다. 모듈이 켜져 있으면 코어가 화면 요청마다 한 번 부른다.
+	 *
+	 * 하는 일
+	 *   1) 사이드바 전체 메뉴 객체를 가져온다.
+	 *   2) 인벤토리 / 보고서 / 유저 세 곳을 차례로 돌면서
+	 *   3) 위의 표(INVENTORY_MENUS, REPORT_MENUS, USER_MENUS)에 적힌 메뉴를 하나씩 붙인다.
+	 *      사용자에게 그 1단계 메뉴가 없으면(역할에서 꺼 둔 경우) 건너뛴다.
+	 *
+	 * 받는 값은 없다. 메뉴 객체를 직접 바꾸는 것이 결과다.
+	 *
 	 * 반환 타입 ": void" 는 "돌려주는 값이 없다"는 뜻이다. 부모와 똑같이 적어야 한다.
+	 *
+	 * @return void
 	 */
 	public function init(): void {
 		/*
@@ -116,9 +148,12 @@ class Module extends CModule {
 			[_('Users'), self::USER_MENUS, _('Users')]
 		];
 
+		// foreach (... as [$a, $b, $c]): 배열의 각 줄을 꺼내면서 세 칸을 변수 세 개에 바로 나눠 담는 문법이다.
 		foreach ($sections as [$section_label, $menus, $insert_after]) {
+			// find(라벨): 그 라벨의 메뉴를 찾는다. 없으면 null.
 			$section = $main_menu->find($section_label);
 
+			// 이 사용자에게는 그 1단계 메뉴가 없다. 다음 구역으로 넘어간다.
 			if ($section === null) {
 				continue;
 			}
@@ -126,14 +161,17 @@ class Module extends CModule {
 			$submenu = $section->getSubMenu();
 
 			// 여러 개를 같은 위치 뒤에 순서대로 넣으려면 뒤에서부터 넣어야 표의 순서가 유지된다.
+			// array_reverse(배열, true): 순서를 뒤집는다. true 는 키(메뉴 라벨)를 그대로 두라는 뜻.
 			$entries = $insert_after !== null ? array_reverse($menus, true) : $menus;
 
+			// $label = 메뉴 라벨(영어), $action = 대표 액션, $aliases = 같은 메뉴로 표시할 다른 액션들.
 			foreach ($entries as $label => [$action, $aliases]) {
 				// Lang::t(): 사용자 언어가 한국어면 한국어 라벨로 바꾼다.
 				$item = (new CMenuItem(Lang::t($label)))
 					->setAction($action)
 					->setAliases($aliases);
 
+				// 끼워 넣을 기준 메뉴가 실제로 있을 때만 그 뒤에 넣는다. 없으면 맨 끝에 붙인다.
 				if ($insert_after !== null && $submenu->find($insert_after) !== null) {
 					$submenu->insertAfter($insert_after, $item);
 				}

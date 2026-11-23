@@ -49,6 +49,11 @@
 			"view": "reports/dailycheck.list",
 			"layout": "layout.htmlpage"
 		},
+		"dailycheck.top": {
+			"class": "Reports/DailyCheck/DailyCheckTop",
+			"view": "reports/dailycheck.top",
+			"layout": "layout.json"
+		},
 		"peakevent.list": {
 			"class": "Reports/PeakEvent/PeakEventList",
 			"view": "reports/peakevent.list",
@@ -72,19 +77,14 @@
 			"view": "reports/winpatch.detail",
 			"layout": "layout.json"
 		},
-		"hostbox.list": {
-			"class": "Reports/HostBox/HostBoxList",
-			"view": "reports/hostbox.list",
-			"layout": "layout.htmlpage"
-		},
-		"hostbox.export": {
-			"class": "Reports/HostBox/HostBoxList",
-			"layout": "export/layout.file"
-		},
 		"usageexport.list": {
 			"class": "Reports/UsageExport/UsageExportList",
 			"view": "reports/usageexport.list",
 			"layout": "layout.htmlpage"
+		},
+		"usageexport.export": {
+			"class": "Reports/UsageExport/UsageExportList",
+			"layout": "export/layout.stream"
 		},
 		"userunconnect.list": {
 			"class": "Users/UserUnconnect/UserUnconnectList",
