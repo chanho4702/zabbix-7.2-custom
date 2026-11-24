@@ -252,8 +252,12 @@ class SwInventoryService {
 				$description = $zbx_host['description'];
 			}
 
-			// 줄의 키. 매칭된 줄은 hostid, 매칭이 안 된 줄은 'itsm_' + ITSM ID(없으면 호스트명).
-			$rowid = $zbx_host !== null ? $zbx_host['hostid'] : 'itsm_'.($itsm_row['id'] ?? $ci_name);
+			/*
+			 * 줄의 키. 매칭된 줄은 hostid, 매칭이 안 된 줄은 'itsm_' + ITSM ID. (5버전과 같다: "itsm_".$row['id'])
+			 * Agent 상태 표(extends_agent)에 이 키로 저장하고 읽는다.
+			 */
+			$itsm_id = trim((string) ($itsm_row['id'] ?? ''));
+			$rowid = $zbx_host !== null ? $zbx_host['hostid'] : 'itsm_'.$itsm_id;
 
 			$rows[] = [
 				'rowid' => $rowid,
@@ -270,10 +274,12 @@ class SwInventoryService {
 				'agent_note' => '',
 				/*
 				 * 상태를 사용자가 입력할 수 있는 줄인가. Zabbix 에 등록되지 않은 ITSM 서버만 입력한다. (5버전과 같다)
-				 * 키가 20자를 넘으면 상태 표의 칸(varchar(20))에 들어가지 않아 저장이 실패하므로 링크를 만들지 않는다.
-				 * (ITSM ID 가 없고 호스트명이 긴 줄. 이런 줄은 "미설치"로만 보인다)
+				 * 다만 아래 두 경우는 링크를 만들지 않는다. 이런 줄은 "미설치" 글자만 보인다.
+				 *   - ITSM ID 가 비어 있다: 키가 모두 'itsm_' 로 같아져 서로의 상태를 덮어쓴다. (5버전은 그대로 덮어썼다)
+				 *   - 키가 20자를 넘는다: 상태 표의 칸(varchar(20))에 들어가지 않는다. ITSM ID 가 15자리를 넘을 때만 생긴다.
 				 */
-				'agent_editable' => $zbx_host === null && !$this->itsm_fallback && mb_strlen($rowid) <= 20
+				'agent_editable' => $zbx_host === null && !$this->itsm_fallback && $itsm_id !== ''
+					&& mb_strlen($rowid) <= 20
 			// 배열 + 배열: 오른쪽 배열의 키(os, web, was, db, duplex)를 왼쪽 배열에 합친다.
 			] + $this->software->resolve($itsm_row, $zbx_host);
 		}
