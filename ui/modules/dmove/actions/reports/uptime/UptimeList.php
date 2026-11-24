@@ -20,7 +20,7 @@
  *   서버 Time : 가동 시간을 "158 일, 13:38:45" 형식으로 표시한 것.
  *   서버 start: 값을 수집한 시각 - 가동 시간 = 부팅 시각.
  *   OS        : 호스트 인벤토리의 os 필드. 필터 OS/Version 도 이 필드를 부분 일치로 찾는다.
- *   IP        : 호스트의 대표 인터페이스 IP.
+ *   IP        : Agent -> SNMP -> JMX -> IPMI 순서로 처음 찾은 인터페이스의 IP (DNS 로 연결하면 DNS 이름). ipOf() 참고.
  *
  * ── 데이터 흐름 ──
  *   doAction()
@@ -62,7 +62,6 @@ use CProfile;
 use CUrl;
 use CWebUser;
 use Modules\DMove\Includes\Filter\HostFilter;
-use Modules\DMove\Includes\HostHelper;
 use Modules\DMove\Includes\ItsmRepository;
 use Modules\DMove\Includes\Lang;
 
@@ -211,20 +210,21 @@ class UptimeList extends CController {
 		 *    with_monitored_items        모니터링 중인 아이템이 하나라도 있는 호스트만. (5버전과 같다)
 		 *    searchInventory             인벤토리 필드를 부분 일치(대소문자 무시)로 찾는다. 여기서는 os 필드.
 		 *    selectInventory             각 호스트에 'inventory' => ['os' => ..] 를 붙인다. 인벤토리가 꺼져 있으면 빈 배열.
-		 *    selectInterfaces            각 호스트에 'interfaces' => [[ip, main, type], ...] 를 붙인다.
+		 *    selectInterfaces            각 호스트에 'interfaces' => [[type, useip, ip, dns], ...] 를 붙인다. (ipOf() 가 쓴다)
 		 *    preservekeys                결과 배열의 키를 hostid 로 한다.
+		 *
+		 * searchInventory 는 OS 입력이 비어 있어도 항상 넣는다. 5버전과 같다. (5버전 CControllerUptime.php)
+		 * 이 옵션이 있으면 API 가 인벤토리 표를 묶어서 읽으므로, 인벤토리가 꺼진 호스트는 목록에서 빠진다.
+		 * 입력이 빈 글자면 OS 조건은 붙지 않고 "인벤토리가 켜진 호스트"라는 조건만 남는다.
 		 */
 		$options = HostFilter::toApiOptions($host_filter) + [
 			'output' => ['hostid', 'name', 'description'],
 			'with_monitored_items' => true,
+			'searchInventory' => ['os' => $filter['os']],
 			'selectInventory' => ['os'],
-			'selectInterfaces' => HostHelper::INTERFACE_FIELDS,
+			'selectInterfaces' => ['type', 'useip', 'ip', 'dns'],
 			'preservekeys' => true
 		];
-
-		if ($filter['os'] !== '') {
-			$options['searchInventory'] = ['os' => $filter['os']];
-		}
 
 		$hosts = API::Host()->get($options);
 
@@ -273,8 +273,9 @@ class UptimeList extends CController {
 			$rows[] = [
 				'hostid' => $host['hostid'],
 				'host' => $host['name'],
-				'ip' => HostHelper::mainIp($host['interfaces']),
+				'ip' => self::ipOf($host['interfaces']),
 				// ITSM 설명이 있으면 그것을, 없으면 Zabbix 호스트 설명을 쓴다.
+				// 확인 안 됨: 5버전 뷰 파일을 받지 못해 5버전이 이 열에 무엇을 썼는지 모른다. 그래서 바꾸지 않았다.
 				'description' => $itsm_descriptions[mb_strtolower($host['name'])] ?? $host['description'],
 				// 인벤토리가 꺼진 호스트는 inventory 가 빈 배열이라 os 키가 없다.
 				'os' => is_array($host['inventory']) ? ($host['inventory']['os'] ?? '') : '',
@@ -286,6 +287,29 @@ class UptimeList extends CController {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * 이 화면의 IP 열 값. 5버전 CControllerUptime.php 와 같은 규칙이다. (다른 화면의 HostHelper::mainIp() 와 다르다)
+	 *
+	 * 인터페이스 종류를 Agent -> SNMP -> JMX -> IPMI 순서로 보고, 처음 찾은 종류의 첫 번째 인터페이스를 쓴다.
+	 * 기본(main) 표시는 보지 않는다. 그 인터페이스가 IP 로 연결하면(useip=1) IP 를, 아니면 DNS 이름을 돌려준다.
+	 * 인터페이스가 하나도 없으면 빈 문자열.
+	 *
+	 * @param array $interfaces  host.get 의 'interfaces' 값. [['type' => .., 'useip' => .., 'ip' => .., 'dns' => ..], ...]
+	 *
+	 * @return string  IP 또는 DNS 이름.
+	 */
+	private static function ipOf(array $interfaces): string {
+		foreach ([INTERFACE_TYPE_AGENT, INTERFACE_TYPE_SNMP, INTERFACE_TYPE_JMX, INTERFACE_TYPE_IPMI] as $type) {
+			foreach ($interfaces as $interface) {
+				if ($interface['type'] == $type) {
+					return $interface['useip'] == INTERFACE_USE_IP ? $interface['ip'] : $interface['dns'];
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**
