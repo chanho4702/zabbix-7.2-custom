@@ -70,8 +70,8 @@ return [
 	'The Agent status table does not exist.' => 'Agent 상태 표가 없습니다.',
 	'Run sql/extends_agent.sql in the Zabbix database, or check conf/swinventory.conf.php.' =>
 		'Zabbix DB 에서 sql/extends_agent.sql 을 실행하거나 conf/swinventory.conf.php 를 확인하세요.',
-	'ITSM table is not configured (conf/itsm.conf.php). Showing Zabbix hosts instead.' =>
-		'ITSM 테이블이 설정되지 않아(conf/itsm.conf.php) Zabbix 호스트 목록 기준으로 표시 중입니다.',
+	'Cannot read ITSM data. Check conf/itsm.conf.php and the ITSM table.' =>
+		'ITSM 데이터를 읽을 수 없습니다. conf/itsm.conf.php 설정과 ITSM 테이블을 확인하세요.',
 
 	// ── 서버 시간 확인 ──
 	'Server uptime' => '서버 Uptime',
@@ -160,14 +160,17 @@ return [
 	'Patch file name' => 'Patch File명',
 	'View details' => '상세보기',
 	'Windows patch details' => 'Windows 패치 상세정보',
+	'No patch data' => '없음',
+	'Host (%1$s) has no item.' => '호스트(%1$s)에 item이 없습니다.',
+	'Host (%1$s) has no collected value in the selected period.' => '호스트(%1$s)에 선택한 기간에 수집된 값이 없습니다.',
+	'No ITSM data for host (%1$s).' => '호스트(%1$s)에 대한 ITSM 데이터가 없습니다.',
+	'No ITSM table for host (%1$s).' => '호스트(%1$s)에 대한 ITSM 테이블이 없습니다.',
 
 	// ── CPU/Memory 전체 사용률 추출 ──
 	'Items' => '항목',
 	'Hours' => '시간',
 	'Business hours (%1$s:00 ~ %2$s:00)' => '업무시간 (%1$s:00 ~ %2$s:00)',
 	'The period can be up to %1$d days. Choose a shorter period.' => '기간은 최대 %1$d일까지 고를 수 있습니다. 기간을 줄여 주세요.',
-	'* A database error occurred. The file is incomplete.' => '※ DB 조회 오류로 파일이 끝까지 만들어지지 않았습니다.',
-	'* Stopped at the row limit (%1$s rows). The file is incomplete.' => '※ 줄 수 한도(%1$s줄)에 닿아 여기서 멈췄습니다. 파일이 끝까지 만들어지지 않았습니다.',
 	'Preview: the first %1$d rows. Download the file to get all rows.' => '미리보기: 앞에서 %1$d줄만 표시합니다. 전체는 파일로 내려받으세요.',
 	'There are no CPU/Memory items for the selected hosts.' => '선택한 호스트에 CPU/Memory 아이템이 없습니다.',
 	'Values before %1$s may have been deleted because the trend storage period has passed. The average covers only the remaining period.' =>
@@ -182,6 +185,14 @@ return [
 		'예상 줄 수가 약 %1$s줄로 한도(%2$s줄)를 넘습니다. 호스트를 줄이거나 기간을 줄여 주세요.',
 	'Target items: %1$s, expected rows: about %2$s. Press [Export to CSV] to download.' =>
 		'대상 아이템 %1$s개, 예상 줄 수 약 %2$s줄. [CSV 내보내기] 를 누르면 내려받습니다.',
+	'There are %1$s rows, which exceeds the limit of %2$s rows. Choose fewer hosts or a shorter period.' =>
+		'줄 수가 %1$s줄로 한도(%2$s줄)를 넘습니다. 호스트를 줄이거나 기간을 줄여 주세요.',
+	'A database error occurred while counting rows. Try again later.' =>
+		'줄 수를 세는 중 DB 조회 오류가 났습니다. 잠시 후 다시 시도해 주세요.',
+	'A database error occurred while reading the preview. Try again later.' =>
+		'미리보기를 읽는 중 DB 조회 오류가 났습니다. 잠시 후 다시 시도해 주세요.',
+	'A database error occurred while calculating usage. Try again later.' =>
+		'사용률을 집계하는 중 DB 조회 오류가 났습니다. 잠시 후 다시 시도해 주세요.',
 	'All hours' => '전체사용현황',
 	'* Real-time data can be exported for the previous day up to 3 months.' =>
 		'※실시간 Data 출력은 전일 ~ 3개월 기간 출력이 가능합니다.',

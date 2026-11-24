@@ -19,6 +19,7 @@
  *   fetchDescriptions() Description 열에 ITSM 설명을 쓰는 화면:
  *                       actions/reports/uptime/UptimeList.php, actions/reports/serverusage/ServerUsageController.php,
  *                       actions/reports/dailycheck/DailyCheckTop.php, includes/WinPatchService.php
+ *   idExists()          actions/inventory/swinventory/AgentSave.php, AgentEdit.php (줄의 키 확인)
  *
  * ── 데이터 흐름 ──
  *   fetch()
@@ -78,7 +79,11 @@ class ItsmRepository {
 
 		$rows = [];
 
-		while ($row = DBfetch($result)) {
+		/*
+		 * DBfetch(커서, false): NULL 값을 0 으로 바꾸지 않고 null 그대로 받는다.
+		 * (기본값 true 면 NULL 인 id 가 '0' 이 되어 키가 'itsm_0' 으로 합쳐지고, 빈 설명이 '0' 으로 보인다)
+		 */
+		while ($row = DBfetch($result, false)) {
 			$rows[] = $row;
 		}
 
@@ -88,31 +93,61 @@ class ItsmRepository {
 	/**
 	 * ITSM 의 호스트명 => Description 표. (저사용/고사용 서버 화면 등, Description 열에 ITSM 값을 쓰는 화면용)
 	 *
-	 * 5버전 대응: ITSM 트레잇의 itsm_description()
-	 *   5버전은 호스트마다 쿼리를 한 번씩 실행했다. 여기서는 한 번에 읽어 이름으로 찾는다.
+	 * 5버전 대응: ITSM 트레잇의 itsm_description()  (...Itms.php 44-75행)
+	 *   5버전은 호스트마다 "ci_name ilike <호스트 표시 이름>" 쿼리를 한 번 실행하고 첫 줄의 description 을 썼다.
+	 *   여기서는 한 번에 읽어 이름으로 찾는다. 찾는 이름은 호스트 표시 이름(name) 하나뿐이다. (5버전과 같다)
+	 *   - ci_name 은 앞뒤 빈칸을 떼지 않고 그대로 비교한다. (대소문자만 무시한다)
+	 *   - 같은 ci_name 이 여러 줄이면 먼저 읽은 줄을 쓴다. (5버전의 "첫 줄")
+	 *   - description 이 비어 있어도 그 값(빈 문자열)을 그대로 돌려준다. Zabbix 호스트 설명으로 넘어가지 않는다.
 	 *
-	 * @return array  [소문자로 바꾼 ci_name => description]  ITSM 을 쓸 수 없으면 빈 배열.
+	 * @return array|null  [소문자로 바꾼 ci_name => description(문자열, 빈 값일 수 있다)]
+	 *                     ITSM 표를 읽을 수 없으면(설정이 비었다 / 표가 없다 / 조회 실패) null.
+	 *                     null 이면 5버전의 "ITSM 테이블이 없습니다", 키가 없으면 "ITSM 데이터가 없습니다" 에 해당한다.
 	 *
 	 * 사용 예:
 	 *   $itsm_descriptions = (new ItsmRepository())->fetchDescriptions();
-	 *   $description = $itsm_descriptions[mb_strtolower($host['name'])] ?? $host['description'];
+	 *   $description = $itsm_descriptions[mb_strtolower($host['name'])] ?? '';
 	 */
-	public function fetchDescriptions(): array {
+	public function fetchDescriptions(): ?array {
+		$rows = $this->fetch();
+
+		if ($rows === null) {
+			return null;
+		}
+
 		$descriptions = [];
 
-		// ?? [] : fetch() 가 null(ITSM 미연동)을 돌려주면 빈 배열로 바꿔 반복문을 건너뛴다.
-		foreach ($this->fetch() ?? [] as $row) {
-			$name = mb_strtolower(trim((string) ($row['ci_name'] ?? '')));
+		foreach ($rows as $row) {
+			$name = mb_strtolower((string) ($row['ci_name'] ?? ''));
 
-			$description = trim((string) ($row['description'] ?? ''));
-
-			// 설명이 빈 행은 넣지 않는다. 그래야 화면이 Zabbix 호스트 설명으로 넘어간다. (?? 는 빈 문자열을 "값 있음"으로 본다)
-			if ($name !== '' && $description !== '') {
-				$descriptions[$name] = $description;
+			// 먼저 읽은 줄을 남긴다. (5버전은 쿼리 결과의 첫 줄을 썼다)
+			if (!array_key_exists($name, $descriptions)) {
+				$descriptions[$name] = (string) ($row['description'] ?? '');
 			}
 		}
 
 		return $descriptions;
+	}
+
+	/**
+	 * ITSM 에 그 id 의 줄이 있는가. (SW 인벤토리 Agent 상태 저장 전 확인용)
+	 *
+	 * id 는 앞뒤 빈칸을 떼지 않고 그대로 비교한다. (줄의 키 'itsm_' + id 도 그대로 만든다)
+	 *
+	 * @param string $id  ITSM id. 예) '1001'
+	 *
+	 * @return bool  있으면 true. ITSM 을 쓸 수 없거나 조회에 실패해도 false.
+	 */
+	public function idExists(string $id): bool {
+		$table = $this->getQualifiedTableName();
+
+		if ($table === null) {
+			return false;
+		}
+
+		$result = DBselect('SELECT 1 FROM '.$table.' WHERE id='.zbx_dbstr($id), 1);
+
+		return $result !== false && DBfetch($result) !== false;
 	}
 
 	/**
