@@ -51,6 +51,7 @@ namespace Modules\DMove;
 use APP;
 use CMenuItem;
 use CRoleHelper;
+use CUrl;
 use CWebUser;
 use Modules\DMove\Includes\Lang;
 use Zabbix\Core\CModule;
@@ -223,18 +224,10 @@ class Module extends CModule {
 			}
 		}
 
+		// 사이드바 아래쪽의 "Agent 설치파일", "사용자메뉴얼" 링크. (5버전과 같게. 설정: conf/sidebar.conf.php)
+		self::addSidebarLinks();
+
 		/*
-		 * TODO(고객환경): 5버전 사이드바 맨 아래에 있던 "Agent 설치파일", "사용자메뉴얼" 링크.
-		 * 링크 대상(파일 경로/URL)을 확인한 뒤 아래처럼 추가한다. 'menu.user' 가 사이드바 아래쪽 메뉴다.
-		 *
-		 *   APP::Component()->get('menu.user')
-		 *       ->insertBefore(_('User settings'),
-		 *           (new CMenuItem('사용자메뉴얼'))
-		 *               ->setIcon(ZBX_ICON_HELP_CIRCLED)
-		 *               ->setUrl(new \CUrl('확인한 주소'))
-		 *               ->setTarget('_blank')
-		 *       );
-		 *
 		 * 새 1단계 메뉴를 만들어 그 아래에 넣고 싶을 때:
 		 *
 		 *   APP::Component()->get('menu.main')
@@ -243,5 +236,52 @@ class Module extends CModule {
 		 *       ->getSubMenu()
 		 *       ->add((new CMenuItem('새 화면'))->setAction('xxx.list'));
 		 */
+	}
+
+	/**
+	 * 사이드바 아래쪽 메뉴에 5버전의 "Agent 설치파일", "사용자메뉴얼" 링크를 넣고, 5버전처럼 코어의 Support,
+	 * Integrations, Help 를 뺀다. 값은 conf/sidebar.conf.php 에 있다.
+	 *
+	 *   APP::Component()->get('menu.user') : 사이드바 아래쪽 메뉴 객체(CMenu). 코어가 모듈 init() 전에 만들어 둔다.
+	 *   remove(라벨) / find(라벨)            : 라벨은 사용자 언어로 번역된 글자라서 _('Support') 처럼 번역해서 찾는다.
+	 *   insertBefore(_('User settings'), ..) : "사용자 설정" 바로 위에 넣는다. 게스트는 이 메뉴가 없어 맨 끝에 붙인다.
+	 */
+	private static function addSidebarLinks(): void {
+		$file = __DIR__.'/conf/sidebar.conf.php';
+		$config = is_readable($file) ? require $file : [];
+
+		if (!is_array($config)) {
+			return;
+		}
+
+		$user_menu = APP::Component()->get('menu.user');
+
+		foreach ((array) ($config['remove_core'] ?? []) as $label) {
+			$user_menu->remove(_((string) $label));
+		}
+
+		foreach ((array) ($config['links'] ?? []) as $link) {
+			if (!is_array($link) || ($link['label'] ?? '') === '' || ($link['url'] ?? '') === '') {
+				continue;
+			}
+
+			$item = (new CMenuItem((string) $link['label']))
+				->setUrl(new CUrl((string) $link['url']))
+				->setTarget('_blank');
+
+			// 'ZBX_ICON_SUPPORT' 같은 상수 이름을 값으로 바꾼다. 없는 이름이면 아이콘 없이 둔다.
+			$icon = (string) ($link['icon'] ?? '');
+
+			if ($icon !== '' && defined($icon)) {
+				$item->setIcon(constant($icon));
+			}
+
+			if ($user_menu->find(_('User settings')) !== null) {
+				$user_menu->insertBefore(_('User settings'), $item);
+			}
+			else {
+				$user_menu->add($item);
+			}
+		}
 	}
 }
