@@ -15,26 +15,24 @@
  *          (zabbix.php?action=peakevent.export&format=csv 또는 xlsx)
  *
  * ── 이 화면이 하는 일 ──
- *   선택한 기간 동안 "장애(PROBLEM) 이벤트가 몇 번 발생했는지"를 트리거별로 센 것이다.
+ *   선택한 기간 동안 트리거의 상태가 몇 번 바뀌었는지(장애 + 복구 이벤트 수)를 트리거별로 센 것이다.
  *   같은 트리거가 장애 <-> 정상을 자주 오갈수록 숫자가 커진다.
  *   코어의 "보고서 > 상위 100 트리거" 와 같은 집계에 IP 와 Description 열을 더한 화면이다.
  *
- * ┌─────────────────────────────────────────────────────────────────────────┐
- * │ TODO(고객환경) 집계 기준 확인                                           │
- * │ 5버전 peak_event.php 소스는 확인하지 못했다. 화면의 열 이름이 코어의    │
- * │ "상위 100 트리거" 보고서와 같아서 같은 방식(기간 내 PROBLEM 이벤트 수)  │
- * │ 으로 구현했다. 5버전 소스에서 아래를 확인해 다르면 getRows() 를 고친다. │
- * │   - 세는 대상: PROBLEM 이벤트만인지, 복구(OK) 이벤트도 포함하는지       │
- * │   - 특정 트리거만 대상인지 (이름이 "[Zabbix|...]" 로 시작하는 것 등)    │
- * │   - 표시 건수 제한 (여기서는 상위 MAX_ROWS 개)                          │
- * │   - Description 의 출처 (여기서는 Zabbix 호스트 설명)                   │
- * └─────────────────────────────────────────────────────────────────────────┘
+ * ── 5버전과 대조 (2026-11-24, 5버전 peak_event.php) ──
+ *   5버전은 코어 toptriggers.php 를 복사한 화면이다. 집계 SQL:
+ *     SELECT e.objectid, count(distinct e.eventid) FROM triggers t, events e
+ *      WHERE source=트리거, object=트리거, 기간 안, [이름 부분 일치], [심각도], [호스트/그룹], [권한]
+ *      GROUP BY e.objectid ORDER BY 개수 DESC LIMIT 100
+ *   - 세는 대상: 장애(PROBLEM)와 복구(OK) 이벤트를 모두 센다 (value 조건이 없다). 그래서 열 이름이 "상태 변경 횟수"다.
+ *   - 표시 건수: 100개. 이름 필터: 이벤트 이름 부분 일치(ilike). 심각도 기본값: [4, 3, 2].
+ *   여기서도 같게 센다. Description 출처(Zabbix 호스트 설명)는 5버전 뷰를 받지 못해 확인하지 못했다.
  *
  * ── 데이터 흐름 ──
  *   doAction()
  *     ├─ 시간 선택기의 기간을 저장하고 읽는다 (코어 함수 updateTimeSelectorPeriod / getTimeSelectorPeriod)
  *     ├─ getRows()
- *     │    ├─ event.get   : 기간 안의 장애 이벤트를 트리거별로 세고, 많은 순으로 100개
+ *     │    ├─ event.get   : 기간 안의 장애/복구 이벤트를 트리거별로 세고, 많은 순으로 100개
  *     │    ├─ trigger.get : 그 트리거의 이름, 심각도, 소속 호스트
  *     │    └─ host.get    : 그 호스트의 설명과 IP
  *     ├─ 내보내기 요청(peakevent.export)이면 파일로 응답하고 끝
@@ -204,6 +202,17 @@ class PeakEventList extends CController {
 		$filter = [
 			'name' => CProfile::get(self::PROFILE_PREFIX.'filter.name', ''),
 			'severities' => self::normalizeSeverities(CProfile::getArray(self::PROFILE_PREFIX.'filter.severities', []))
+			/*
+			 * 5버전처럼 처음 열 때 High, Average, Warning 3개가 체크되어 있게 하려면 위 줄 대신 아래 줄을 쓴다.
+			 * (5버전 peak_event.php: 코어 toptriggers.php 를 복사한 화면이라 심각도 기본값이 [4, 3, 2] 였다)
+			 *   TRIGGER_SEVERITY_HIGH = 4, TRIGGER_SEVERITY_AVERAGE = 3, TRIGGER_SEVERITY_WARNING = 2
+			 * 주의: 이렇게 하면 체크를 모두 풀고 [적용] 해도 저장된 값이 없어 다시 3개가 체크된다.
+			 *      (프로파일은 빈 배열을 저장하지 않는다. 5버전도 같았다)
+			 *
+			 * 'severities' => self::normalizeSeverities(CProfile::getArray(self::PROFILE_PREFIX.'filter.severities',
+			 * 	[TRIGGER_SEVERITY_HIGH, TRIGGER_SEVERITY_AVERAGE, TRIGGER_SEVERITY_WARNING]
+			 * ))
+			 */
 		];
 
 		// ── 2) 데이터 ──
@@ -311,22 +320,24 @@ class PeakEventList extends CController {
 		 *    결과: [['objectid' => 트리거ID, 'rowscount' => 개수], ...]
 		 *
 		 *    source / object : "트리거가 만든 이벤트"만.
-		 *    value           : TRIGGER_VALUE_TRUE = 장애(PROBLEM) 이벤트만. 복구 이벤트는 세지 않는다.
 		 *    countOutput + groupBy : 이벤트를 그대로 받지 않고, objectid 별 개수(rowscount)만 받는다.
-		 *    sortfield / sortorder : 개수가 많은 순서로.
-		 *    limit           : 위에서 MAX_ROWS 개까지만.
+		 *
+		 *    장애(PROBLEM)와 복구(OK) 이벤트를 모두 센다. 5버전 peak_event.php 와 같다 (2026-11-24 대조).
+		 *    (이전 구현은 장애만 셌다. 장애만 세려면 아래에서 복구 쪽 조회를 빼면 된다)
+		 *
+		 *    둘을 따로 조회해 PHP 에서 더하는 이유:
+		 *      - 7.0 event.get 은 value 를 주지 않으면 장애/복구를 따로 세어 합치는데, 각각에 정렬과 limit 를 먼저
+		 *        적용하고 합친 뒤 다시 정렬하지 않는다. 그대로 쓰면 "많은 순 100개"가 틀어진다. (CEvent::get())
+		 *      - 복구 이벤트의 심각도(severity)는 0 으로 저장된다. event.get 의 severities 로 거르면 복구가 빠진다.
+		 *        그래서 심각도는 5버전처럼 트리거의 심각도(priority)로 아래 2) 에서 거른다.
 		 */
 		$options = [
 			'countOutput' => true,
 			'groupBy' => ['objectid'],
 			'source' => EVENT_SOURCE_TRIGGERS,
 			'object' => EVENT_OBJECT_TRIGGER,
-			'value' => TRIGGER_VALUE_TRUE,
 			'time_from' => $time_from,
-			'time_till' => $time_till,
-			'sortfield' => ['rowscount'],
-			'sortorder' => ZBX_SORT_DOWN,
-			'limit' => self::MAX_ROWS
+			'time_till' => $time_till
 		// 호스트 그룹/호스트 필터. 선택하지 않으면 null 이라 조건이 붙지 않는다. (하위 그룹 포함)
 		] + HostFilter::toApiOptions($host_filter);
 
@@ -338,19 +349,37 @@ class PeakEventList extends CController {
 			$options['search'] = ['name' => $filter['name']];
 		}
 
-		// 심각도 필터: 체크한 심각도의 이벤트만. 하나도 체크하지 않으면 전체.
-		if ($filter['severities']) {
-			$options['severities'] = $filter['severities'];
+		// [트리거ID => 개수]. 장애 개수에 복구 개수를 더한다.
+		$count_by_triggerid = [];
+
+		foreach ([TRIGGER_VALUE_TRUE, TRIGGER_VALUE_FALSE] as $value) {
+			$counts = API::Event()->get(['value' => $value] + $options);
+
+			foreach ($counts ?: [] as $count) {
+				$count_by_triggerid[$count['objectid']] = ($count_by_triggerid[$count['objectid']] ?? 0)
+					+ (int) $count['rowscount'];
+			}
 		}
 
-		$counts = API::Event()->get($options);
+		// 심각도 필터: 체크한 심각도의 트리거만. 하나도 체크하지 않으면 전체. (5버전: t.priority 조건)
+		if ($count_by_triggerid && $filter['severities']) {
+			$matching = API::Trigger()->get([
+				'output' => [],
+				'triggerids' => array_keys($count_by_triggerid),
+				'filter' => ['priority' => $filter['severities']],
+				'preservekeys' => true
+			]);
+			// array_intersect_key: 왼쪽 배열에서 오른쪽에도 있는 키만 남긴다.
+			$count_by_triggerid = array_intersect_key($count_by_triggerid, $matching ?: []);
+		}
 
-		if (!$counts) {
+		if (!$count_by_triggerid) {
 			return [];
 		}
 
-		// array_column(배열, 값 키, 색인 키): [트리거ID => 개수]
-		$count_by_triggerid = array_column($counts, 'rowscount', 'objectid');
+		// 개수가 많은 순으로 정렬하고 위에서 MAX_ROWS(100)개만. arsort: 값 기준 내림차순, 키 유지.
+		arsort($count_by_triggerid);
+		$count_by_triggerid = array_slice($count_by_triggerid, 0, self::MAX_ROWS, true);
 
 		/*
 		 * 2) 트리거 이름, 심각도, 소속 호스트.
