@@ -12,13 +12,13 @@
  *
  * ── 데이터 흐름 ──
  *   목록 : getRows()
- *            ├─ item.get : 필터에 맞는 호스트 중 패치 목록 아이템을 가진 것
- *            ├─ host.get : 그 호스트의 이름, 설명, 인터페이스
- *            ├─ (HotFix ID 를 입력했을 때만) getLatestValue() 로 값을 읽어 글자가 들어 있는지 본다
- *            └─ ItsmRepository::fetchDescriptions() 로 Description 을 채운다
+ *            ├─ host.get : 필터에 맞는 호스트 중 인벤토리 OS 에 windows 가 들어 있는 것 (이름, 인터페이스)
+ *            ├─ item.get : 그 호스트의 패치 목록 아이템
+ *            ├─ getLatestValue() : 기간 안의 값. 있으면 "상세보기", 없으면 "없음". HotFix ID 도 이 값으로 본다
+ *            └─ ItsmRepository::fetchDescriptions() 로 Description 을 채운다 (ITSM 값만)
  *   상세 : getDetail()
  *            ├─ host.get / item.get : 호스트와 패치 목록 아이템 (권한 밖이면 결과가 없다)
- *            ├─ getLatestValue()    : 선택한 달의 가장 최근 값 (history.get)
+ *            ├─ getLatestValue()    : 기간 안의 빈 값이 아닌 가장 최근 값 (history.get)
  *            └─ parse()             : 긴 글을 표의 행으로 자른다
  *
  * 5버전 대응: 윈도우 트레잇(...Windows.php)의 middle_patchFile / middle_patchVersion / middle_patchDate,
@@ -28,8 +28,9 @@
  *   각 윈도우 서버의 Zabbix 에이전트가 "설치된 패치 목록 파일"의 내용을 통째로 읽어 보내는 아이템이 있다.
  *   (아이템 키: conf/winpatch.conf.php)  그 값(긴 글)이 이력(history)에 쌓인다.
  *
- *     목록 화면   = 그 아이템을 가진 호스트
- *     상세보기    = 선택한 달에 수집된 값 중 가장 최근 것을 표로 풀어서 보여 준다
+ *     목록 화면   = 인벤토리 OS 가 windows 인 호스트 (아이템이 없어도 나온다)
+ *     기간        = 고른 날짜 00:00:00 ~ 그달 말일 23:59:59 (monthRange())
+ *     상세보기    = 기간 안에 수집된 값 중 빈 값이 아닌 가장 최근 것을 표로 풀어서 보여 준다
  *     HotFix ID   = 그 값 안에 입력한 글자가 들어 있는 호스트만 남긴다
  *
  * 5버전과 달라진 점
@@ -52,6 +53,9 @@ use API;
 use Modules\DMove\Includes\Filter\HostFilter;
 
 class WinPatchService {
+
+	/** getLatestValue() 가 history.get 한 번에 읽는 값 수. */
+	private const HISTORY_BATCH = 5;
 
 	/** @var array  conf/winpatch.conf.php 의 내용 */
 	private array $config;
@@ -91,35 +95,39 @@ class WinPatchService {
 	}
 
 	/**
-	 * 'YYYY-MM-DD' 가 속한 달의 시작과 끝을 유닉스 시간(초)으로 돌려준다.
-	 * 5버전의 "수집월선택" 과 같다. 날짜를 하나 고르면 그 날이 속한 달 전체를 본다.
+	 * 'YYYY-MM-DD' 날짜부터 그달 말일까지를 유닉스 시간(초)으로 돌려준다.
+	 * 5버전의 "수집월선택" 과 같다. 고른 날짜 00:00:00 부터 그달 말일까지 본다. (1일로 당기지 않는다)
+	 * (5버전 윈도우 트레잇(...Windows.php) middle_patchDate, CControllerPopupWindows.php: from = strtotime(고른 날짜))
 	 *
-	 * 예) '2026-11-23' -> [2026-11-01 00:00:00 의 유닉스 초, 2026-11-30 23:59:59 의 유닉스 초]
+	 * 5버전은 끝을 "clock < 말일 23:59:59" 로 비교해서 마지막 1초가 빠졌다. 여기서는 23:59:59 까지 넣는다.
+	 *
+	 * 예) '2026-11-23' -> [2026-11-23 00:00:00 의 유닉스 초, 2026-11-30 23:59:59 의 유닉스 초]
 	 *
 	 * @param string $date  'YYYY-MM-DD' 형식의 날짜.
 	 *
-	 * @return array  [그달 1일 00:00:00, 그달 말일 23:59:59]
+	 * @return array  [고른 날짜 00:00:00, 그달 말일 23:59:59]
 	 */
 	public static function monthRange(string $date): array {
 		$time = strtotime($date.' 00:00:00');
 
-		// date('Y-m-01') = 그달 1일,  date('Y-m-t') = 그달 말일 (t 는 "그달의 날 수")
+		// date('Y-m-t') = 그달 말일 (t 는 "그달의 날 수")
 		return [
-			strtotime(date('Y-m-01', $time).' 00:00:00'),
+			$time,
 			strtotime(date('Y-m-t', $time).' 23:59:59')
 		];
 	}
 
 	/**
-	 * 패치 목록 아이템을 가진 호스트 목록. (목록 화면의 행)
+	 * 윈도우 호스트 목록. (목록 화면의 행)
 	 *
-	 * 설정의 아이템 키를 가진 호스트만 나온다. 호스트는 API 가 사용자 권한에 맞게 걸러 준다.
+	 * 인벤토리 OS 에 windows 가 들어 있는 호스트가 나온다. 호스트는 API 가 사용자 권한에 맞게 걸러 준다.
 	 *
 	 * @param array  $host_filter  HostFilter::load() 의 결과.
-	 * @param string $hotfix_id    비어 있지 않으면, 선택한 달의 값에 이 글자가 들어 있는 호스트만 남긴다.
-	 * @param string $month_date   'YYYY-MM-DD'. 이 날짜가 속한 달을 본다.
+	 * @param string $hotfix_id    비어 있지 않으면, 기간 안의 값에 이 글자가 들어 있는 호스트만 남긴다.
+	 * @param string $month_date   'YYYY-MM-DD'. 이 날짜부터 그달 말일까지 본다.
 	 *
-	 * @return array  [['hostid' => .., 'name' => .., 'ip' => .., 'description' => ..], ...]
+	 * @return array  [['hostid' => .., 'name' => .., 'ip' => .., 'description' => .. 또는 null,
+	 *                  'description_error' => 'table' / 'data' / null, 'patch' => 'ok' / 'no_item' / 'no_value'], ...]
 	 */
 	public function getRows(array $host_filter, string $hotfix_id, string $month_date): array {
 		// 설정이 비어 있으면 찾을 아이템이 없다.
@@ -128,7 +136,7 @@ class WinPatchService {
 		}
 
 		/*
-		 * 1) 필터에 맞는 호스트 중 패치 목록 아이템을 가진 것. item.get 옵션:
+		 * 1) 대상 호스트와 그 패치 목록 아이템.
 		 *    HostFilter::toApiOptions()  선택한 그룹/호스트를 groupids, hostids 조건으로 바꿔 준다.
 		 *    filter                      정확히 일치하는 값으로 거른다. 여기서는 아이템 키.
 		 *    value_type                  값의 형식. 뒤에서 history.get 을 부를 때 필요하다.
@@ -142,55 +150,73 @@ class WinPatchService {
 		 */
 		$host_options = HostFilter::toApiOptions($host_filter);
 
-		$items = API::Item()->get($host_options + [
-			'output' => ['itemid', 'hostid', 'value_type'],
-			'filter' => ['key_' => $this->config['item_key']]
+		/*
+		 * 대상 호스트는 5버전과 같다. (5버전 CControllerWindows.php: host_inventory.os ilike '%windows%')
+		 * 필터에 맞고 볼 수 있는 호스트 중, 인벤토리의 OS 에 windows 가 들어 있는 것 (대소문자 무시).
+		 * 패치 아이템이 없는 호스트도 목록에 나온다. (패치 칸에 "없음")
+		 *   searchInventory : 인벤토리 필드 부분 일치. 인벤토리가 꺼진 호스트는 나오지 않는다.
+		 */
+		$hosts = API::Host()->get($host_options + [
+			'output' => ['hostid', 'name'],
+			'selectInterfaces' => HostHelper::INTERFACE_FIELDS,
+			'searchInventory' => ['os' => 'windows'],
+			'preservekeys' => true
 		]);
 
-		if (!$items) {
+		if (!$hosts) {
 			return [];
 		}
+
+		// 그 호스트들의 패치 목록 아이템.
+		$items = API::Item()->get([
+			'output' => ['itemid', 'hostid', 'value_type'],
+			'hostids' => array_keys($hosts),
+			'filter' => ['key_' => $this->config['item_key']]
+		]);
 
 		// array_column(배열, null, 'hostid') : 각 행을 hostid 로 찾을 수 있게 색인한다. [hostid => 아이템]
 		$item_by_hostid = array_column($items, null, 'hostid');
 
-		$hosts = API::Host()->get([
-			'output' => ['hostid', 'host', 'name', 'description'],
-			'selectInterfaces' => HostHelper::INTERFACE_FIELDS,
-			'hostids' => array_keys($item_by_hostid),
-			'preservekeys' => true
-		]);
-
-		// 2) HotFix ID 필터. 값이 길어서, 필터를 쓴 경우에만 호스트별로 값을 읽는다.
+		/*
+		 * 2) 기간 안의 값. "상세보기" 링크는 값이 있을 때만 보여 주므로 호스트마다 값을 읽는다. (5버전 patch_date)
+		 *    HotFix ID 를 입력했으면 그 값에 입력한 글자가 들어 있는 호스트만 남긴다.
+		 */
 		$hotfix_id = trim($hotfix_id);
+		[$time_from, $time_till] = self::monthRange($month_date);
 
-		if ($hotfix_id !== '') {
-			[$time_from, $time_till] = self::monthRange($month_date);
-
-			foreach ($hosts as $hostid => $host) {
-				$value = $this->getLatestValue($item_by_hostid[$hostid], $time_from, $time_till);
-
-				// mb_stripos: 대소문자 무시 "포함" 검사. 없으면 false.
-				if ($value === null || mb_stripos($value, $hotfix_id) === false) {
-					unset($hosts[$hostid]);
-				}
-			}
-		}
-
-		// 3) Description 은 ITSM 값을 먼저 쓰고, 없으면 Zabbix 호스트 설명을 쓴다.
+		/*
+		 * 3) Description 은 ITSM 값만 쓴다. (5버전 ITSM 트레잇(...Itms.php) itsm_description())
+		 *    null = ITSM 을 쓸 수 없음(테이블 없음). 배열에 그 호스트가 없으면 ITSM 데이터 없음.
+		 */
 		$itsm_descriptions = (new ItsmRepository())->fetchDescriptions();
 
 		$rows = [];
 
-		// ITSM 설명은 호스트 표시 이름(name)으로 먼저 찾고, 없으면 기술 이름(host)으로 찾는다. 둘 다 없으면 Zabbix 설명.
 		foreach ($hosts as $hostid => $host) {
+			$item = $item_by_hostid[$hostid] ?? null;
+			$value = $item !== null ? $this->getLatestValue($item, $time_from, $time_till) : null;
+
+			// mb_stripos: 대소문자 무시 "포함" 검사. 없으면 false.
+			if ($hotfix_id !== '' && ($value === null || mb_stripos($value, $hotfix_id) === false)) {
+				continue;
+			}
+
+			/*
+			 * description_error : Description 이 없을 때 그 이유. 뷰가 빨간 "-" 와 안내 문구를 고른다.
+			 *                     'table' = ITSM 테이블 없음, 'data' = 그 호스트의 ITSM 데이터 없음, null = 값 있음.
+			 * patch             : 'ok' = 기간 안에 값 있음, 'no_item' = 패치 아이템 없음, 'no_value' = 기간 안에 값 없음.
+			 */
+			$description = $itsm_descriptions !== null
+				? ($itsm_descriptions[mb_strtolower($host['name'])] ?? null)
+				: null;
+
 			$rows[] = [
 				'hostid' => $hostid,
 				'name' => $host['name'],
 				'ip' => HostHelper::mainIp($host['interfaces']),
-				'description' => $itsm_descriptions[mb_strtolower($host['name'])]
-					?? $itsm_descriptions[mb_strtolower($host['host'])]
-					?? $host['description']
+				'description' => $description,
+				'description_error' => $itsm_descriptions === null ? 'table' : ($description === null ? 'data' : null),
+				'patch' => $item === null ? 'no_item' : ($value === null ? 'no_value' : 'ok')
 			];
 		}
 
@@ -200,10 +226,10 @@ class WinPatchService {
 	/**
 	 * 한 호스트의 패치 상세 표. (상세보기 창의 내용)
 	 *
-	 * 선택한 달에 수집된 값 중 가장 최근 것을 표로 바꾼다. 그 달에 값이 없으면 rows 가 빈 배열이다.
+	 * 기간 안에 수집된 값 중 빈 값이 아닌 가장 최근 것을 표로 바꾼다. 기간 안에 값이 없으면 rows 가 빈 배열이다.
 	 *
 	 * @param string $hostid      호스트 ID. 예) '10084'
-	 * @param string $month_date  'YYYY-MM-DD'. 이 날짜가 속한 달을 본다.
+	 * @param string $month_date  'YYYY-MM-DD'. 이 날짜부터 그달 말일까지 본다.
 	 *
 	 * @return array|null  ['host' => 호스트 표시명, 'rows' => [[열 이름 => 값, ...], ...]]
 	 *                     호스트가 없거나 볼 권한이 없거나 패치 아이템이 없으면 null.
@@ -239,7 +265,13 @@ class WinPatchService {
 	}
 
 	/**
-	 * 기간 안에 수집된 값 중 가장 최근 것. 없으면 null.
+	 * 기간 안에 수집된 값 중 빈 값('')이 아닌 가장 최근 것. 없으면 null.
+	 * 5버전 팝업과 같다. (5버전 CControllerPopupWindows.php: value <> '' ORDER BY clock DESC LIMIT 1)
+	 *
+	 * history.get 에는 "빈 값 제외" 조건이 없어서, 최근 값부터 HISTORY_BATCH 건씩 읽어 여기서 고른다.
+	 * 한 달 치를 한 번에 읽지 않는 이유: 값 하나가 긴 글이라 무겁다.
+	 * 읽은 것이 모두 빈 값이면, 그중 가장 오래된 시각의 1초 전까지로 끝을 당겨 다시 읽는다.
+	 * (같은 초에 값이 HISTORY_BATCH 건보다 많으면 그 초의 나머지는 건너뛴다. 실제로는 생기지 않는 경우다)
 	 *
 	 * @param array $item       item.get 의 행 1개. ['itemid' => .., 'hostid' => .., 'value_type' => ..]
 	 * @param int   $time_from  시작 시각(유닉스 초).
@@ -249,23 +281,39 @@ class WinPatchService {
 	 *                      ?string 의 ? 는 "null 도 돌려줄 수 있다"는 뜻이다.
 	 */
 	private function getLatestValue(array $item, int $time_from, int $time_till): ?string {
-		/*
-		 * history.get
-		 *   history   : 값이 저장된 표의 종류. 아이템의 value_type 과 같은 값을 줘야 한다. (1 = 문자, 4 = 텍스트)
-		 *   sortfield / sortorder / limit : 시각 내림차순으로 1건 = 가장 최근 값.
-		 */
-		$history = API::History()->get([
-			'output' => ['value'],
-			'history' => (int) $item['value_type'],
-			'itemids' => [$item['itemid']],
-			'time_from' => $time_from,
-			'time_till' => $time_till,
-			'sortfield' => 'clock',
-			'sortorder' => ZBX_SORT_DOWN,
-			'limit' => 1
-		]);
+		while ($time_from <= $time_till) {
+			/*
+			 * history.get
+			 *   history   : 값이 저장된 표의 종류. 아이템의 value_type 과 같은 값을 줘야 한다. (1 = 문자, 4 = 텍스트)
+			 *   sortfield / sortorder / limit : 시각 내림차순으로 HISTORY_BATCH 건 = 최근 값부터.
+			 */
+			$history = API::History()->get([
+				'output' => ['clock', 'value'],
+				'history' => (int) $item['value_type'],
+				'itemids' => [$item['itemid']],
+				'time_from' => $time_from,
+				'time_till' => $time_till,
+				'sortfield' => 'clock',
+				'sortorder' => ZBX_SORT_DOWN,
+				'limit' => self::HISTORY_BATCH
+			]);
 
-		return $history ? (string) $history[0]['value'] : null;
+			foreach ($history as $row) {
+				if ($row['value'] !== '') {
+					return (string) $row['value'];
+				}
+			}
+
+			// 덜 채워 왔으면 기간 안에 더 읽을 값이 없다.
+			if (count($history) < self::HISTORY_BATCH) {
+				return null;
+			}
+
+			// end(배열): 마지막 원소. 시각 내림차순이라 가장 오래된 값이다.
+			$time_till = (int) end($history)['clock'] - 1;
+		}
+
+		return null;
 	}
 
 	/**

@@ -15,7 +15,7 @@
  *   필터        : 호스트 그룹, 호스트 (선택창), HotFix ID(입력), 수집월(날짜 입력 + 달력)
  *   경고 상자   : 아이템 키 설정(conf/winpatch.conf.php)이 비어 있을 때만 나온다
  *   표          : 호스트(정렬 가능), IP, Description, 패치 파일명("상세보기" 링크)
- *                 "상세보기" 를 누르면 그 호스트의 패치 상세정보 팝업이 뜬다
+ *                 "상세보기" 를 누르면 그 호스트의 패치 상세정보 팝업이 뜬다. 기간 안에 값이 없으면 빨간 "없음"
  *
  * ── 받는 값 ($data) ──
  *   action          이 화면의 액션 이름. 'winpatch.list'
@@ -30,7 +30,8 @@
  *   sortorder       현재 정렬 방향. 'ASC' 또는 'DESC'
  *   config_missing  true 면 아이템 키 설정이 비어 있다 (경고 상자를 띄운다)
  *   paging          페이지 번호 줄
- *   rows            [['hostid' => .., 'name' => .., 'ip' => .., 'description' => ..], ...]
+ *   rows            [['hostid' => .., 'name' => .., 'ip' => .., 'description' => .., 'description_error' => ..,
+ *                     'patch' => 'ok' / 'no_item' / 'no_value'], ...]   (WinPatchService::getRows() 참고)
  *
  * ── 관련 파일 ──
  *   actions/reports/winpatch/WinPatchList.php     컨트롤러
@@ -103,20 +104,52 @@ $table = (new CTableInfo())
 	])
 	->setPageNavigation($data['paging']);
 
+/*
+ * 값이 없을 때 쓰는 빨간 글자. 마우스를 올리면 안내 문구(hint)가 뜬다. (5버전 윈도우 트레잇, ITSM 트레잇과 같은 모양)
+ */
+$red_hint = static fn(string $text, string $hint): CSpan => (new CSpan($text))
+	->addClass(ZBX_STYLE_RED)
+	->addClass(ZBX_STYLE_CURSOR_POINTER)
+	->setHint($hint);
+
 foreach ($data['rows'] as $row) {
+	// Description: ITSM 값이 없으면 빨간 "-". 테이블이 없을 때와 그 호스트의 데이터가 없을 때 문구가 다르다.
+	if ($row['description_error'] === 'table') {
+		$description = $red_hint('-', Lang::t('No ITSM table for host (%1$s).', $row['hostid']));
+	}
+	elseif ($row['description_error'] === 'data') {
+		$description = $red_hint('-', Lang::t('No ITSM data for host (%1$s).', $row['hostid']));
+	}
+	else {
+		$description = $row['description'];
+	}
+
+	/*
+	 * "상세보기" 링크. 기간 안에 값이 있을 때만 나온다. 누르면 패치 상세정보 팝업이 뜬다.
+	 *   CLinkAction        : 주소로 이동하지 않고 스크립트로 동작하는 링크(점선 밑줄).
+	 *   js-winpatch-detail : 스크립트(views/js/reports/winpatch.list.js.php)가 이 링크를 찾는 표시.
+	 *   data-hostid        : 어느 호스트인지 스크립트에 알려 주는 값. HTML 의 data-* 속성이다.
+	 * 값이 없으면 빨간 "없음". 아이템이 없을 때와 기간 안에 값이 없을 때 문구가 다르다. (5버전은 둘 다 "item이 없습니다")
+	 */
+	if ($row['patch'] === 'ok') {
+		$patch = (new CLinkAction(Lang::t('View details')))
+			->addClass('js-winpatch-detail')
+			->setAttribute('data-hostid', $row['hostid']);
+	}
+	elseif ($row['patch'] === 'no_item') {
+		$patch = $red_hint(Lang::t('No patch data'), Lang::t('Host (%1$s) has no item.', $row['hostid']));
+	}
+	else {
+		$patch = $red_hint(Lang::t('No patch data'),
+			Lang::t('Host (%1$s) has no collected value in the selected period.', $row['hostid'])
+		);
+	}
+
 	$table->addRow([
 		(new CCol($row['name']))->addClass(ZBX_STYLE_NOWRAP),
 		(new CCol($row['ip']))->addClass(ZBX_STYLE_NOWRAP),
-		(new CCol($row['description']))->addClass(ZBX_STYLE_WORDBREAK),
-		/*
-		 * "상세보기" 링크. 누르면 패치 상세정보 팝업이 뜬다.
-		 *   CLinkAction        : 주소로 이동하지 않고 스크립트로 동작하는 링크(점선 밑줄).
-		 *   js-winpatch-detail : 스크립트(views/js/reports/winpatch.list.js.php)가 이 링크를 찾는 표시.
-		 *   data-hostid        : 어느 호스트인지 스크립트에 알려 주는 값. HTML 의 data-* 속성이다.
-		 */
-		(new CLinkAction(Lang::t('View details')))
-			->addClass('js-winpatch-detail')
-			->setAttribute('data-hostid', $row['hostid'])
+		(new CCol($description))->addClass(ZBX_STYLE_WORDBREAK),
+		$patch
 	]);
 }
 

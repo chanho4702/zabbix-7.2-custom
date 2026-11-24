@@ -21,7 +21,7 @@
  *     ├─ WinPatchService::getDetail(hostid, month)
  *     │    ├─ host.get    : 그 호스트를 사용자가 볼 수 있는지 확인하고 이름을 읽는다
  *     │    ├─ item.get    : 그 호스트의 패치 목록 아이템을 찾는다
- *     │    ├─ history.get : 그 달에 수집된 값 중 가장 최근 것 1건
+ *     │    ├─ history.get : 기간 안에 수집된 값 중 빈 값이 아닌 가장 최근 것 1건
  *     │    └─ parse()     : 긴 글을 표(행 배열)로 바꾼다
  *     └─ 뷰(views/reports/winpatch.detail.php)가 팝업용 JSON 으로 출력
  *
@@ -63,7 +63,7 @@ class WinPatchDetail extends CController {
 	 * 주소로 들어온 값 검사. 두 값 모두 반드시 있어야 한다.
 	 *
 	 *   hostid  어느 호스트의 패치를 볼지. 예) 10084
-	 *   month   어느 달을 볼지. 날짜 하나를 받고, 그 날짜가 속한 달 전체를 본다. 예) 2026-10-01
+	 *   month   어느 기간을 볼지. 날짜 하나를 받고, 그 날짜부터 그달 말일까지 본다. 예) 2026-10-01
 	 *
 	 * 규칙을 | 로 이으면 "둘 다 만족해야 한다"는 뜻이다.
 	 *
