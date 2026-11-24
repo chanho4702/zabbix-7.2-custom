@@ -38,6 +38,8 @@
  *   problem           내보낼 수 없는 이유. 빈 문자열이면 내보낼 수 있다
  *   item_count        대상 아이템 수
  *   estimated_rows    예상 줄 수
+ *   split             true 면 예상 줄 수가 split_rows 를 넘어 zip 으로 나눠 받는다
+ *   split_rows        파일 하나의 줄 수. 1000000
  *   preview_rows      미리보기 표의 행. [['host' => .., 'item' => .., 'clock' => .., 'value' => ..], ...]
  *   preview_limit     미리보기 줄 수. 100
  *
@@ -144,6 +146,15 @@ else {
 			number_format($data['item_count']), number_format($data['estimated_rows'])
 		)))->addClass('dm-toolbar')
 	);
+
+	// 어림 줄 수가 split_rows 를 넘으면 zip 으로 나눠 받는다는 것을 미리 알려 준다. (5버전: 100만 줄마다 파일을 나눔)
+	if ($data['split']) {
+		$html_page->addItem(
+			(new CDiv(Lang::t('The file is split every %1$s rows and downloaded as one ZIP file.',
+				number_format($data['split_rows'])
+			)))->addClass('dm-toolbar')
+		);
+	}
 }
 
 /*

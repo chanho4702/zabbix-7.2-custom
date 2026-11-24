@@ -218,11 +218,18 @@ class UsageExportList extends CController {
 				return;
 			}
 
+			// 파일명 앞부분 예) usage_cpumem_working_20261123_101530  (5버전도 항목과 시간 구분을 이름에 넣었다)
+			$base = 'usage_'.self::fileSuffix($filter).'_'.date('Ymd_His');
+
 			// views/export/layout.stream.php 가 이 값을 읽어 CSV 를 내려보낸다.
-			$response = new CControllerResponseData(['stream_plan' => $plan]);
+			$response = new CControllerResponseData(['stream_plan' => $plan, 'part_base' => $base]);
 			$response->setTitle($title);
-			// 파일명 예) usage_cpumem_working_20261123_101530.csv  (5버전도 항목과 시간 구분을 이름에 넣었다)
-			$response->setFileName('usage_'.self::fileSuffix($filter).'_'.date('Ymd_His').'.csv');
+			/*
+			 * 어림 줄 수가 split_rows(기본 100만)를 넘으면 5버전처럼 100만 줄씩 나눈 CSV 들을 zip 하나로 받는다.
+			 *   예) usage_cpumem_working_20261123_101530.zip 안에 ..._00.csv, ..._01.csv ...
+			 * 넘지 않으면 CSV 한 파일.
+			 */
+			$response->setFileName($base.($plan['split'] ? '.zip' : '.csv'));
 
 			$this->setResponse($response);
 
@@ -264,7 +271,10 @@ class UsageExportList extends CController {
 			// 미리보기 표. 내보낼 수 있을 때만 앞에서 PREVIEW_ROWS 줄을 읽는다.
 			'preview_rows' => ($plan !== null && $problem === '') ? $service->preview($plan, self::PREVIEW_ROWS) : [],
 			'preview_limit' => self::PREVIEW_ROWS,
-			'estimated_rows' => $plan !== null ? $plan['estimated_rows'] : 0
+			'estimated_rows' => $plan !== null ? $plan['estimated_rows'] : 0,
+			// 나눠 받기(zip) 여부와 파일 하나의 줄 수. 뷰가 안내문에 쓴다.
+			'split' => $plan !== null && $plan['split'],
+			'split_rows' => $service->getSplitRows()
 		]);
 		$response->setTitle($title);	// 브라우저 탭 제목
 

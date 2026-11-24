@@ -172,6 +172,8 @@ return [
 	'There are no CPU/Memory items for the selected hosts.' => '선택한 호스트에 CPU/Memory 아이템이 없습니다.',
 	'Enter the reason for Agent not installed or exception.' =>
 		'Agent 미설치 및 예외 사유를 입력해 주세요',
+	'The file is split every %1$s rows and downloaded as one ZIP file.' =>
+		'%1$s 줄마다 파일을 나눠 ZIP 파일 하나로 받습니다.',
 	'About %1$s rows are expected, which exceeds the limit of %2$s rows. Choose fewer hosts or a shorter period.' =>
 		'예상 줄 수가 약 %1$s줄로 한도(%2$s줄)를 넘습니다. 호스트를 줄이거나 기간을 줄여 주세요.',
 	'Target items: %1$s, expected rows: about %2$s. Press [Export to CSV] to download.' =>

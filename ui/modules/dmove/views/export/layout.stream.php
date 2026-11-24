@@ -44,14 +44,16 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 set_time_limit(0);
 
 // header(): HTTP 응답 헤더를 보낸다. 본문을 출력하기 전에 불러야 한다.
-header('Content-Type: text/csv; charset=UTF-8');
+// 나눠 받기(zip)인지는 계획의 split 값으로 안다. (UsageExportService::buildPlan)
+$is_zip = !empty($data['stream_plan']['split']);
+header($is_zip ? 'Content-Type: application/zip' : 'Content-Type: text/csv; charset=UTF-8');
 // attachment: 브라우저가 화면에 표시하지 않고 파일로 저장하게 한다.
 header('Content-Disposition: attachment; filename="'.$data['page']['file'].'"');
 // 전체 크기를 미리 알 수 없으므로 Content-Length 는 보내지 않는다.
 // 웹 서버(nginx)가 응답을 모아 두지 않고 바로 흘려보내게 한다.
 header('X-Accel-Buffering: no');
 
-(new UsageExportService())->stream($data['stream_plan']);
+(new UsageExportService())->stream($data['stream_plan'], $data['part_base'] ?? 'usage');
 
 // 코어가 이 뒤에 다른 출력(디버그 정보 등)을 붙이지 않도록 여기서 끝낸다.
 exit;

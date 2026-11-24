@@ -38,6 +38,7 @@
 namespace Modules\DMove\Includes;
 
 use API;
+use Modules\DMove\Includes\Export\ZipStreamWriter;
 use Modules\DMove\Includes\Filter\HostFilter;
 
 class UsageExportService {
@@ -60,6 +61,14 @@ class UsageExportService {
 	/** stream() 이 지금까지 쓴 값 줄 수. */
 	private int $written = 0;
 
+	/** 나눠 받기일 때 zip 을 쓰는 도구. 한 파일로 받을 때는 null. */
+	private ?ZipStreamWriter $zip = null;
+
+	/** 나눠 받기일 때 지금 파일에 쓴 값 줄 수와 파일 번호, zip 안 파일명의 앞부분. */
+	private int $part_rows = 0;
+	private int $part_no = 0;
+	private string $part_base = '';
+
 	/**
 	 * 설정 파일을 읽는다. 파일이 없거나 값이 빠져 있으면 5버전 기본값을 쓴다.
 	 */
@@ -79,6 +88,7 @@ class UsageExportService {
 			'max_period_days' => max(1, (int) ($config['max_period_days'] ?? 93)),
 			'assumed_interval' => max(1, (int) ($config['assumed_interval'] ?? 180)),
 			'max_rows' => max(1, (int) ($config['max_rows'] ?? 10000000)),
+			'split_rows' => max(1, (int) ($config['split_rows'] ?? 1000000)),
 			'business_hours' => [(int) ($hours[0] ?? 9), (int) ($hours[1] ?? 18)]
 		];
 	}
@@ -91,6 +101,11 @@ class UsageExportService {
 	/** 어림한 줄 수의 한도. 예) 10000000 */
 	public function getMaxRows(): int {
 		return $this->config['max_rows'];
+	}
+
+	/** 파일 하나에 넣을 값 줄 수. 넘으면 나눠서 zip 으로 묶는다. 예) 1000000 */
+	public function getSplitRows(): int {
+		return $this->config['split_rows'];
 	}
 
 	/** 업무시간 [시작 시, 끝 시]. 예) [9, 18] */
@@ -135,7 +150,8 @@ class UsageExportService {
 	 *     'time_till'      => 1795086400,
 	 *     'hours'          => TIME_BUSINESS,
 	 *     'estimated_rows' => 480,          // 어림한 줄 수
-	 *     'too_large'      => false         // 어림한 줄 수가 한도를 넘는가
+	 *     'too_large'      => false,        // 어림한 줄 수가 한도를 넘는가
+	 *     'split'          => false         // 어림한 줄 수가 split_rows 를 넘어 zip 으로 나눠 받는가
 	 *   ]
 	 */
 	public function buildPlan(array $host_filter, int $items, int $hours, int $time_from, int $time_till): array {
@@ -203,7 +219,8 @@ class UsageExportService {
 			'time_till' => $time_till,
 			'hours' => $hours,
 			'estimated_rows' => $estimated_rows,
-			'too_large' => $estimated_rows > $this->config['max_rows']
+			'too_large' => $estimated_rows > $this->config['max_rows'],
+			'split' => $estimated_rows > $this->config['split_rows']
 		];
 	}
 
@@ -213,15 +230,62 @@ class UsageExportService {
 	 * 전체를 문자열로 모으지 않고, 아이템을 몇 개씩 묶어 조회한 뒤 읽는 대로 echo 한다.
 	 * 그래서 줄이 수백만 개여도 PHP 메모리는 한 묶음 분량만 쓴다.
 	 *
-	 * @param array $plan  buildPlan() 의 결과.
+	 * 나눠 받기($plan['split'])이면 split_rows 줄마다 CSV 파일을 새로 시작해 zip 하나로 묶는다.
+	 * 파일마다 BOM 과 제목 줄이 들어간다. (5버전: split -l 1000000 으로 나눈 export_..00.csv, 01.csv ...)
+	 *
+	 * @param array  $plan       buildPlan() 의 결과.
+	 * @param string $part_base  나눠 받기일 때 zip 안 파일명의 앞부분. 예) 'usage_cpu_all_20261124_101530'
+	 *                           -> usage_cpu_all_20261124_101530_00.csv, _01.csv ...
 	 */
-	public function stream(array $plan): void {
-		// UTF-8 BOM. 엑셀이 한글을 깨뜨리지 않게 파일 맨 앞에 붙인다. (CsvWriter 와 같은 처리)
-		echo "\xEF\xBB\xBF";
-		echo self::csvLine(['HOST', 'ITEM', 'CLOCK', 'VALUE']);
-
+	public function stream(array $plan, string $part_base = 'usage'): void {
 		// 지금까지 쓴 값 줄 수. 한도(max_rows)를 넘으면 멈춘다. (어림이 틀렸을 때를 대비한 마지막 안전장치)
 		$this->written = 0;
+		$this->part_rows = 0;
+		$this->part_no = 0;
+		$this->part_base = $part_base;
+		$this->zip = !empty($plan['split']) ? new ZipStreamWriter() : null;
+
+		$this->startPart();
+		$this->streamValues($plan);
+
+		if ($this->zip !== null) {
+			$this->zip->finish();
+			flush();
+		}
+	}
+
+	/**
+	 * 새 CSV 파일(나눠 받기면 zip 안의 다음 파일)을 시작하고 BOM 과 제목 줄을 쓴다.
+	 */
+	private function startPart(): void {
+		if ($this->zip !== null) {
+			// sprintf('%02d', 0) -> '00'. 5버전 split -d 와 같은 두 자리 번호.
+			$this->zip->startFile($this->part_base.'_'.sprintf('%02d', $this->part_no).'.csv');
+			$this->part_no++;
+		}
+
+		$this->part_rows = 0;
+		// UTF-8 BOM. 엑셀이 한글을 깨뜨리지 않게 파일 맨 앞에 붙인다. (CsvWriter 와 같은 처리)
+		$this->out("\xEF\xBB\xBF");
+		$this->out(self::csvLine(['HOST', 'ITEM', 'CLOCK', 'VALUE']));
+	}
+
+	/**
+	 * 내보낼 내용을 쓴다. 나눠 받기면 zip 안의 지금 파일에, 아니면 바로 브라우저로.
+	 */
+	private function out(string $text): void {
+		if ($this->zip !== null) {
+			$this->zip->write($text);
+		}
+		else {
+			echo $text;
+		}
+	}
+
+	/**
+	 * 값 줄을 표별로, 묶음별로 읽어서 쓴다.
+	 */
+	private function streamValues(array $plan): void {
 
 		// 값 형식별로 표가 다르다. 소수는 history, 정수는 history_uint.
 		$tables = [
@@ -337,7 +401,7 @@ class UsageExportService {
 
 		// DBselect 는 실패하면 false 를 돌려준다. 그대로 두면 앞부분만 있는 파일이 "성공"처럼 보이므로 이유를 남긴다.
 		if ($result === false) {
-			echo self::csvLine([Lang::t('* A database error occurred. The file is incomplete.')]);
+			$this->out(self::csvLine([Lang::t('* A database error occurred. The file is incomplete.')]));
 			flush();
 
 			return false;
@@ -345,23 +409,29 @@ class UsageExportService {
 
 		while ($row = DBfetch($result)) {
 			if ($this->written >= $this->config['max_rows']) {
-				echo self::csvLine([Lang::t('* Stopped at the row limit (%1$s rows). The file is incomplete.',
+				$this->out(self::csvLine([Lang::t('* Stopped at the row limit (%1$s rows). The file is incomplete.',
 					number_format($this->config['max_rows'])
-				)]);
+				)]));
 				flush();
 
 				return false;
 			}
 
+			// 나눠 받기: 지금 파일이 split_rows 줄을 채웠으면 다음 파일을 시작한다.
+			if ($this->zip !== null && $this->part_rows >= $this->config['split_rows']) {
+				$this->startPart();
+			}
+
 			$item = $plan['items'][$row['itemid']];
 
-			echo self::csvLine([
+			$this->part_rows++;
+			$this->out(self::csvLine([
 				$item['host'],
 				$item['name'],
 				// date() 는 로그인한 사용자의 시간대로 표시한다. (5버전 형식: YYYY-MM-DD HH24:MI:SS)
 				date('Y-m-d H:i:s', (int) $row['clock']),
 				$row['value']
-			]);
+			]));
 
 			// 5000줄마다 브라우저로 밀어 보낸다. 보내지 않고 쌓아 두면 메모리가 늘고 브라우저가 "응답 없음"으로 본다.
 			if (++$this->written % 5000 === 0) {
