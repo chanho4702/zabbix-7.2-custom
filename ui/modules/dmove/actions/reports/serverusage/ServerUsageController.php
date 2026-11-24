@@ -503,7 +503,7 @@ abstract class ServerUsageController extends CController {
 		$value = trim($value);
 
 		/*
-		 * 정규식: ^ 처음, \d{4} 숫자 4개, - 하이픈, \d{2} 숫자 2개, $ 끝. 괄호로 묶은 부분이 $m 에 들어간다.
+		 * 정규식: ^ 처음, \d{4} 숫자 4개, - 하이픈, \d{2} 숫자 2개, - 하이픈, \d{2} 숫자 2개, $ 끝. 괄호로 묶은 부분이 $m 에 들어간다.
 		 *   $m[1] = 연, $m[2] = 월, $m[3] = 일.   preg_match 는 맞으면 1 을 돌려준다.
 		 */
 		if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) !== 1) {

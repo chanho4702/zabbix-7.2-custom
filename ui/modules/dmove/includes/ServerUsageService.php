@@ -9,6 +9,8 @@
  * ── 누가 쓰는가 ──
  *   actions/reports/serverusage/ServerUsageController.php   저사용 / 고사용 서버 사용현황 화면 (CPU)
  *   actions/reports/dailycheck/DailyCheckTop.php            일일점검의 CPU / Memory 사용률 Top 10 팝업
+ *   actions/reports/serverusage/ThresholdEdit.php           [기준설정] 창의 기본값 getThresholds()
+ *   includes/UsageExportService.php                         CPU/Memory 사용률 추출의 아이템 찾기 findItems()
  *
  * ── 데이터 흐름 ──
  *   new ServerUsageService(METRIC_CPU 또는 METRIC_MEMORY)

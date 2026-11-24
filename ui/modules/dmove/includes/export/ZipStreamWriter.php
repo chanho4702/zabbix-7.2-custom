@@ -14,11 +14,22 @@
  *   $zip->startFile('a_01.csv');  $zip->write("...");
  *   $zip->finish();               // 마지막에 꼭 부른다. 부르지 않으면 깨진 zip 이 된다.
  *
- * ── 형식 메모 (zip 규격 APPNOTE) ──
- *   파일마다 [로컬 헤더][압축된 내용][데이터 설명자] 를 쓰고, 끝에 [중앙 디렉터리][끝 레코드] 를 쓴다.
- *   내용을 다 쓰기 전에는 크기와 CRC 를 모르므로, 로컬 헤더에는 0 을 쓰고 플래그 3번 비트(데이터 설명자 사용)를 켠다.
- *   플래그 11번 비트는 파일명이 UTF-8 이라는 뜻이다.
- *   크기가 4GB 를 넘는 zip(ZIP64)은 지원하지 않는다. 줄 수 한도(max_rows, 1000만 줄)로는 넘지 않는다.
+ * ── zip 파일 안의 모양 (zip 규격 문서 APPNOTE.TXT 기준) ──
+ *   zip 은 "파일 이름표 + 내용"을 차례로 붙이고, 맨 끝에 "목차"를 붙인 파일이다.
+ *
+ *     [이름표][a_00.csv 내용][뒷이름표]  [이름표][a_01.csv 내용][뒷이름표]  ...  [목차][끝 표시]
+ *
+ *   - 이름표(로컬 헤더)    : 파일 이름, 압축 방식, 시각.
+ *   - 뒷이름표(데이터 설명자): 내용의 크기와 CRC. 내용을 다 써야 알 수 있으므로 내용 "뒤"에 쓴다.
+ *                            그래서 이름표에는 크기를 0 으로 쓰고 "크기는 뒤에 있음" 표시(플래그 3번 비트)를 켠다.
+ *   - 목차(중앙 디렉터리)  : 모든 파일의 이름, 크기, 이름표 위치. 압축 프로그램은 이 목차를 먼저 읽는다.
+ *   - 끝 표시(끝 레코드)   : 목차가 어디서 시작하는지. zip 파일의 맨 마지막 22바이트.
+ *
+ *   CRC   : 내용으로 계산한 검사 숫자. 압축을 풀 때 다시 계산해 내용이 깨지지 않았는지 확인한다.
+ *   플래그 11번 비트 : 파일 이름이 UTF-8(한글 가능) 이라는 표시.
+ *
+ *   크기가 4GB 를 넘는 zip(ZIP64 확장)은 지원하지 않는다. 줄 수 한도(max_rows, 1000만 줄, 한 줄 약 60바이트)로는
+ *   압축 전에도 1GB 안팎이라 넘지 않는다. 한도를 크게 올릴 때만 신경 쓴다.
  */
 
 namespace Modules\DMove\Includes\Export;
@@ -70,7 +81,11 @@ class ZipStreamWriter {
 			'compressed' => 0
 		];
 
-		// 로컬 헤더. pack('V'): 4바이트 리틀엔디언, pack('v'): 2바이트 리틀엔디언.
+		/*
+		 * 이름표(로컬 헤더).
+		 * pack(형식, 값...): 숫자를 정해진 바이트 모양으로 바꾼다. zip 은 숫자를 "작은 자리 바이트부터" 쓴다.
+		 *   'V' = 4바이트 숫자, 'v' = 2바이트 숫자. 형식 글자 하나가 뒤의 값 하나와 짝이다.
+		 */
 		$this->emit(pack('VvvvvvVVVvv',
 			0x04034b50,			// 로컬 헤더 표시
 			20,					// 풀 때 필요한 버전 (2.0)
@@ -83,6 +98,12 @@ class ZipStreamWriter {
 			0					// 추가 필드 길이
 		).$name);
 
+		/*
+		 * 내용을 쓰는 동안 CRC 와 압축을 조금씩 이어서 계산한다. (전체를 메모리에 모으지 않기 위해서)
+		 *   hash_init('crc32b')         : CRC 계산 시작. hash_update() 로 이어서 넣는다.
+		 *   deflate_init(ZLIB_ENCODING_RAW) : zip 안에 넣는 압축(deflate) 시작. deflate_add() 로 이어서 넣는다.
+		 *   level 6 : 압축 정도(1 빠름 ~ 9 작게). 6 이 보통 쓰는 값이다.
+		 */
 		$this->crc = hash_init('crc32b');
 		$this->deflate = $this->method === 8 ? deflate_init(ZLIB_ENCODING_RAW, ['level' => 6]) : null;
 	}
@@ -160,7 +181,7 @@ class ZipStreamWriter {
 			$this->emit($out);
 		}
 
-		// hash_final(.., true): 4바이트 빅엔디언. unpack('N') 으로 정수로 바꾼다.
+		// hash_final(.., true): CRC 결과 4바이트. unpack('N') 으로 숫자로 바꾼 뒤 위의 pack('V') 로 zip 모양에 맞춰 쓴다.
 		$this->current['crc'] = unpack('N', hash_final($this->crc, true))[1];
 
 		$this->emit(pack('VVVV',
@@ -176,6 +197,7 @@ class ZipStreamWriter {
 		$this->crc = null;
 	}
 
+	/** 바이트를 바로 브라우저로 내보내고, 지금까지 보낸 양을 센다. (목차에 쓸 이름표 위치 계산용) */
 	private function emit(string $bytes): void {
 		echo $bytes;
 		$this->offset += strlen($bytes);

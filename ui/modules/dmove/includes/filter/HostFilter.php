@@ -46,8 +46,8 @@
  * 사용 예: actions/reports/uptime/UptimeList.php, views/reports/uptime.list.php
  *
  * ── 지금 이 필터를 쓰는 화면 ──
- *   서버 시간 확인(uptime), 저사용/고사용 서버(serverusage), 윈도우즈 패치 현황(winpatch),
- *   usageexport 화면의 컨트롤러와 뷰. 그리고 includes/WinPatchService.php.
+ *   서버 시간 확인(uptime), 저사용/고사용 서버(serverusage), 피크 이벤트 분석(peakevent), 윈도우즈 패치 현황(winpatch),
+ *   usageexport 화면의 컨트롤러와 뷰. 그리고 includes/WinPatchService.php, includes/UsageExportService.php.
  *
  * ── 데이터 흐름 ──
  *   [적용] 클릭 -> 주소에 filter_groupids[], filter_hostids[] 가 온다

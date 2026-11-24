@@ -56,11 +56,8 @@ use Modules\DMove\Includes\SwInventoryService;
  * ── CSS / JS ────────────────────────────────────────────────────────────────
  * 모듈 공통 CSS(assets/css/dmove.css)는 manifest.json 의 "assets" 에 등록되어 모든 화면에 자동 로드된다.
  *
- * 이 화면에서만 쓰는 JS 가 필요하면:
- *   1) views/js/swinventory.list.js.php 파일을 만들고 (<script> 태그로 감싼 JS)
- *   2) 아래 주석을 푼다.
- *
- * $this->includeJsFile('swinventory.list.js.php');
+ * 이 화면에서만 쓰는 JS 는 views/js/inventory/swinventory.list.js.php 에 있다. (<script> 태그로 감싼 JS)
+ * 바로 아래 includeJsFile() 이 불러온다.
  */
 
 /*
