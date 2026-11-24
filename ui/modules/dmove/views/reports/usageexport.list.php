@@ -17,7 +17,7 @@
  *   필터      : 호스트 그룹, 호스트 (선택창), 항목(라디오 버튼), 시간대(라디오 버튼), 빨간 안내문 두 줄
  *               + 시간 선택기 (조회 기간)
  *   안내      : 대상 아이템 수와 예상 줄 수. 내보낼 수 없으면 이유(기간 초과, 줄 수 초과 등)
- *   표        : 미리보기. 파일에 들어갈 내용의 앞에서 100줄 (HOST, ITEM, CLOCK, VALUE)
+ *   표        : 미리보기. 파일에 들어갈 내용의 앞에서 100줄 (host, item, clock, value)
  *
  * ── 쓰는 순서 ──
  *   1) 필터와 기간을 고르고 [적용] 을 누른다. 대상 아이템 수와 예상 줄 수가 표시된다.
@@ -34,7 +34,7 @@
  *   filter            ['items' => 0|1|2, 'time' => 0|1]   지금 선택된 라디오 값
  *   items_options     항목 라디오의 [값 => 라벨]
  *   time_options      시간 라디오의 [값 => 라벨]
- *   config_missing    true 면 아이템 키 설정(conf/serverusage.conf.php)이 비어 있다
+ *   config_missing    true 면 아이템 키 설정(conf/usageexport.conf.php)이 비어 있다
  *   problem           내보낼 수 없는 이유. 빈 문자열이면 내보낼 수 있다
  *   item_count        대상 아이템 수
  *   estimated_rows    예상 줄 수
@@ -43,6 +43,7 @@
  *   split_rows        파일 하나의 줄 수. 1000000
  *   preview_rows      미리보기 표의 행. [['host' => .., 'item' => .., 'clock' => .., 'value' => ..], ...]
  *   preview_limit     미리보기 줄 수. 100
+ *   preview_error     true 면 미리보기 조회가 실패했다 (오류 상자)
  *
  * ── 관련 파일 ──
  *   actions/reports/usageexport/UsageExportList.php   컨트롤러
@@ -129,9 +130,9 @@ if ($can_export) {
 $html_page->addItem($filter);
 
 if ($data['config_missing']) {
-	// 아이템 키 설정이 비어 있다. (conf/serverusage.conf.php 의 cpu_item_keys / memory_item_keys)
+	// 아이템 키 설정이 비어 있다. (conf/usageexport.conf.php 의 cpu_item_keys / memory_item_keys)
 	$html_page->addItem(
-		makeMessageBox(ZBX_STYLE_MSG_WARNING, [], Lang::t('Settings are required: %1$s', 'conf/serverusage.conf.php'),
+		makeMessageBox(ZBX_STYLE_MSG_WARNING, [], Lang::t('Settings are required: %1$s', 'conf/usageexport.conf.php'),
 			false
 		)
 	);
@@ -153,7 +154,10 @@ else {
 		$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_WARNING, [], $data['history_warning'], false));
 	}
 
-	// 어림 줄 수가 split_rows 를 넘으면 zip 으로 나눠 받는다는 것을 미리 알려 준다. (5버전: 100만 줄마다 파일을 나눔)
+	/*
+	 * 어림 줄 수가 split_rows 를 넘으면 zip 으로 나눠 받는다는 것을 미리 알려 준다. (5버전: 100만 줄마다 파일을 나눔)
+	 * 실제로 나눌지는 [CSV 내보내기] 를 누를 때 실제 줄 수로 정한다.
+	 */
 	if ($data['split']) {
 		$html_page->addItem(
 			(new CDiv(Lang::t('The file is split every %1$s rows and downloaded as one ZIP file.',
@@ -168,8 +172,15 @@ else {
  * CTableInfo 는 행이 하나도 없으면 "데이터 없음" 안내 줄을 스스로 표시한다.
  * 그 기간에 수집값이 없으면(예: 이력 보관 기간이 지난 날짜) 여기서 바로 알 수 있다.
  */
-if ($can_export) {
-	$table = (new CTableInfo())->setHeader(['HOST', 'ITEM', 'CLOCK', 'VALUE']);
+if ($can_export && $data['preview_error']) {
+	// 미리보기 조회가 실패했다. 빈 표가 "값 없음"으로 보이지 않게 오류 상자를 띄운다.
+	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_BAD, [],
+		Lang::t('A database error occurred while reading the preview. Try again later.'), false
+	));
+}
+elseif ($can_export) {
+	// 열 제목은 파일의 제목 줄과 같다. (5버전 SQL 의 열 이름)
+	$table = (new CTableInfo())->setHeader(['host', 'item', 'clock', 'value']);
 
 	foreach ($data['preview_rows'] as $row) {
 		$table->addRow([

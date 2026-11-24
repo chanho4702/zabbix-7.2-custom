@@ -5,9 +5,13 @@
  * ── 이 파일이 하는 일 ──
  *   서버들의 CPU / 메모리 사용률 "수집값 원본"을 CSV 로 내보낸다. 수집값 한 건이 CSV 한 줄이다.
  *
- *     "HOST","ITEM","CLOCK","VALUE"
- *     "web-01","CPU utilization","2026-11-22 09:00:00","12.5"
- *     "web-01","CPU utilization","2026-11-22 09:03:00","13.1"
+ *     host,item,clock,value
+ *     web-01,CPU utilization,2026-11-22 09:00:00,12.5
+ *     web-01,CPU utilization,2026-11-22 09:03:00,13.1
+ *
+ *   파일 모양은 5버전과 같다. 5버전은 PostgreSQL 의 \COPY (...) TO ... WITH (FORMAT CSV, header, ENCODING 'UTF8')
+ *   로 파일을 만들었다. 그래서 BOM 이 없고, 제목 줄은 SQL 의 열 이름(소문자)이고, 값은 필요할 때만 따옴표로 감싼다.
+ *   (csvLine() 설명)
  *
  * ── 누가 쓰는가 ──
  *   actions/reports/usageexport/UsageExportList.php  : buildPlan() 으로 "무엇을 내보낼지" 계획을 만들고,
@@ -29,8 +33,11 @@
  *     3개월치를 받으려면 CPU/메모리 아이템의 이력 보관 기간이 3개월 이상이어야 한다.
  *     보관 기간보다 오래된 날짜를 고르면 그 구간은 파일에 나오지 않는다.
  *   - 줄 수가 많다. 서버 1000대의 3개월치면 수천만 줄이다. 그래서 두 가지를 한다.
- *       1) 줄 수를 미리 어림해서 한도(max_rows)를 넘으면 내보내지 않는다. (5버전과 같은 방식)
+ *       1) 내려보내기 전에 실제 줄 수를 세어(countRows) 한도(max_rows)를 넘으면 내보내지 않는다.
+ *          (5버전은 어림한 줄 수로 막았다. 어림은 화면 안내로만 쓴다)
  *       2) 아이템을 몇 개씩 묶어 나눠 조회하고, 읽는 대로 바로 내려보낸다. 전체를 메모리에 올리지 않는다.
+ *   - CLOCK 과 업무시간 조건은 5버전처럼 SQL 에서 to_timestamp() 로 계산한다. 그래서 PostgreSQL 전용이고,
+ *     시각은 DB 서버(접속 세션)의 시간대로 나온다. (5버전 psql 도 같았다)
  *   - 이력을 DB 에서 직접 읽는 것은 history.get API 가 결과를 한꺼번에 배열로 돌려줘서 이 분량을 감당할 수 없기 때문이다.
  *     대신 "어느 호스트/아이템을 볼 수 있는가"는 API 로 걸러서 사용자 권한을 지킨다.
  */
@@ -65,10 +72,13 @@ class UsageExportService {
 	/** 나눠 받기일 때 zip 을 쓰는 도구. 한 파일로 받을 때는 null. */
 	private ?ZipStreamWriter $zip = null;
 
-	/** 나눠 받기일 때 지금 파일에 쓴 값 줄 수와 파일 번호, zip 안 파일명의 앞부분. */
+	/** 나눠 받기일 때 지금 파일에 쓴 줄 수(제목 줄 포함)와 파일 번호, zip 안 파일명의 앞부분. */
 	private int $part_rows = 0;
 	private int $part_no = 0;
 	private string $part_base = '';
+
+	/** CSV 제목 줄. 5버전 SQL 의 열 이름(SELECT host, item, ... as clock, value) 그대로다. */
+	private const HEADER = ['host', 'item', 'clock', 'value'];
 
 	/**
 	 * 설정 파일을 읽는다. 파일이 없거나 값이 빠져 있으면 5버전 기본값을 쓴다.
@@ -90,7 +100,10 @@ class UsageExportService {
 			'assumed_interval' => max(1, (int) ($config['assumed_interval'] ?? 180)),
 			'max_rows' => max(1, (int) ($config['max_rows'] ?? 10000000)),
 			'split_rows' => max(1, (int) ($config['split_rows'] ?? 1000000)),
-			'business_hours' => [(int) ($hours[0] ?? 9), (int) ($hours[1] ?? 18)]
+			'business_hours' => [(int) ($hours[0] ?? 9), (int) ($hours[1] ?? 18)],
+			// 아이템 키. 비어 있으면 화면에 "설정이 필요합니다" 안내가 나온다.
+			'cpu_item_keys' => array_values((array) ($config['cpu_item_keys'] ?? [])),
+			'memory_item_keys' => array_values((array) ($config['memory_item_keys'] ?? []))
 		];
 	}
 
@@ -99,12 +112,12 @@ class UsageExportService {
 		return $this->config['max_period_days'];
 	}
 
-	/** 어림한 줄 수의 한도. 예) 10000000 */
+	/** 값 줄 수의 한도. 예) 10000000 */
 	public function getMaxRows(): int {
 		return $this->config['max_rows'];
 	}
 
-	/** 파일 하나에 넣을 값 줄 수. 넘으면 나눠서 zip 으로 묶는다. 예) 1000000 */
+	/** 파일 하나의 줄 수(제목 줄 포함). 넘으면 나눠서 zip 으로 묶는다. 예) 1000000 */
 	public function getSplitRows(): int {
 		return $this->config['split_rows'];
 	}
@@ -115,14 +128,14 @@ class UsageExportService {
 	}
 
 	/**
-	 * 고른 항목에 필요한 아이템 키 설정(conf/serverusage.conf.php)이 채워져 있는가.
+	 * 고른 항목에 필요한 아이템 키 설정(conf/usageexport.conf.php)이 채워져 있는가.
 	 * 비어 있으면 화면에 "설정이 필요합니다" 안내를 띄운다.
 	 *
 	 * @param int $items  ITEMS_CPU_MEM / ITEMS_CPU / ITEMS_MEM
 	 */
 	public function isConfigured(int $items): bool {
-		foreach (self::metricsFor($items) as $metric) {
-			if (!(new ServerUsageService($metric))->isConfigured()) {
+		foreach (self::keyNamesFor($items) as $name) {
+			if (!$this->config[$name]) {
 				return false;
 			}
 		}
@@ -135,8 +148,9 @@ class UsageExportService {
 	 *
 	 * 하는 일:
 	 *   1) 필터에 맞는 호스트를 API 로 찾는다. (사용자가 볼 수 있는 호스트만 나온다)
-	 *   2) 그 호스트의 CPU / 메모리 아이템을 찾는다. (키는 conf/serverusage.conf.php)
-	 *   3) 줄 수를 어림한다. 기간(초) / 수집 간격(초) x 아이템 수. (5버전과 같은 계산)
+	 *      호스트를 하나라도 골랐으면 그룹은 보지 않고 고른 호스트만 쓴다. (5버전 monitoring.perf.view.php 138, 180행)
+	 *   2) 그 호스트의 CPU / 메모리 아이템을 찾는다. (키는 conf/usageexport.conf.php, 정확히 같은 키)
+	 *   3) 줄 수를 어림한다. 기간(초) / 수집 간격(초) x 아이템 수. (화면 안내용. 실제 판단은 countRows())
 	 *
 	 * @param array $host_filter  ['groupids' => [...], 'hostids' => [...]]  비어 있으면 볼 수 있는 전체 호스트.
 	 * @param int   $items        ITEMS_CPU_MEM / ITEMS_CPU / ITEMS_MEM
@@ -150,9 +164,9 @@ class UsageExportService {
 	 *     'time_from'      => 1795000000,
 	 *     'time_till'      => 1795086400,
 	 *     'hours'          => TIME_BUSINESS,
-	 *     'estimated_rows' => 480,          // 어림한 줄 수
-	 *     'too_large'      => false,        // 어림한 줄 수가 한도를 넘는가
-	 *     'split'          => false,        // 어림한 줄 수가 split_rows 를 넘어 zip 으로 나눠 받는가
+	 *     'estimated_rows' => 480,          // 어림한 줄 수 (화면 안내용)
+	 *     'split'          => false,        // 어림으로 보아 zip 으로 나눠 받을 것 같은가 (화면 안내용.
+	 *                                       // 내보낼 때 컨트롤러가 실제 줄 수로 다시 정한다)
 	 *     'history_available_from' => 1792400000  // 이보다 이른 값은 보관 기간이 지나 지워졌을 수 있다. 모르면 null
 	 *   ]
 	 */
@@ -168,6 +182,11 @@ class UsageExportService {
 		 * 괄호 안의 toApiOptions() 가 호스트 그룹을 조회하면(API::HostGroup()) 그 이름이 hostgroup 으로 바뀌어,
 		 * 바깥의 get() 이 엉뚱하게 hostgroup.get 으로 실행된다. (호스트 그룹 필터를 골랐을 때만 생기는 오류다)
 		 */
+		// 이 화면만의 규칙: 호스트를 골랐으면 그룹 조건은 빼고 호스트만 쓴다. (HostFilter 자체는 바꾸지 않는다)
+		if ($host_filter['hostids']) {
+			$host_filter['groupids'] = [];
+		}
+
 		$host_options = HostFilter::toApiOptions($host_filter);
 
 		$hosts = API::Host()->get($host_options + [
@@ -175,28 +194,30 @@ class UsageExportService {
 			'preservekeys' => true
 		]);
 
-		// 2) 아이템. 고른 항목(CPU, 메모리)마다 찾아서 합친다. [itemid => hostid]
-		$hostid_by_itemid = [];
+		// 2) 아이템. 고른 항목(CPU, 메모리)의 키를 모은다. 예) ['system.cpu.util', '100-system.cpu.util[all,idle,avg1]']
+		$keys = [];
 
-		foreach (self::metricsFor($items) as $metric) {
-			// 배열 + 배열: 왼쪽에 없는 키만 오른쪽에서 더한다. itemid 가 키라서 겹치지 않는다.
-			$hostid_by_itemid += (new ServerUsageService($metric))->findItems(array_keys($hosts));
+		foreach (self::keyNamesFor($items) as $name) {
+			$keys = array_merge($keys, $this->config[$name]);
 		}
 
 		$plan_items = [];
 		$item_history = [];
 
-		if ($hostid_by_itemid) {
+		if ($hosts && $keys) {
 			/*
-			 * 아이템 이름과 값 형식.
+			 * 키가 정확히 같은 아이템과 그 이름, 값 형식. (5버전: itemkey in (...))
 			 *   value_type : 0 = 소수(history 표), 3 = 정수(history_uint 표). 그 밖의 형식(문자 등)은 사용률이 아니므로 뺀다.
 			 */
 			$db_items = API::Item()->get([
 				// delay: 수집 간격. 줄 수를 어림하는 데 쓴다. (예: '1m', '30s', '5m;wd1-5,9-18')
 				// history: 아이템의 원본 값 보관 기간. (예: '31d') 보관 기간 안내에 쓴다.
 				'output' => ['itemid', 'hostid', 'name', 'value_type', 'delay', 'history'],
-				'itemids' => array_keys($hostid_by_itemid),
-				'filter' => ['value_type' => [ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64]]
+				'hostids' => array_keys($hosts),
+				'filter' => [
+					'key_' => $keys,
+					'value_type' => [ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64]
+				]
 			]);
 
 			foreach ($db_items as $item) {
@@ -224,8 +245,8 @@ class UsageExportService {
 			'time_till' => $time_till,
 			'hours' => $hours,
 			'estimated_rows' => $estimated_rows,
-			'too_large' => $estimated_rows > $this->config['max_rows'],
-			'split' => $estimated_rows > $this->config['split_rows'],
+			// 제목 줄까지 센 줄 수가 split_rows 를 넘으면 나눈다. (화면 안내용 어림)
+			'split' => $estimated_rows + 1 > $this->config['split_rows'],
 			// 이 시각보다 이른 값은 보관 기간이 지나 지워졌을 수 있다. 알 수 없으면 null. (화면 안내용)
 			'history_available_from' => self::historyAvailableFrom($item_history)
 		];
@@ -275,14 +296,16 @@ class UsageExportService {
 	 * 그래서 줄이 수백만 개여도 PHP 메모리는 한 묶음 분량만 쓴다.
 	 *
 	 * 나눠 받기($plan['split'])이면 split_rows 줄마다 CSV 파일을 새로 시작해 zip 하나로 묶는다.
-	 * 파일마다 BOM 과 제목 줄이 들어간다. (5버전: split -l 1000000 으로 나눈 export_..00.csv, 01.csv ...)
+	 * 5버전 split -l 1000000 -d 와 같다. 제목 줄은 첫 파일(00)의 첫 줄에만 있고, 줄 수에 함께 센다.
 	 *
-	 * @param array  $plan       buildPlan() 의 결과.
-	 * @param string $part_base  나눠 받기일 때 zip 안 파일명의 앞부분. 예) 'usage_cpu_all_20261124_101530'
-	 *                           -> usage_cpu_all_20261124_101530_00.csv, _01.csv ...
+	 * DB 조회가 중간에 실패하면 멈추고 웹 서버 오류 로그에 남긴다. 파일 안에는 아무것도 덧붙이지 않는다.
+	 * zip 이면 끝의 목차를 쓰지 않아 깨진 zip 이 되므로 받은 사람이 불완전한 것을 알 수 있다.
+	 *
+	 * @param array  $plan       buildPlan() 의 결과 + 컨트롤러가 실제 줄 수로 정한 split.
+	 * @param string $part_base  나눠 받기일 때 zip 안 파일명의 앞부분. 예) 'export_20261124101530'
+	 *                           -> export_2026112410153000.csv, ...01.csv ...  (5버전 파일명과 같다)
 	 */
-	public function stream(array $plan, string $part_base = 'usage'): void {
-		// 지금까지 쓴 값 줄 수. 한도(max_rows)를 넘으면 멈춘다. (어림이 틀렸을 때를 대비한 마지막 안전장치)
+	public function stream(array $plan, string $part_base = 'export_'): void {
 		$this->written = 0;
 		$this->part_rows = 0;
 		$this->part_no = 0;
@@ -290,28 +313,35 @@ class UsageExportService {
 		$this->zip = !empty($plan['split']) ? new ZipStreamWriter() : null;
 
 		$this->startPart();
-		$this->streamValues($plan);
+		$this->out(self::csvLine(self::HEADER));
+		$this->part_rows++;
+
+		// 실패했으면 zip 목차를 쓰지 않고 끝낸다.
+		if (!$this->streamValues($plan)) {
+			flush();
+
+			return;
+		}
 
 		if ($this->zip !== null) {
 			$this->zip->finish();
-			flush();
 		}
+
+		flush();
 	}
 
 	/**
-	 * 새 CSV 파일(나눠 받기면 zip 안의 다음 파일)을 시작하고 BOM 과 제목 줄을 쓴다.
+	 * 새 CSV 파일(나눠 받기면 zip 안의 다음 파일)을 시작한다. 한 파일로 받을 때는 할 일이 없다.
+	 * BOM 은 쓰지 않는다. (5버전 COPY 결과에 BOM 이 없었다)
 	 */
 	private function startPart(): void {
 		if ($this->zip !== null) {
-			// sprintf('%02d', 0) -> '00'. 5버전 split -d 와 같은 두 자리 번호.
-			$this->zip->startFile($this->part_base.'_'.sprintf('%02d', $this->part_no).'.csv');
+			// sprintf('%02d', 0) -> '00'. 5버전 split -d 와 같은 두 자리 번호. 앞부분 뒤에 바로 붙는다.
+			$this->zip->startFile($this->part_base.sprintf('%02d', $this->part_no).'.csv');
 			$this->part_no++;
 		}
 
 		$this->part_rows = 0;
-		// UTF-8 BOM. 엑셀이 한글을 깨뜨리지 않게 파일 맨 앞에 붙인다. (CsvWriter 와 같은 처리)
-		$this->out("\xEF\xBB\xBF");
-		$this->out(self::csvLine(['HOST', 'ITEM', 'CLOCK', 'VALUE']));
 	}
 
 	/**
@@ -328,8 +358,10 @@ class UsageExportService {
 
 	/**
 	 * 값 줄을 표별로, 묶음별로 읽어서 쓴다.
+	 *
+	 * @return bool  DB 조회가 실패했으면 false.
 	 */
-	private function streamValues(array $plan): void {
+	private function streamValues(array $plan): bool {
 
 		// 값 형식별로 표가 다르다. 소수는 history, 정수는 history_uint.
 		$tables = [
@@ -343,10 +375,54 @@ class UsageExportService {
 
 			foreach ($this->makeQueries($items, $plan) as [$itemids, $from, $till]) {
 				if (!$this->streamChunk($table, $itemids, $from, $till, $plan)) {
-					return;
+					return false;
 				}
 			}
 		}
+
+		return true;
+	}
+
+	/**
+	 * 계획대로 내보내면 값이 몇 줄인지 센다. (제목 줄은 빼고) 내보내기 전에 컨트롤러가 부른다.
+	 *
+	 * 한도(max_rows) 검사와 "한 파일 / 나눠 받기" 결정을 어림이 아니라 이 실제 줄 수로 한다.
+	 * 조건은 stream() 과 같다. (같은 historySql() 을 COUNT 로 감싼다)
+	 *
+	 * @return int|null  줄 수. DB 조회가 실패하면 null.
+	 */
+	public function countRows(array $plan): ?int {
+		$count = 0;
+
+		$tables = [
+			ITEM_VALUE_TYPE_FLOAT => 'history',
+			ITEM_VALUE_TYPE_UINT64 => 'history_uint'
+		];
+
+		foreach ($tables as $value_type => $table) {
+			$itemids = [];
+
+			foreach ($plan['items'] as $itemid => $item) {
+				if ($item['value_type'] === $value_type) {
+					$itemids[] = $itemid;
+				}
+			}
+
+			if (!$itemids) {
+				continue;
+			}
+
+			$result = DBselect('SELECT COUNT(*) AS cnt'.$this->historyFrom($table, $itemids, $plan));
+			$row = $result !== false ? DBfetch($result) : false;
+
+			if ($row === false) {
+				return null;
+			}
+
+			$count += (int) $row['cnt'];
+		}
+
+		return $count;
 	}
 
 	/**
@@ -358,9 +434,10 @@ class UsageExportService {
 	 * @param array $plan   buildPlan() 의 결과.
 	 * @param int   $limit  읽을 최대 줄 수. 예) 100
 	 *
-	 * @return array  [['host' => 'web-01', 'item' => 'CPU utilization', 'clock' => '2026-11-22 09:00:00', 'value' => '12.5'], ...]
+	 * @return array|null  [['host' => 'web-01', 'item' => 'CPU utilization', 'clock' => '2026-11-22 09:00:00', 'value' => '12.5'], ...]
+	 *                     값은 파일에 나가는 글자 그대로다. (clock 도 SQL 이 만든 글자) DB 조회가 실패하면 null.
 	 */
-	public function preview(array $plan, int $limit): array {
+	public function preview(array $plan, int $limit): ?array {
 		$rows = [];
 
 		$tables = [
@@ -388,13 +465,17 @@ class UsageExportService {
 				// DBselect(쿼리, N): 두 번째 인자를 주면 앞에서 N 줄만 읽는다. (DB 종류에 맞게 LIMIT 을 붙여 준다)
 				$result = DBselect($this->historySql($table, $chunk, $plan), $remaining);
 
-				while ($result !== false && $row = DBfetch($result)) {
+				if ($result === false) {
+					return null;
+				}
+
+				while ($row = DBfetch($result)) {
 					$item = $plan['items'][$row['itemid']];
 
 					$rows[] = [
 						'host' => $item['host'],
 						'item' => $item['name'],
-						'clock' => date('Y-m-d H:i:s', (int) $row['clock']),
+						'clock' => $row['clock_text'],
 						'value' => $row['value']
 					];
 				}
@@ -409,7 +490,9 @@ class UsageExportService {
 	 *
 	 * 쿼리에 들어가는 값은 dbConditionId() 가 만든 조건과 이 클래스에서 만든 정수뿐이라 따옴표 처리가 필요 없다.
 	 *
+	 *   clock_text : 5버전 SQL 과 같은 to_char(to_timestamp(clock), 'YYYY-MM-DD HH24:MI:SS'). DB 세션 시간대로 나온다.
 	 *   ORDER BY itemid, clock : 아이템별로, 시간 순서대로. 이력 표의 색인(itemid, clock) 순서라서 빠르다.
+	 *                            (5버전 SQL 에는 순서 지정이 없었다. 줄의 내용은 같고 순서만 정해 둔 것이다)
 	 *
 	 * @param string   $table    'history' 또는 'history_uint'
 	 * @param array    $itemids  읽을 아이템 ID.
@@ -418,20 +501,34 @@ class UsageExportService {
 	 */
 	private function historySql(string $table, array $itemids, array $plan, ?int $from = null,
 			?int $till = null): string {
-		return 'SELECT itemid,clock,value'.
-			' FROM '.$table.
+		return 'SELECT itemid,'.
+				"to_char(to_timestamp(clock),'YYYY-MM-DD HH24:MI:SS') AS clock_text,".
+				'value'.
+			$this->historyFrom($table, $itemids, $plan, $from, $till).
+			' ORDER BY itemid,clock';
+	}
+
+	/**
+	 * historySql() 과 countRows() 가 같이 쓰는 FROM ~ WHERE 부분. 두 곳의 조건이 어긋나지 않게 한 곳에서 만든다.
+	 *
+	 * @return string  예) ' FROM history WHERE itemid IN (..) AND clock>=.. AND clock<=..'
+	 */
+	private function historyFrom(string $table, array $itemids, array $plan, ?int $from = null,
+			?int $till = null): string {
+		return ' FROM '.$table.
 			' WHERE '.dbConditionId('itemid', $itemids).
 				' AND clock>='.(int) ($from ?? $plan['time_from']).
 				' AND clock<='.(int) ($till ?? $plan['time_till']).
-				$this->hoursCondition((int) $plan['hours']).
-			' ORDER BY itemid,clock';
+				$this->hoursCondition((int) $plan['hours']);
 	}
 
 	/**
 	 * 아이템 한 묶음, 한 기간 구간의 값을 조회해서 CSV 줄로 출력한다.
 	 *
-	 * 조회에 실패하거나 줄 수 한도를 넘으면 파일 끝에 이유를 한 줄 쓰고 false 를 돌려준다. (더 읽지 않는다)
-	 * 이미 앞부분을 브라우저로 보낸 뒤라서 오류 화면으로 바꿀 수 없기 때문이다.
+	 * 조회에 실패하면 웹 서버 오류 로그에 남기고 false 를 돌려준다. (더 읽지 않는다)
+	 * 이미 앞부분을 브라우저로 보낸 뒤라서 오류 화면으로 바꿀 수 없다. 파일 안에 안내 줄을 쓰지 않는 것은
+	 * 5버전 파일 모양(값 줄만 있음)을 지키기 위해서다.
+	 * 줄 수 한도는 내보내기 전에 countRows() 로 검사했으므로 여기서는 보지 않는다.
 	 *
 	 * @param string $table    'history' 또는 'history_uint'
 	 * @param array  $itemids  이번에 읽을 아이템 ID.
@@ -443,25 +540,15 @@ class UsageExportService {
 	private function streamChunk(string $table, array $itemids, int $from, int $till, array $plan): bool {
 		$result = DBselect($this->historySql($table, $itemids, $plan, $from, $till));
 
-		// DBselect 는 실패하면 false 를 돌려준다. 그대로 두면 앞부분만 있는 파일이 "성공"처럼 보이므로 이유를 남긴다.
+		// DBselect 는 실패하면 false 를 돌려준다. 앞부분만 있는 파일이 되므로 로그에 남긴다.
 		if ($result === false) {
-			$this->out(self::csvLine([Lang::t('* A database error occurred. The file is incomplete.')]));
-			flush();
+			error_log('dmove usageexport: DB query failed after '.$this->written.' rows. The file is incomplete.');
 
 			return false;
 		}
 
 		while ($row = DBfetch($result)) {
-			if ($this->written >= $this->config['max_rows']) {
-				$this->out(self::csvLine([Lang::t('* Stopped at the row limit (%1$s rows). The file is incomplete.',
-					number_format($this->config['max_rows'])
-				)]));
-				flush();
-
-				return false;
-			}
-
-			// 나눠 받기: 지금 파일이 split_rows 줄을 채웠으면 다음 파일을 시작한다.
+			// 나눠 받기: 지금 파일이 split_rows 줄(첫 파일은 제목 줄 포함)을 채웠으면 다음 파일을 시작한다.
 			if ($this->zip !== null && $this->part_rows >= $this->config['split_rows']) {
 				$this->startPart();
 			}
@@ -472,8 +559,8 @@ class UsageExportService {
 			$this->out(self::csvLine([
 				$item['host'],
 				$item['name'],
-				// date() 는 로그인한 사용자의 시간대로 표시한다. (5버전 형식: YYYY-MM-DD HH24:MI:SS)
-				date('Y-m-d H:i:s', (int) $row['clock']),
+				// SQL 이 만든 글자 그대로. (5버전 형식: YYYY-MM-DD HH24:MI:SS, DB 세션 시간대)
+				$row['clock_text'],
 				$row['value']
 			]));
 
@@ -491,22 +578,21 @@ class UsageExportService {
 	/**
 	 * 업무시간 조건(SQL 조각). "전체"를 골랐으면 빈 문자열이다.
 	 *
-	 * clock 은 UTC 기준 유닉스 초다. 사용자 시간대의 "몇 시인가"를 알려면 시간대 차이를 더한 뒤 하루(86400초)로 나눈 나머지를 본다.
-	 *   date('Z') : 사용자 시간대와 UTC 의 차이(초). 한국은 32400 (9시간).
-	 *   예) 한국 09:00 = UTC 00:00 -> (clock + 32400) % 86400 = 32400 (= 9 x 3600)
+	 * 5버전 SQL 과 같은 식이다: EXTRACT(HOUR FROM to_timestamp(clock)) >= 9 AND ... < 18
+	 * to_timestamp() 는 DB 세션 시간대로 시각을 만든다. 그래서 "몇 시인가"는 CLOCK 열과 같은 시간대로 본다.
+	 * 요일은 가리지 않는다. (5버전과 같다)
 	 *
-	 * @return string  예) ' AND ((clock+32400)%86400)>=32400 AND ((clock+32400)%86400)<64800'
+	 * @return string  예) ' AND EXTRACT(HOUR FROM to_timestamp(clock))>=9 AND EXTRACT(HOUR FROM to_timestamp(clock))<18'
 	 */
 	private function hoursCondition(int $hours): string {
 		if ($hours !== self::TIME_BUSINESS) {
 			return '';
 		}
 
-		$second_of_day = '((clock+'.(int) date('Z').')%'.SEC_PER_DAY.')';
+		$hour = 'EXTRACT(HOUR FROM to_timestamp(clock))';
 		[$hour_from, $hour_till] = $this->config['business_hours'];
 
-		return ' AND '.$second_of_day.'>='.($hour_from * SEC_PER_HOUR).
-			' AND '.$second_of_day.'<'.($hour_till * SEC_PER_HOUR);
+		return ' AND '.$hour.'>='.(int) $hour_from.' AND '.$hour.'<'.(int) $hour_till;
 	}
 
 	/**
@@ -579,45 +665,49 @@ class UsageExportService {
 	}
 
 	/**
-	 * 값 여러 개를 CSV 한 줄로 만든다.
+	 * 값 여러 개를 CSV 한 줄로 만든다. PostgreSQL COPY ... (FORMAT CSV) 와 같은 규칙이다. (5버전 파일과 같은 모양)
 	 *
-	 *   - 모든 값을 큰따옴표로 감싼다. 값 안의 큰따옴표는 두 번 써서("") 표시한다. (CSV 규칙)
-	 *   - 값이 = + - @ 탭 CR 로 시작하면 앞에 ' 를 붙인다. 엑셀이 수식으로 실행하지 못하게 하는 처리다. (CsvWriter 와 같다)
-	 *     숫자(예: -5)는 수식이 아니므로 그대로 둔다.
+	 *   - 쉼표, 큰따옴표, 줄바꿈(LF, CR) 중 하나가 들어 있는 값만 큰따옴표로 감싼다. 안의 큰따옴표는 두 번 쓴다("").
+	 *   - 빈 글자('')는 "" 로 쓴다. NULL 은 아무것도 쓰지 않는다. (COPY 가 둘을 이렇게 구별한다)
+	 *   - 줄 끝은 LF(\n) 하나다.
+	 *   - 엑셀 수식 방지용 ' 는 붙이지 않는다. (5버전 파일에 없던 글자라서)
 	 *
-	 * 예) ['web-01', 'CPU "util"', '2026-11-22 09:00:00', '12.5'] -> "web-01","CPU ""util""","2026-11-22 09:00:00","12.5"\n
+	 * 예) ['web-01', 'CPU "util", %', '2026-11-22 09:00:00', '12.5'] -> web-01,"CPU ""util"", %",2026-11-22 09:00:00,12.5\n
 	 */
 	private static function csvLine(array $values): string {
 		$cells = [];
 
 		foreach ($values as $value) {
-			$value = (string) $value;
-
-			if ($value !== '' && !is_numeric($value) && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
-				$value = "'".$value;
+			if ($value === null) {
+				$cells[] = '';
 			}
-
-			$cells[] = '"'.str_replace('"', '""', $value).'"';
+			elseif ($value === '' || strpbrk((string) $value, ",\"\n\r") !== false) {
+				// strpbrk(글자, 찾을 글자들): 하나라도 있으면 그 위치부터의 글자, 없으면 false.
+				$cells[] = '"'.str_replace('"', '""', (string) $value).'"';
+			}
+			else {
+				$cells[] = (string) $value;
+			}
 		}
 
 		return implode(',', $cells)."\n";
 	}
 
 	/**
-	 * 항목 선택 값을 ServerUsageService 의 집계 대상 목록으로 바꾼다.
+	 * 항목 선택 값을 설정의 키 이름 목록으로 바꾼다.
 	 *
-	 * @return array  예) ITEMS_CPU_MEM -> [METRIC_CPU, METRIC_MEMORY]
+	 * @return array  예) ITEMS_CPU_MEM -> ['cpu_item_keys', 'memory_item_keys']
 	 */
-	private static function metricsFor(int $items): array {
+	private static function keyNamesFor(int $items): array {
 		switch ($items) {
 			case self::ITEMS_CPU:
-				return [ServerUsageService::METRIC_CPU];
+				return ['cpu_item_keys'];
 
 			case self::ITEMS_MEM:
-				return [ServerUsageService::METRIC_MEMORY];
+				return ['memory_item_keys'];
 
 			default:
-				return [ServerUsageService::METRIC_CPU, ServerUsageService::METRIC_MEMORY];
+				return ['cpu_item_keys', 'memory_item_keys'];
 		}
 	}
 }

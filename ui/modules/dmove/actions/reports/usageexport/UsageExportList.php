@@ -4,7 +4,7 @@
  *
  * ── 이 화면이 하는 일 ──
  *   서버들의 CPU / 메모리 사용률 수집값 원본을 CSV 파일로 내려받는다. 화면에 표는 없다.
- *   수집값 한 건이 파일의 한 줄이다. 열: HOST, ITEM, CLOCK, VALUE
+ *   수집값 한 건이 파일의 한 줄이다. 열: host, item, clock, value (파일 모양은 5버전과 같다)
  *
  *   화면     : zabbix.php?action=usageexport.list
  *   내보내기 : zabbix.php?action=usageexport.export   (화면의 [CSV 내보내기] 버튼)
@@ -20,7 +20,7 @@
  *   안내 : ※실시간 Data 출력은 전일 ~ 3개월 기간 출력이 가능합니다.
  *          ※다량의 Data export시 1분 이상 소요될 수 있습니다.
  *   버튼 : [CSV 내보내기]
- *   표   : 미리보기. 파일에 들어갈 내용의 앞에서 100줄 (HOST, ITEM, CLOCK, VALUE). 5버전에는 없던 것이다
+ *   표   : 미리보기. 파일에 들어갈 내용의 앞에서 100줄 (host, item, clock, value). 5버전에는 없던 것이다
  *
  * ── 데이터 흐름 ──
  *   화면(usageexport.list)
@@ -32,7 +32,8 @@
  *   내보내기(usageexport.export)
  *     doAction()
  *       ├─ 저장된 필터와 기간으로 같은 계획을 다시 만든다
- *       ├─ 문제가 있으면(기간 초과, 줄 수 초과, 대상 없음) 화면으로 되돌린다. 화면에 이유가 나온다
+ *       ├─ 문제가 있으면(기간 초과, 대상 없음) 화면으로 되돌린다. 화면에 이유가 나온다
+ *       ├─ UsageExportService::countRows() : 실제 줄 수. 한도 초과나 DB 오류면 화면으로 되돌린다
  *       └─ 레이아웃(views/export/layout.stream.php) 이 UsageExportService::stream() 으로 CSV 를 내려보낸다
  *
  * ── 5버전과 달라진 점 ──
@@ -40,8 +41,8 @@
  *     [CSV 내보내기] 버튼을 눌러 받는다. 다른 화면의 내보내기와 같은 방식이다.
  *   - 5버전은 따로 만든 복사 표에서 읽고 서버 셸 스크립트로 파일을 만들었다. 여기서는 Zabbix 표준 이력 표에서
  *     바로 읽어 내려보낸다. (자세한 설명: includes/UsageExportService.php 머리말)
- *   - 5버전은 파일이 여러 개로 나뉘어 내려왔다. 나누는 기준이 서버 스크립트에 있어서 확인하지 못했다.
- *     여기서는 파일 하나로 내려보낸다.
+ *   - 5버전은 100만 줄(제목 줄 포함)마다 나눈 파일을 따로따로 내려받았다. 여기서는 나눈 파일들을 zip 하나로 묶는다.
+ *     파일 안의 모양과 파일명은 5버전과 같다.
  *   - 권한: 5버전은 검사가 없었다. 여기서는 로그인한 사용자(게스트 제외)만 쓰고, 볼 수 있는 호스트의 값만 나온다.
  *
  * ── 알아 둘 점 ──
@@ -53,8 +54,7 @@
  *   views/reports/usageexport.list.php                화면 뷰
  *   views/export/layout.stream.php                    CSV 를 흘려보내는 레이아웃
  *   includes/UsageExportService.php                   대상 아이템 찾기, 줄 수 어림, CSV 출력
- *   conf/usageexport.conf.php                         최대 기간, 줄 수 한도, 업무시간
- *   conf/serverusage.conf.php                         CPU / 메모리 아이템 키 (저사용/고사용 화면과 같이 쓴다)
+ *   conf/usageexport.conf.php                         CPU / 메모리 아이템 키, 최대 기간, 줄 수 한도, 업무시간
  *   includes/filter/HostFilter.php                    호스트 그룹/호스트 선택 필터 (여러 화면 공용)
  */
 
@@ -64,6 +64,7 @@ use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
 use CControllerResponseRedirect;
+use CMessageHelper;
 use CProfile;
 use CUrl;
 use CWebUser;
@@ -218,18 +219,46 @@ class UsageExportList extends CController {
 				return;
 			}
 
-			// 파일명 앞부분 예) usage_cpumem_working_20261123_101530  (5버전도 항목과 시간 구분을 이름에 넣었다)
-			$base = 'usage_'.self::fileSuffix($filter).'_'.date('Ymd_His');
+			/*
+			 * 실제 줄 수를 먼저 센다. 한도 검사와 "한 파일 / 나눠 받기" 결정을 이 값으로 한다. (어림은 화면 안내용)
+			 * CMessageHelper::setErrorTitle() : 되돌아간 화면 위에 빨간 오류 상자로 보일 문구를 남긴다.
+			 */
+			$row_count = $service->countRows($plan);
+			$error = '';
+
+			if ($row_count === null) {
+				$error = Lang::t('A database error occurred while counting rows. Try again later.');
+			}
+			elseif ($row_count > $service->getMaxRows()) {
+				$error = Lang::t('There are %1$s rows, which exceeds the limit of %2$s rows. Choose fewer hosts or a shorter period.',
+					number_format($row_count), number_format($service->getMaxRows())
+				);
+			}
+
+			if ($error !== '') {
+				CMessageHelper::setErrorTitle($error);
+				$this->setResponse(new CControllerResponseRedirect(
+					(new CUrl('zabbix.php'))->setArgument('action', 'usageexport.list')
+				));
+
+				return;
+			}
+
+			// 제목 줄 1줄 + 값 줄이 split_rows(기본 100만)를 넘으면 나눈다. (5버전 split -l 1000000 과 같다)
+			$plan['split'] = $row_count + 1 > $service->getSplitRows();
+
+			/*
+			 * 파일명은 5버전과 같다. FDATE = date("YmdHis"), split -d 가 붙이는 번호 00, 01 ...
+			 *   한 파일   : export_2026112310153000.csv
+			 *   나눠 받기 : export_20261123101530.zip 안에 export_2026112310153000.csv, ...01.csv ...
+			 *               (5버전은 파일마다 따로 내려받았다. 여기서는 zip 하나로 묶는다)
+			 */
+			$base = 'export_'.date('YmdHis');
 
 			// views/export/layout.stream.php 가 이 값을 읽어 CSV 를 내려보낸다.
 			$response = new CControllerResponseData(['stream_plan' => $plan, 'part_base' => $base]);
 			$response->setTitle($title);
-			/*
-			 * 어림 줄 수가 split_rows(기본 100만)를 넘으면 5버전처럼 100만 줄씩 나눈 CSV 들을 zip 하나로 받는다.
-			 *   예) usage_cpumem_working_20261123_101530.zip 안에 ..._00.csv, ..._01.csv ...
-			 * 넘지 않으면 CSV 한 파일.
-			 */
-			$response->setFileName($base.($plan['split'] ? '.zip' : '.csv'));
+			$response->setFileName($plan['split'] ? $base.'.zip' : $base.'00.csv');
 
 			$this->setResponse($response);
 
@@ -244,6 +273,9 @@ class UsageExportList extends CController {
 		 * 내보내기는 막지 않고 화면에 노란 상자로 알려만 준다. (저사용/고사용의 요약 값 안내와 같은 방식)
 		 */
 		$history_warning = '';
+
+		// 미리보기 표. 내보낼 수 있을 때만 앞에서 PREVIEW_ROWS 줄을 읽는다. DB 조회가 실패하면 null (오류 상자).
+		$preview_rows = ($plan !== null && $problem === '') ? $service->preview($plan, self::PREVIEW_ROWS) : [];
 
 		if ($plan !== null && $plan['history_available_from'] !== null
 				&& $time_from < $plan['history_available_from']) {
@@ -283,8 +315,8 @@ class UsageExportList extends CController {
 			// 원본 값 보관 기간 안내. 문제없으면 ''
 			'history_warning' => $history_warning,
 			'item_count' => $plan !== null ? count($plan['items']) : 0,
-			// 미리보기 표. 내보낼 수 있을 때만 앞에서 PREVIEW_ROWS 줄을 읽는다.
-			'preview_rows' => ($plan !== null && $problem === '') ? $service->preview($plan, self::PREVIEW_ROWS) : [],
+			'preview_rows' => $preview_rows ?? [],
+			'preview_error' => $preview_rows === null,
 			'preview_limit' => self::PREVIEW_ROWS,
 			'estimated_rows' => $plan !== null ? $plan['estimated_rows'] : 0,
 			// 나눠 받기(zip) 여부와 파일 하나의 줄 수. 뷰가 안내문에 쓴다.
@@ -302,7 +334,7 @@ class UsageExportList extends CController {
 	 * 검사 순서:
 	 *   1) 기간이 최대 기간(기본 93일)을 넘는가
 	 *   2) 대상 아이템이 하나도 없는가
-	 *   3) 예상 줄 수가 한도(기본 1000만)를 넘는가   (5버전은 이때 안내 창만 띄웠다)
+	 * 줄 수 한도(기본 1000만)는 [CSV 내보내기] 를 누를 때 실제 줄 수로 검사한다. (doAction() 의 countRows())
 	 *
 	 * @param array|null $plan  buildPlan() 의 결과. 설정이 비어 있어 계획을 만들지 못했으면 null.
 	 *
@@ -321,29 +353,6 @@ class UsageExportList extends CController {
 			return Lang::t('There are no CPU/Memory items for the selected hosts.');
 		}
 
-		if ($plan['too_large']) {
-			// number_format(값): 천 단위마다 쉼표를 넣는다. 예) 10000000 -> 10,000,000
-			return Lang::t('About %1$s rows are expected, which exceeds the limit of %2$s rows. Choose fewer hosts or a shorter period.',
-				number_format($plan['estimated_rows']), number_format($service->getMaxRows())
-			);
-		}
-
 		return '';
-	}
-
-	/**
-	 * 파일명에 넣을 구분 글자. (5버전: cpumem / cpu / mem + working / all)
-	 *
-	 * 예) ['items' => ITEMS_CPU, 'time' => TIME_ALL] -> 'cpu_all'
-	 */
-	private static function fileSuffix(array $filter): string {
-		$items = [
-			UsageExportService::ITEMS_CPU_MEM => 'cpumem',
-			UsageExportService::ITEMS_CPU => 'cpu',
-			UsageExportService::ITEMS_MEM => 'mem'
-		];
-
-		return ($items[$filter['items']] ?? 'cpumem').'_'
-			.($filter['time'] === UsageExportService::TIME_BUSINESS ? 'working' : 'all');
 	}
 }
