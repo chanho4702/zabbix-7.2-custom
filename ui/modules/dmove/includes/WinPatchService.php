@@ -14,7 +14,7 @@
  *   목록 : getRows()
  *            ├─ host.get : 필터에 맞는 호스트 중 인벤토리 OS 에 windows 가 들어 있는 것 (이름, 인터페이스)
  *            ├─ item.get : 그 호스트의 패치 목록 아이템
- *            ├─ getLatestValue() : 기간 안의 값. 있으면 "상세보기", 없으면 "없음". HotFix ID 도 이 값으로 본다
+ *            ├─ findItemsWithValue() : 기간 안에 값이 있는가 (모든 호스트를 쿼리 한 번에). 있으면 "상세보기", 없으면 "없음". HotFix ID 도 여기서 본다
  *            └─ ItsmRepository::fetchDescriptions() 로 Description 을 채운다 (ITSM 값만)
  *   상세 : getDetail()
  *            ├─ host.get / item.get : 호스트와 패치 목록 아이템 (권한 밖이면 결과가 없다)
@@ -34,7 +34,8 @@
  *     HotFix ID   = 그 값 안에 입력한 글자가 들어 있는 호스트만 남긴다
  *
  * 5버전과 달라진 점
- *   - history_str / history_text 테이블을 직접 읽던 것을 API(history.get)로 바꿨다.
+ *   - 상세보기는 history_str / history_text 테이블을 직접 읽던 것을 API(history.get)로 바꿨다.
+ *     목록은 속도 때문에 표를 직접 읽되, 모든 호스트를 쿼리 한 번으로 확인한다. (5버전은 호스트마다 읽었다)
  *   - 5버전은 값을 "빈칸으로 나눠" 표로 만들어서, 비어 있는 열이 있으면 뒤의 값이 앞으로 당겨졌다.
  *     (예: 설치한 사람이 비어 있으면 날짜가 다른 열에 표시됨)
  *     여기서는 제목 줄의 열 위치를 기준으로 잘라서 값이 제 열에 들어간다. (parse() 참고)
@@ -178,11 +179,13 @@ class WinPatchService {
 		$item_by_hostid = array_column($items, null, 'hostid');
 
 		/*
-		 * 2) 기간 안의 값. "상세보기" 링크는 값이 있을 때만 보여 주므로 호스트마다 값을 읽는다. (5버전 patch_date)
+		 * 2) 기간 안의 값. "상세보기" 링크는 값이 있을 때만 보여 준다. (5버전 patch_date)
 		 *    HotFix ID 를 입력했으면 그 값에 입력한 글자가 들어 있는 호스트만 남긴다.
+		 *    모든 호스트를 쿼리 한 번으로 확인한다. (findItemsWithValue())
 		 */
 		$hotfix_id = trim($hotfix_id);
 		[$time_from, $time_till] = self::monthRange($month_date);
+		$with_value = $this->findItemsWithValue($items, $time_from, $time_till, $hotfix_id);
 
 		/*
 		 * 3) Description 은 ITSM 값만 쓴다. (5버전 ITSM 트레잇(...Itms.php) itsm_description())
@@ -194,10 +197,10 @@ class WinPatchService {
 
 		foreach ($hosts as $hostid => $host) {
 			$item = $item_by_hostid[$hostid] ?? null;
-			$value = $item !== null ? $this->getLatestValue($item, $time_from, $time_till) : null;
+			// 기간 안에 빈 값이 아닌 값이 있는가. (HotFix ID 를 넣었으면 그 글자도 들어 있는가)
+			$has_value = $item !== null && array_key_exists($item['itemid'], $with_value);
 
-			// mb_stripos: 대소문자 무시 "포함" 검사. 없으면 false.
-			if ($hotfix_id !== '' && ($value === null || mb_stripos($value, $hotfix_id) === false)) {
+			if ($hotfix_id !== '' && !$has_value) {
 				continue;
 			}
 
@@ -216,11 +219,84 @@ class WinPatchService {
 				'ip' => HostHelper::mainIp($host['interfaces']),
 				'description' => $description,
 				'description_error' => $itsm_descriptions === null ? 'table' : ($description === null ? 'data' : null),
-				'patch' => $item === null ? 'no_item' : ($value === null ? 'no_value' : 'ok')
+				'patch' => $item === null ? 'no_item' : ($has_value ? 'ok' : 'no_value')
 			];
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * 기간 안에 빈 값('')이 아닌 값이 있는 아이템. 목록 화면용으로 모든 호스트를 쿼리 한 번에 확인한다.
+	 *
+	 * ── 왜 이렇게 하나 ──
+	 *   예전에는 호스트마다 history.get 을 불러서, 윈도우 서버가 300대면 DB 에 300번 넘게 물었다.
+	 *   여기서는 이력 표를 직접 한 번만 읽는다. 아이템 ID 는 위에서 API(item.get)가 권한에 맞게 걸러 준 것만 쓴다.
+	 *   긴 글(패치 목록)은 가져오지 않고 "있는가"만 본다. 결과는 호스트마다 history.get 으로 보던 것과 같다.
+	 *
+	 * ── HotFix ID 를 넣었을 때 ──
+	 *   아이템마다 기간 안의 "빈 값이 아닌 가장 최근 값"에 그 글자가 들어 있는지 본다. (대소문자 무시, 5버전과 같음)
+	 *   UPPER(value) LIKE '%글자%' : 대문자로 바꿔 "포함" 검사. 입력의 %, _, \ 는 글자 그대로 찾도록 앞에 \ 를 붙인다.
+	 *   같은 초에 빈 값이 아닌 값이 둘 이상이면 그중 하나라도 맞으면 남긴다. (실제로는 생기지 않는 경우다)
+	 *
+	 * 표: 값 형식이 문자(1)면 history_str, 텍스트(4)면 history_text.
+	 *
+	 * @param array  $items      item.get 의 결과. [['itemid' => .., 'value_type' => ..], ...]
+	 * @param int    $time_from  시작 시각(유닉스 초).
+	 * @param int    $time_till  끝 시각(유닉스 초).
+	 * @param string $hotfix_id  HotFix ID. 비어 있으면 값이 있는지만 본다.
+	 *
+	 * @return array  [itemid => true]  조건에 맞는 아이템만 들어 있다.
+	 */
+	private function findItemsWithValue(array $items, int $time_from, int $time_till, string $hotfix_id): array {
+		$tables = [ITEM_VALUE_TYPE_STR => 'history_str', ITEM_VALUE_TYPE_TEXT => 'history_text'];
+
+		// 값 형식별로 아이템 ID 를 나눈다. [value_type => [itemid, ...]]
+		$itemids_by_type = [];
+
+		foreach ($items as $item) {
+			$itemids_by_type[(int) $item['value_type']][] = $item['itemid'];
+		}
+
+		$found = [];
+
+		foreach ($itemids_by_type as $value_type => $itemids) {
+			if (!array_key_exists($value_type, $tables)) {
+				continue;
+			}
+
+			$table = $tables[$value_type];
+			$where = dbConditionId('itemid', $itemids).
+				' AND clock>='.$time_from.' AND clock<='.$time_till.
+				" AND value<>''";
+
+			if ($hotfix_id === '') {
+				$sql = 'SELECT DISTINCT itemid FROM '.$table.' WHERE '.$where;
+			}
+			else {
+				// addcslashes(글자, '%_\\') : LIKE 의 특수 글자 앞에 \ 를 붙인다. zbx_dbstr : 따옴표로 감싸 SQL 에 안전하게 넣는다.
+				$pattern = zbx_dbstr('%'.mb_strtoupper(addcslashes($hotfix_id, '%_\\')).'%');
+
+				// 안쪽 쿼리 = 아이템마다 빈 값이 아닌 가장 최근 시각. 바깥 = 그 시각의 값에 글자가 들어 있는가.
+				$sql = 'SELECT DISTINCT h.itemid FROM '.$table.' h'.
+					' JOIN (SELECT itemid,MAX(clock) AS clock FROM '.$table.' WHERE '.$where.' GROUP BY itemid) m'.
+						' ON h.itemid=m.itemid AND h.clock=m.clock'.
+					" WHERE h.value<>'' AND UPPER(h.value) LIKE ".$pattern;
+			}
+
+			$result = DBselect($sql);
+
+			// DBselect 는 실패하면 false 를 돌려준다. 그 표는 "값 없음"으로 본다.
+			if ($result === false) {
+				continue;
+			}
+
+			while ($row = DBfetch($result)) {
+				$found[$row['itemid']] = true;
+			}
+		}
+
+		return $found;
 	}
 
 	/**
