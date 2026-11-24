@@ -172,6 +172,8 @@ return [
 	'There are no CPU/Memory items for the selected hosts.' => '선택한 호스트에 CPU/Memory 아이템이 없습니다.',
 	'Values before %1$s may have been deleted because the trend storage period has passed. The average covers only the remaining period.' =>
 		'%1$s 이전 값은 요약 데이터 보관 기간이 지나 지워졌을 수 있습니다. 평균은 남아 있는 기간으로만 계산됩니다.',
+	'Values before %1$s may have been deleted because the history storage period has passed. The file contains only the remaining values.' =>
+		'%1$s 이전 값은 원본 데이터 보관 기간이 지나 지워졌을 수 있습니다. 파일에는 남아 있는 값만 들어갑니다.',
 	'Enter the reason for Agent not installed or exception.' =>
 		'Agent 미설치 및 예외 사유를 입력해 주세요',
 	'The file is split every %1$s rows and downloaded as one ZIP file.' =>

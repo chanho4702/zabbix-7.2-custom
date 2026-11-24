@@ -252,9 +252,11 @@ class SwInventoryService {
 				$description = $zbx_host['description'];
 			}
 
+			// 줄의 키. 매칭된 줄은 hostid, 매칭이 안 된 줄은 'itsm_' + ITSM ID(없으면 호스트명).
+			$rowid = $zbx_host !== null ? $zbx_host['hostid'] : 'itsm_'.($itsm_row['id'] ?? $ci_name);
+
 			$rows[] = [
-				// 매칭된 행은 hostid 를, 매칭이 안 된 행은 'itsm_' + ITSM ID(없으면 호스트명)를 고유키로 쓴다.
-				'rowid' => $zbx_host !== null ? $zbx_host['hostid'] : 'itsm_'.($itsm_row['id'] ?? $ci_name),
+				'rowid' => $rowid,
 				'hostid' => $zbx_host !== null ? $zbx_host['hostid'] : null,
 				// 인벤토리가 켜져 있고 사용자가 볼 수 있는 호스트만 코어의 인벤토리 상세 화면으로 링크한다.
 				'has_inventory' => $zbx_host !== null && $zbx_host['inventory_mode'] != HOST_INVENTORY_DISABLED
@@ -266,8 +268,12 @@ class SwInventoryService {
 				// Agent 상태는 아래 applyAgentStatus() 에서 한 번에 채운다. 여기서는 자리만 만든다.
 				'agent' => self::AGENT_INSTALLED,
 				'agent_note' => '',
-				// 상태를 사용자가 입력할 수 있는 줄인가. Zabbix 에 등록되지 않은 ITSM 서버만 입력한다. (5버전과 같다)
-				'agent_editable' => $zbx_host === null && !$this->itsm_fallback
+				/*
+				 * 상태를 사용자가 입력할 수 있는 줄인가. Zabbix 에 등록되지 않은 ITSM 서버만 입력한다. (5버전과 같다)
+				 * 키가 20자를 넘으면 상태 표의 칸(varchar(20))에 들어가지 않아 저장이 실패하므로 링크를 만들지 않는다.
+				 * (ITSM ID 가 없고 호스트명이 긴 줄. 이런 줄은 "미설치"로만 보인다)
+				 */
+				'agent_editable' => $zbx_host === null && !$this->itsm_fallback && mb_strlen($rowid) <= 20
 			// 배열 + 배열: 오른쪽 배열의 키(os, web, was, db, duplex)를 왼쪽 배열에 합친다.
 			] + $this->software->resolve($itsm_row, $zbx_host);
 		}

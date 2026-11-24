@@ -239,6 +239,19 @@ class UsageExportList extends CController {
 		// ── 6) 화면 응답 ──
 		[$hour_from, $hour_till] = $service->getBusinessHours();
 
+		/*
+		 * 보관 기간 안내. 조회 시작일이 원본 값 보관 기간보다 이르면, 그 앞의 값은 지워져 파일에 없을 수 있다.
+		 * 내보내기는 막지 않고 화면에 노란 상자로 알려만 준다. (저사용/고사용의 요약 값 안내와 같은 방식)
+		 */
+		$history_warning = '';
+
+		if ($plan !== null && $plan['history_available_from'] !== null
+				&& $time_from < $plan['history_available_from']) {
+			$history_warning = Lang::t('Values before %1$s may have been deleted because the history storage period has passed. The file contains only the remaining values.',
+				date('Y-m-d', $plan['history_available_from'])
+			);
+		}
+
 		$response = new CControllerResponseData([
 			'action' => 'usageexport.list',
 			'export_action' => 'usageexport.export',
@@ -267,6 +280,8 @@ class UsageExportList extends CController {
 			'config_missing' => $config_missing,
 			// 내보낼 수 없는 이유. 빈 문자열이면 [CSV 내보내기] 버튼이 나온다.
 			'problem' => $problem,
+			// 원본 값 보관 기간 안내. 문제없으면 ''
+			'history_warning' => $history_warning,
 			'item_count' => $plan !== null ? count($plan['items']) : 0,
 			// 미리보기 표. 내보낼 수 있을 때만 앞에서 PREVIEW_ROWS 줄을 읽는다.
 			'preview_rows' => ($plan !== null && $problem === '') ? $service->preview($plan, self::PREVIEW_ROWS) : [],

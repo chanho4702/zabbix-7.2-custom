@@ -49,8 +49,10 @@ class UsageCache {
 			return null;
 		}
 
-		// filemtime: 파일을 마지막으로 쓴 시각. 유지 시간이 지났으면 없는 것으로 본다.
+		// filemtime: 파일을 마지막으로 쓴 시각. 유지 시간이 지났으면 지우고 없는 것으로 본다.
 		if (filemtime($file) < time() - $this->seconds) {
+			@unlink($file);
+
 			return null;
 		}
 
@@ -102,7 +104,15 @@ class UsageCache {
 		return $dir !== null ? $dir.'/'.$key.'.json' : null;
 	}
 
-	/** 저장 폴더. 없으면 만든다(0700). 만들 수 없으면 null. */
+	/**
+	 * 저장 폴더. 없으면 만든다(0700). 쓸 수 없거나 안전하지 않으면 null (저장하지 않음).
+	 *
+	 * 임시 폴더는 서버의 모든 사용자가 쓸 수 있다. 다른 사용자가 같은 이름의 폴더를 먼저 만들어 두면
+	 * 저장 결과를 바꿔치기할 수 있으므로, 아래 두 가지가 맞을 때만 쓴다.
+	 *   - 진짜 폴더일 것 (is_link: 다른 곳을 가리키는 바로가기(심볼릭 링크)가 아님)
+	 *   - 웹 서버 사용자가 만든 폴더일 것 (fileowner: 폴더 주인, posix_geteuid: 지금 PHP 를 실행하는 사용자)
+	 *     posix 함수가 없는 서버(윈도우 등)에서는 주인 확인을 건너뛴다.
+	 */
 	private function dir(): ?string {
 		$dir = rtrim(sys_get_temp_dir(), '/\\').'/'.self::DIR_NAME;
 
@@ -110,7 +120,15 @@ class UsageCache {
 			return null;
 		}
 
-		return is_writable($dir) ? $dir : null;
+		if (is_link($dir) || !is_writable($dir)) {
+			return null;
+		}
+
+		if (function_exists('posix_geteuid') && @fileowner($dir) !== posix_geteuid()) {
+			return null;
+		}
+
+		return $dir;
 	}
 
 	/**

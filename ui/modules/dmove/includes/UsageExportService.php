@@ -38,6 +38,7 @@
 namespace Modules\DMove\Includes;
 
 use API;
+use CHousekeepingHelper;
 use Modules\DMove\Includes\Export\ZipStreamWriter;
 use Modules\DMove\Includes\Filter\HostFilter;
 
@@ -151,7 +152,8 @@ class UsageExportService {
 	 *     'hours'          => TIME_BUSINESS,
 	 *     'estimated_rows' => 480,          // 어림한 줄 수
 	 *     'too_large'      => false,        // 어림한 줄 수가 한도를 넘는가
-	 *     'split'          => false         // 어림한 줄 수가 split_rows 를 넘어 zip 으로 나눠 받는가
+	 *     'split'          => false,        // 어림한 줄 수가 split_rows 를 넘어 zip 으로 나눠 받는가
+	 *     'history_available_from' => 1792400000  // 이보다 이른 값은 보관 기간이 지나 지워졌을 수 있다. 모르면 null
 	 *   ]
 	 */
 	public function buildPlan(array $host_filter, int $items, int $hours, int $time_from, int $time_till): array {
@@ -182,6 +184,7 @@ class UsageExportService {
 		}
 
 		$plan_items = [];
+		$item_history = [];
 
 		if ($hostid_by_itemid) {
 			/*
@@ -190,7 +193,8 @@ class UsageExportService {
 			 */
 			$db_items = API::Item()->get([
 				// delay: 수집 간격. 줄 수를 어림하는 데 쓴다. (예: '1m', '30s', '5m;wd1-5,9-18')
-				'output' => ['itemid', 'hostid', 'name', 'value_type', 'delay'],
+				// history: 아이템의 원본 값 보관 기간. (예: '31d') 보관 기간 안내에 쓴다.
+				'output' => ['itemid', 'hostid', 'name', 'value_type', 'delay', 'history'],
 				'itemids' => array_keys($hostid_by_itemid),
 				'filter' => ['value_type' => [ITEM_VALUE_TYPE_FLOAT, ITEM_VALUE_TYPE_UINT64]]
 			]);
@@ -203,6 +207,7 @@ class UsageExportService {
 					// 이 아이템의 어림 줄 수 = 기간(초) / 수집 간격(초). intdiv(a, b): 나눗셈의 몫(정수).
 					'est_rows' => intdiv(max(0, $time_till - $time_from), $this->intervalOf($item['delay']))
 				];
+				$item_history[] = $item['history'];
 			}
 		}
 
@@ -220,8 +225,47 @@ class UsageExportService {
 			'hours' => $hours,
 			'estimated_rows' => $estimated_rows,
 			'too_large' => $estimated_rows > $this->config['max_rows'],
-			'split' => $estimated_rows > $this->config['split_rows']
+			'split' => $estimated_rows > $this->config['split_rows'],
+			// 이 시각보다 이른 값은 보관 기간이 지나 지워졌을 수 있다. 알 수 없으면 null. (화면 안내용)
+			'history_available_from' => self::historyAvailableFrom($item_history)
 		];
+	}
+
+	/**
+	 * 원본 값(history)이 남아 있을 것으로 보는 가장 이른 시각. 화면의 보관 기간 안내에 쓴다.
+	 *
+	 * Zabbix 는 보관 기간이 지난 원본 값을 하우스키핑(정리 작업)으로 지운다. 그 설정을 따른다.
+	 *   - 하우스키핑에서 이력 정리가 꺼져 있으면 지우지 않으므로 null.
+	 *   - "아이템 보관 기간 덮어쓰기"가 켜져 있으면 그 기간을 쓴다. (관리 > 일반 > 하우스키핑)
+	 *   - 꺼져 있으면 대상 아이템의 보관 기간 중 가장 짧은 것을 쓴다. (가장 먼저 지워지는 아이템 기준)
+	 * 정리 작업이 늦게 돌거나 DB 에서 따로 지운 경우는 알 수 없으므로 "지워졌을 수 있다"고만 안내한다.
+	 *
+	 * @param array $item_history  아이템별 보관 기간 문자열. 예) ['31d', '90d']
+	 *
+	 * @return int|null  유닉스 초. 알 수 없거나 지울 일이 없으면 null.
+	 */
+	private static function historyAvailableFrom(array $item_history): ?int {
+		if (CHousekeepingHelper::get(CHousekeepingHelper::HK_HISTORY_MODE) != 1) {
+			return null;
+		}
+
+		if (CHousekeepingHelper::get(CHousekeepingHelper::HK_HISTORY_GLOBAL) == 1) {
+			$keep = timeUnitToSeconds(CHousekeepingHelper::get(CHousekeepingHelper::HK_HISTORY));
+		}
+		else {
+			$keep = null;
+
+			foreach ($item_history as $history) {
+				// timeUnitToSeconds('31d') -> 2678400. 매크로 등 바꿀 수 없는 값이면 null.
+				$seconds = timeUnitToSeconds((string) $history);
+
+				if ($seconds !== null && $seconds > 0 && ($keep === null || $seconds < $keep)) {
+					$keep = $seconds;
+				}
+			}
+		}
+
+		return ($keep !== null && $keep > 0) ? time() - (int) $keep : null;
 	}
 
 	/**

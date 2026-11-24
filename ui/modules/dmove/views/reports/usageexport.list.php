@@ -38,6 +38,7 @@
  *   problem           내보낼 수 없는 이유. 빈 문자열이면 내보낼 수 있다
  *   item_count        대상 아이템 수
  *   estimated_rows    예상 줄 수
+ *   history_warning   원본 값 보관 기간 안내 문구. 문제없으면 ''
  *   split             true 면 예상 줄 수가 split_rows 를 넘어 zip 으로 나눠 받는다
  *   split_rows        파일 하나의 줄 수. 1000000
  *   preview_rows      미리보기 표의 행. [['host' => .., 'item' => .., 'clock' => .., 'value' => ..], ...]
@@ -146,6 +147,11 @@ else {
 			number_format($data['item_count']), number_format($data['estimated_rows'])
 		)))->addClass('dm-toolbar')
 	);
+
+	// 조회 시작일이 원본 값 보관 기간보다 이르다. 내보내기는 되지만 앞부분 값이 없을 수 있다.
+	if ($data['history_warning'] !== '') {
+		$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_WARNING, [], $data['history_warning'], false));
+	}
 
 	// 어림 줄 수가 split_rows 를 넘으면 zip 으로 나눠 받는다는 것을 미리 알려 준다. (5버전: 100만 줄마다 파일을 나눔)
 	if ($data['split']) {
