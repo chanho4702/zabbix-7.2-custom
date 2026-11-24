@@ -23,9 +23,8 @@
  *   프로파일은 사용자마다 따로 저장되는 값이다. 그래서 한 사람이 기준을 바꿔도 다른 사람 화면에는 영향이 없다.
  *
  *   저사용 두 값은 5버전과 같은 프로파일 키를 쓴다. 5버전 DB 를 올린 환경에서는 사용자가 바꿔 둔 값이 그대로 이어진다.
- *   고사용 두 값의 키(cpuhigh, peakhigh)는 5버전 고사용 컨트롤러를 받지 못해서 같은 규칙으로 이름을 지었다.
- *   TODO(고객환경): 5버전 고사용 컨트롤러의 프로파일 키가 다르면 아래 PROFILE_KEYS 의 두 줄을 그 이름으로 바꾼다.
- *                   (다르더라도 화면은 정상 동작한다. 5버전에서 바꿔 둔 고사용 기준이 이어지지 않을 뿐이다)
+ *   고사용 두 값의 키(cpuhigh, peakhigh)도 5버전과 같다. (2026-11-24 확인: 5버전 CControllerHighserver.php,
+ *   popup.lowserver.php 가 web.report.server.cpuhigh / peakhigh 를 읽었다. 기본값 30 / 70 / 50 / 70 도 같다)
  */
 
 namespace Modules\DMove\Includes;
