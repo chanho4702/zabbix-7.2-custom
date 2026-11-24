@@ -57,7 +57,8 @@ $form = (new CForm())
 	->addItem(
 		(new CFormList())
 			->addRow(new CLabel(Lang::t('Agent status')), $status_radio)
-			->addRow(new CLabel(Lang::t('Reason'), 'explanation'),
+			// setAsteriskMark(): 라벨에 빨간 * 를 붙여 꼭 넣어야 하는 칸임을 보인다. (빈 사유는 AgentSave 가 막는다)
+			->addRow((new CLabel(Lang::t('Reason'), 'explanation'))->setAsteriskMark(),
 				// CTextArea(이름, 값): 여러 줄 입력칸. setMaxlength: 최대 글자 수(표의 열 크기).
 				(new CTextArea('explanation', ''))
 					->setWidth(ZBX_TEXTAREA_STANDARD_WIDTH)

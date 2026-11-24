@@ -170,6 +170,8 @@ return [
 	'* Stopped at the row limit (%1$s rows). The file is incomplete.' => '※ 줄 수 한도(%1$s줄)에 닿아 여기서 멈췄습니다. 파일이 끝까지 만들어지지 않았습니다.',
 	'Preview: the first %1$d rows. Download the file to get all rows.' => '미리보기: 앞에서 %1$d줄만 표시합니다. 전체는 파일로 내려받으세요.',
 	'There are no CPU/Memory items for the selected hosts.' => '선택한 호스트에 CPU/Memory 아이템이 없습니다.',
+	'Enter the reason for Agent not installed or exception.' =>
+		'Agent 미설치 및 예외 사유를 입력해 주세요',
 	'About %1$s rows are expected, which exceeds the limit of %2$s rows. Choose fewer hosts or a shorter period.' =>
 		'예상 줄 수가 약 %1$s줄로 한도(%2$s줄)를 넘습니다. 호스트를 줄이거나 기간을 줄여 주세요.',
 	'Target items: %1$s, expected rows: about %2$s. Press [Export to CSV] to download.' =>

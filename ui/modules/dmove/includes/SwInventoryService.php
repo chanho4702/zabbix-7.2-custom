@@ -171,7 +171,7 @@ class SwInventoryService {
 		/*
 		 * 1) Zabbix 호스트 조회. 로그인한 사용자의 호스트 권한과 관계없이 전체 호스트를 읽는다.
 		 *    (주의: 5버전은 API::Host()->get() 이라 사용자 권한이 적용됐다. Super admin 이면 결과가 같다.
-		 *     v5 CControllerSwinventories.php:200-208. 전체로 둘지 권한을 적용할지 확인 대기, 2026-11-24)
+		 *     v5 CControllerSwinventories.php:200-208. 이 차이를 알고도 전체로 두기로 다시 정함, 2026-11-24)
 		 *
 		 *    이 화면은 "ITSM 서버 목록 중 Zabbix 에 등록된 것/안 된 것"을 보는 화면이고, ITSM 목록은 권한과 관계없이
 		 *    전부 나온다. Zabbix 호스트만 권한으로 줄이면, 권한 밖 호스트가 실제로는 등록돼 있는데도 "미설치"로 보인다.

@@ -66,6 +66,12 @@ class AgentSave extends CController {
 			$ret = false;
 		}
 
+		// 사유는 꼭 넣어야 한다. 5버전 popup.agent.js 도 비어 있으면 이 문구로 막았다.
+		if ($ret && trim($this->getInput('explanation', '')) === '') {
+			error(Lang::t('Enter the reason for Agent not installed or exception.'));
+			$ret = false;
+		}
+
 		if ($ret && mb_strlen($this->getInput('explanation', '')) > self::EXPLANATION_MAX) {
 			error(Lang::t('The reason can be up to %1$d characters.', self::EXPLANATION_MAX));
 			$ret = false;
