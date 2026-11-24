@@ -267,3 +267,13 @@ web-01   CPU utilization   2026-11-22 09:03:00   13.1
 - **기간 버튼**: 시간 선택기의 "어제" 같은 버튼과 < > 가 동작하지 않던 문제를 고쳤다. (코어 스크립트 `gtlc.js` 를 불러오지 않았고, 코어가 이 화면의 기간 저장 이름을 받지 않았다. `Module.php` 의 `registerTimeSelectors()`)
 - 확인: 1분 간격 아이템 2개 + 간격 불명 1개, 2시간 -> 예상 약 280줄, 실제 240줄. 한도를 50줄로 낮추면 내보내기 버튼 대신 한도 초과 안내가 나온다.
 - **필터 영역 순서와 기본 기간** (2026-11-24): 5버전 화면처럼 오른쪽 위 탭을 [< 줌 아웃 >] [최신 5 일간] [필터] 순서로 바꾸고, 처음 열면 [필터] 탭이 펼쳐지게 했다. 기간을 고른 적이 없으면 기본은 "최신 5 일간"(`now-5d`)이다. (`UsageExportList::DEFAULT_FROM`)
+
+## 부록: 100만 줄마다 파일 나누기 (2026-11-24)
+
+- 5버전 `export_csv.sh` 는 psql 결과를 `split -l 1000000` 으로 100만 줄마다 나눠 웹 폴더에 저장했고, 화면이 파일마다 내려받기를 걸었다 (`monitoring.perf.view.php`). 사용자 결정으로 7버전도 100만 줄마다 나눈다.
+- 7버전은 서버에 파일을 남기지 않는다. 어림 줄 수가 `split_rows`(기본 100만)를 넘으면 나눈 CSV 들을 **zip 하나**로 흘려보낸다. 파일명 `usage_항목_시간_날짜_시각.zip`, 안의 파일 `..._00.csv`, `..._01.csv` ... (5버전 `split -d` 와 같은 두 자리 번호). 파일마다 BOM 과 제목 줄이 있다.
+- 넘지 않으면 지금처럼 CSV 한 파일. 화면에 "100만 줄마다 파일을 나눠 ZIP 파일 하나로 받습니다." 가 나오면 zip 이다.
+- 엑셀은 한 시트에 1,048,576 줄까지 열리므로 100만 줄 파일은 엑셀로 열 수 있다.
+- 관련 파일: `includes/export/ZipStreamWriter.php`(새 파일), `includes/UsageExportService.php`, `actions/reports/usageexport/UsageExportList.php`, `views/export/layout.stream.php`, `views/reports/usageexport.list.php`, `conf/usageexport.conf.php`(`split_rows`), `lang/ko.php`.
+- 확인 (테스트 환경): `split_rows` 를 150 으로 잠시 낮추고 값 400줄로 내려받음 → zip 안에 150, 150, 100 줄 파일 3개, CRC 검사 통과. 100만으로 되돌리고 같은 조건 → CSV 한 파일 400줄.
+- 어림이 실제보다 작으면(예: 수집 간격 매크로) 100만 줄을 넘어도 CSV 한 파일로 나올 수 있다. 줄 수 한도(`max_rows`)는 그대로 지킨다.
