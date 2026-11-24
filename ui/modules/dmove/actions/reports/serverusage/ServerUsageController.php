@@ -36,7 +36,7 @@
  * ── 5버전과 달라진 점 ──
  *   - 평균/Peak 계산을 추가 테이블 없이 한다. (includes/ServerUsageService.php 머리말 참고)
  *   - [기준설정] 버튼은 사용자별 값으로 옮겼다 (includes/ServerUsageThresholds.php). 값이 없으면 conf/serverusage.conf.php 의 기본값.
- *   - Description 은 ITSM 값을 먼저 쓰고, 없으면 Zabbix 호스트 설명을 쓴다. (5버전은 ITSM 값만 썼다)
+ *   - (같은 점) Description 은 ITSM 값만 쓴다. ITSM 에 없으면 빨간 '-' 와 안내 문구. (itsmDescription())
  *   - 내보내기는 CSV 만 (5버전과 같다).
  *
  * ── 이 화면들에 속한 파일 ──
@@ -57,6 +57,8 @@ use CArrayHelper;
 use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
+use CControllerResponseRedirect;
+use CMessageHelper;
 use CPagerHelper;
 use CProfile;
 use CUrl;
@@ -194,6 +196,7 @@ abstract class ServerUsageController extends CController {
 	 *   'business_hours' => [9, 18]                    // 설정의 업무시간 [시작 시, 끝 시]
 	 *   'criteria'       => 판정 기준 안내문
 	 *   'period_error'   => ''                         // 기간이 잘못됐을 때의 안내문. 문제없으면 ''
+	 *   'query_error'    => false                      // DB 집계가 실패했으면 true
  *   'trends_warning' => ''                         // 조회 시작일이 요약 값 보관 기간보다 이를 때의 안내문. 문제없으면 ''
 	 *   'config_missing' => false                      // 아이템 키 설정이 비어 있으면 true
 	 *   'sort', 'sortorder', 'paging', 'rows'
@@ -291,6 +294,22 @@ abstract class ServerUsageController extends CController {
 			? $this->getRows($service, $host_filter, $time_from, $time_till, $filter['hours'], $thresholds)
 			: [];
 
+		// DB 집계가 실패했다. 빈 목록을 정상 결과처럼 보여 주지 않고 오류 상자를 띄운다. 내보내기는 화면으로 되돌린다.
+		$query_error = $rows === null;
+
+		if ($query_error) {
+			$rows = [];
+
+			if ($this->isExportRequest()) {
+				CMessageHelper::setErrorTitle(Lang::t('A database error occurred while calculating usage. Try again later.'));
+				$this->setResponse(new CControllerResponseRedirect(
+					(new CUrl('zabbix.php'))->setArgument('action', $list_action)
+				));
+
+				return;
+			}
+		}
+
 		/*
 		 * 보관 기간 안내. 조회 시작일이 요약 값(trends)의 보관 기간보다 이르면, 그 앞 구간은 하우스키퍼가 지워
 		 * 값이 없고 평균은 남은 구간으로만 계산된다. 숫자는 그대로 두고 화면에 알려만 준다.
@@ -330,6 +349,8 @@ abstract class ServerUsageController extends CController {
 			'business_hours' => $service->getBusinessHours(),
 			'criteria' => $this->getCriteriaText($thresholds),
 			'period_error' => $period_error,
+			// true 면 DB 집계가 실패했다 (오류 상자)
+			'query_error' => $query_error,
 			// 요약 값 보관 기간 안내. 문제없으면 ''
 			'trends_warning' => $trends_warning,
 			// 아이템 키 설정이 비어 있으면 뷰가 안내를 띄운다.
@@ -424,10 +445,11 @@ abstract class ServerUsageController extends CController {
 	 * @param string             $hours        시간대. 'work'(업무시간) / 'night'(업무외시간) / 'all'(전체)
 	 * @param array              $thresholds   conf/serverusage.conf.php 의 thresholds.
 	 *
-	 * @return array  [['hostid' => .., 'name' => .., 'ip' => .., 'description' => .., 'avg' => 12.34, 'peak' => 56.78], ...]
+	 * @return array|null  [['hostid' => .., 'name' => .., 'ip' => .., 'description' => .., 'description_hint' => ..,
+	 *                       'avg' => 12.34, 'peak' => 56.78], ...]   DB 집계가 실패하면 null.
 	 */
 	private function getRows(ServerUsageService $service, array $host_filter, int $time_from, int $time_till,
-			string $hours, array $thresholds): array {
+			string $hours, array $thresholds): ?array {
 		/*
 		 * 1) 필터에 맞는 호스트. (사용자가 볼 수 있는 호스트만 나온다) host.get 옵션:
 		 *    HostFilter::toApiOptions()  선택한 그룹/호스트를 groupids, hostids 조건으로 바꿔 준다.
@@ -454,10 +476,14 @@ abstract class ServerUsageController extends CController {
 			return [];
 		}
 
-		// 2) 호스트별 평균 / Peak. [hostid => ['avg' => .., 'peak' => ..]]
+		// 2) 호스트별 평균 / Peak. [hostid => ['avg' => .., 'peak' => ..]]  DB 집계가 실패하면 null.
 		$usage = $service->getUsage(array_keys($hosts), $time_from, $time_till, $hours);
 
-		// 3) ITSM 의 Description. [소문자 호스트명 => 설명]  ITSM 미연동이면 빈 배열.
+		if ($usage === null) {
+			return null;
+		}
+
+		// 3) ITSM 의 Description. [소문자 표시명 => 설명]  ITSM 을 쓸 수 없으면(테이블 없음) null.
 		$itsm_descriptions = (new ItsmRepository())->fetchDescriptions();
 
 		$rows = [];
@@ -470,16 +496,16 @@ abstract class ServerUsageController extends CController {
 
 			$host = $hosts[$hostid];
 
-			// ITSM 설명을 표시명 -> 호스트명 순서로 찾고, 없으면 Zabbix 호스트 설명을 쓴다.
-			$description = $itsm_descriptions[mb_strtolower($host['name'])]
-				?? $itsm_descriptions[mb_strtolower($host['host'])]
-				?? $host['description'];
+			// ITSM 설명만 쓴다. 없으면 '-' 이고 description_hint 에 이유가 들어간다. (5버전과 같다)
+			[$description, $description_hint] = self::itsmDescription($itsm_descriptions, $hostid, $host['name']);
 
 			$rows[] = [
 				'hostid' => $hostid,
 				'name' => $host['name'],
 				'ip' => HostHelper::mainIp($host['interfaces']),
 				'description' => $description,
+				// 화면에서 빨간 '-' 위에 보일 안내. ITSM 값이 있으면 ''. (내보내기 파일에는 나가지 않는다)
+				'description_hint' => $description_hint,
 				// round(값, 2): 소수 둘째 자리까지 반올림. 화면과 내보내기 파일에 같은 값이 나오게 여기서 맞춘다.
 				'avg' => round($values['avg'], 2),
 				'peak' => round($values['peak'], 2)
@@ -487,6 +513,31 @@ abstract class ServerUsageController extends CController {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * 호스트의 Description 과 안내 문구. 5버전 ITSM 트레잇의 itsm_description() 과 같은 규칙이다.
+	 *   ITSM 에 그 호스트(표시명) 행이 있다 -> [ITSM 설명, '']   (설명이 비어 있어도 그대로 쓴다)
+	 *   행이 없다                         -> ['-', '호스트(ID)에 대한 ITSM 데이터가 없습니다.']
+	 *   ITSM 테이블을 쓸 수 없다           -> ['-', '호스트(ID)에 대한 ITSM 테이블이 없습니다.']
+	 * Zabbix 호스트 설명으로 대신하지 않는다.
+	 *
+	 * @param array|null $itsm_descriptions  ItsmRepository::fetchDescriptions() 의 결과.
+	 *
+	 * @return array  [설명, 안내 문구]
+	 */
+	public static function itsmDescription(?array $itsm_descriptions, string $hostid, string $name): array {
+		if ($itsm_descriptions === null) {
+			return ['-', Lang::t('No ITSM table for host (%1$s).', $hostid)];
+		}
+
+		$key = mb_strtolower($name);
+
+		if (!array_key_exists($key, $itsm_descriptions)) {
+			return ['-', Lang::t('No ITSM data for host (%1$s).', $hostid)];
+		}
+
+		return [(string) $itsm_descriptions[$key], ''];
 	}
 
 	/**

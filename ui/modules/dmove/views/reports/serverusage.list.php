@@ -36,12 +36,14 @@
  *   business_hours  업무시간. [시작 시, 끝 시]. 예) [9, 18]
  *   criteria        기준 안내문 글자
  *   period_error    기간 오류 문구. 오류가 없으면 ''
+ *   query_error     true 면 DB 집계가 실패했다 (오류 상자를 띄운다)
  *   trends_warning  요약 값 보관 기간 안내 문구. 문제없으면 ''
  *   config_missing  true 면 아이템 키 설정이 비어 있다 (경고 상자를 띄운다)
  *   sort            현재 정렬 열. 'name' 또는 'avg'
  *   sortorder       현재 정렬 방향. 'ASC' 또는 'DESC'
  *   paging          페이지 번호 줄
- *   rows            [['hostid' => .., 'name' => .., 'ip' => .., 'description' => .., 'avg' => 12.34, 'peak' => 56.78], ...]
+ *   rows            [['hostid' => .., 'name' => .., 'ip' => .., 'description' => .., 'description_hint' => ..,
+ *                     'avg' => 12.34, 'peak' => 56.78], ...]   description_hint 는 ITSM 에 없을 때의 안내. 있으면 ''
  *
  * ── 관련 파일 ──
  *   actions/reports/serverusage/ServerUsageController.php   두 화면의 공통 컨트롤러
@@ -159,7 +161,14 @@ foreach ($data['rows'] as $row) {
 	$table->addRow([
 		(new CCol($row['name']))->addClass(ZBX_STYLE_NOWRAP),
 		(new CCol($row['ip']))->addClass(ZBX_STYLE_NOWRAP),
-		(new CCol($row['description']))->addClass(ZBX_STYLE_WORDBREAK),
+		// ITSM 에 없으면 빨간 '-' 에 마우스를 올리면 이유가 보인다. (5버전과 같다)
+		(new CCol($row['description_hint'] === ''
+			? $row['description']
+			: (new CSpan($row['description']))
+				->addClass(ZBX_STYLE_RED)
+				->addClass(ZBX_STYLE_CURSOR_POINTER)
+				->setHint($row['description_hint'])
+		))->addClass(ZBX_STYLE_WORDBREAK),
 		// 소수 둘째 자리까지 + %. 예) 2.29%   (number_format(값, 자릿수, 소수점, 천단위 구분))
 		number_format($row['avg'], 2, '.', '').'%',
 		number_format($row['peak'], 2, '.', '').'%'
@@ -207,6 +216,13 @@ if ($data['config_missing']) {
 if ($data['period_error'] !== '') {
 	// 기간이 잘못되어 조회하지 않은 경우. 빨간 오류 상자로 이유를 보여 준다.
 	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_BAD, [], $data['period_error'], false));
+}
+
+if ($data['query_error']) {
+	// DB 집계가 실패했다. 빈 표가 "해당 서버 없음"으로 보이지 않게 빨간 오류 상자를 띄운다.
+	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_BAD, [],
+		Lang::t('A database error occurred while calculating usage. Try again later.'), false
+	));
 }
 
 if ($data['trends_warning'] !== '') {

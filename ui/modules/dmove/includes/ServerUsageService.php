@@ -10,7 +10,7 @@
  *   actions/reports/serverusage/ServerUsageController.php   저사용 / 고사용 서버 사용현황 화면 (CPU)
  *   actions/reports/dailycheck/DailyCheckTop.php            일일점검의 CPU / Memory 사용률 Top 10 팝업
  *   actions/reports/serverusage/ThresholdEdit.php           [기준설정] 창의 기본값 getThresholds()
- *   includes/UsageExportService.php                         CPU/Memory 사용률 추출의 아이템 찾기 findItems()
+ *   (CPU/Memory 사용률 추출은 5버전처럼 자기 키를 쓴다. conf/usageexport.conf.php)
  *
  * ── 데이터 흐름 ──
  *   new ServerUsageService(METRIC_CPU 또는 METRIC_MEMORY)
@@ -191,10 +191,11 @@ class ServerUsageService {
 	 * @param int    $time_till  끝 시각(유닉스 초). 그날 23:59:59
 	 * @param string $hours      HOURS_ALL / HOURS_BUSINESS / HOURS_OFF
 	 *
-	 * @return array  [hostid => ['avg' => 12.34, 'peak' => 56.78], ...]
-	 *                기간 안에 값이 없는 호스트와 사용률 아이템이 없는 호스트는 결과에 없다.
+	 * @return array|null  [hostid => ['avg' => 12.34, 'peak' => 56.78], ...]
+	 *                     기간 안에 값이 없는 호스트와 사용률 아이템이 없는 호스트는 결과에 없다.
+	 *                     DB 집계가 실패하면 null. (부르는 쪽이 오류 상자를 띄운다)
 	 */
-	public function getUsage(array $hostids, int $time_from, int $time_till, string $hours): array {
+	public function getUsage(array $hostids, int $time_from, int $time_till, string $hours): ?array {
 		$this->trends_available_from = null;
 
 		if (!$hostids) {
@@ -219,6 +220,11 @@ class ServerUsageService {
 		}
 
 		$usage = $this->calculateUsage($hostids, $time_from, $time_till, $hours);
+
+		// 집계 실패는 저장하지 않는다. 저장하면 cache_seconds 동안 빈 목록이 정상 결과처럼 보인다.
+		if ($usage === null) {
+			return null;
+		}
 
 		$cache->set($cache_key, ['usage' => $usage, 'trends_available_from' => $this->trends_available_from]);
 
@@ -266,9 +272,9 @@ class ServerUsageService {
 	}
 
 	/**
-	 * 실제 집계. getUsage() 가 저장해 둔 결과가 없을 때 부른다. 반환 형식은 getUsage() 와 같다.
+	 * 실제 집계. getUsage() 가 저장해 둔 결과가 없을 때 부른다. 반환 형식은 getUsage() 와 같다. DB 조회 실패면 null.
 	 */
-	private function calculateUsage(array $hostids, int $time_from, int $time_till, string $hours): array {
+	private function calculateUsage(array $hostids, int $time_from, int $time_till, string $hours): ?array {
 		// 1) 아이템 찾기. [itemid => hostid]
 		$hostid_by_itemid = $this->findCpuItems($hostids);
 
@@ -342,6 +348,7 @@ class ServerUsageService {
 		 *    CASE WHEN 조건 THEN 값 END : 조건에 맞을 때만 값, 아니면 NULL. AVG/MAX 는 NULL 을 빼고 계산한다.
 		 *    그래서 시간대 밖의 값은 평균에 들어가지 않고, Peak 만 필요하면 전체 시간의 최대를 같이 구할 수 있다.
 		 *    고른 시간대의 값이 하나도 없는 날은 하루 평균이 NULL 이 되어 기간 평균에서 빠진다.
+		 *    그래도 그날의 하루 최대는 Peak 에 들어간다. (5버전: 업무일이면 업무시간 값이 없는 날도 하루 최대를 Peak 로 썼다)
 		 *
 		 *    dbConditionId / dbConditionInt : "컬럼 IN (1,2,3)" 조건을 안전하게 만들어 주는 코어 함수.
 		 *    쿼리에 들어가는 나머지 값은 모두 이 메소드 안에서 만든 정수라서 따옴표 처리가 필요 없다.
@@ -374,18 +381,25 @@ class ServerUsageService {
 					$day_condition.
 				' GROUP BY itemid,'.$day_number.
 			') d'.
-			' WHERE d.day_avg IS NOT NULL'.
 			' GROUP BY d.itemid'
 		);
 
 		$usage = [];
 
-		// DBselect 는 실패하면 false 를 돌려준다. 그대로 DBfetch 에 넘기면 경고가 나므로 먼저 확인한다.
+		// DBselect 는 실패하면 false 를 돌려준다. "값 없음"과 구별되게 null 을 돌려준다. (getUsage() 가 저장하지 않는다)
 		if ($result === false) {
-			return $usage;
+			return null;
 		}
 
 		while ($row = DBfetch($result)) {
+			/*
+			 * 업무시간 평균이 하나도 없는 아이템(기간 내내 업무시간 값이 없음)은 뺀다. Peak 만 있어도 목록에 넣지 않는다.
+			 * 5버전은 이때 평균을 0 으로 보여 줬다. 값이 없는데 0% 로 보이는 것은 버그라서 고친 것을 유지한다.
+			 */
+			if ($row['usage_avg'] === null) {
+				continue;
+			}
+
 			$hostid = $hostid_by_itemid[$row['itemid']];
 
 			// 한 호스트에 사용률 아이템이 둘 이상이면 평균이 큰 쪽을 그 호스트의 값으로 쓴다.
@@ -430,20 +444,6 @@ class ServerUsageService {
 		}
 
 		return ($keep !== null && $keep > 0) ? time() - (int) $keep : null;
-	}
-
-	/**
-	 * 대상 호스트의 사용률 아이템을 찾아 [itemid => hostid] 로 돌려준다. (다른 클래스에서 쓰는 공개 메소드)
-	 *
-	 * CPU/Memory 전체 사용률 추출(includes/UsageExportService.php)이 "어느 아이템의 값을 내보낼지" 정할 때 쓴다.
-	 * 생성자에서 고른 종류(METRIC_CPU / METRIC_MEMORY)의 아이템을 찾는다.
-	 *
-	 * @param array $hostids  대상 호스트 ID. 예) ['10084', '10085']
-	 *
-	 * @return array  [itemid => hostid]. 예) ['44001' => '10084']  못 찾으면 빈 배열.
-	 */
-	public function findItems(array $hostids): array {
-		return $hostids ? $this->findCpuItems($hostids) : [];
 	}
 
 	/**

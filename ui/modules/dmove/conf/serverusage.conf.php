@@ -22,10 +22,9 @@
  *
  * ── 값의 출처 (2026-11-23 채움) ──
  *   cpu_item_keys    : 5버전 키 클래스(...Key.php)의 serverCpuUsage() 가 돌려주던 키 3개 (리눅스, 유닉스, 윈도우)
- *   memory_item_keys : 같은 클래스의 serverMemoryUsage() 키 + 5버전 "CPU/Mem 사용률 추출" 화면이 읽던 키
+ *   memory_item_keys : 같은 클래스의 serverMemoryUsage() 키 2개 (유닉스, 윈도우)
  *   thresholds       : 5버전 화면의 [기준설정] 창 기본값
  *
- *   TODO(고객환경): 유닉스 CPU 키는 5버전 소스에서 끝까지 확인하지 못해 앞부분만 적었다. (아래 prefix 설명)
  *   7버전 서버에서 확인: 데이터 수집 > 호스트 > (서버 종류별로 하나씩) > 아이템 에서 CPU / 메모리 사용률 아이템의 "키"
  *   키가 하나도 맞지 않으면 목록이 비어 나온다. 키를 모두 지우면 화면에 "설정이 필요합니다" 안내가 나온다.
  */
@@ -48,11 +47,10 @@ return [
 		],
 		'prefix' => [
 			/*
-			 * 유닉스 (serverCpuUsage() 의 unix). 키 뒷부분(awk 명령)은 5버전 소스에서 끝까지 확인하지 못해서
-			 * 확실한 앞부분만 적고 "이 글자로 시작하는 키"로 찾는다.
-			 * TODO(고객환경): 7버전 서버의 유닉스 호스트에서 실제 키를 확인한다.
+			 * 유닉스 (serverCpuUsage() 의 unix). 5버전도 키 전체가 아니라 LIKE '이 글자%' 로 앞부분만 비교했다.
+			 * 5버전 값 그대로다. '|' 와 '[' 도 보통 글자로 비교한다. (API 의 startSearch 가 LIKE 특수문자를 처리한다)
 			 */
-			'system.run[cat /zabbix/script/res_vmstat.log'
+			'system.run[cat /zabbix/script/res_vmstat.log|awk'
 		]
 	],
 
@@ -67,9 +65,8 @@ return [
 			// 윈도우 (5버전 키 클래스 serverMemoryUsage() 의 windows. linux 줄은 5버전에서 주석 처리돼 있었다)
 			'vm.memory.size[pused]',
 			// 유닉스 (serverMemoryUsage() 의 unix)
-			'system.run[/zabbix/shells/MEM_COMP.sh]',
-			// 5버전 "CPU/Mem 사용률 추출" 화면이 메모리 값으로 읽던 키 (monitoring.perf.view.php)
-			'system.run[/zabbix/script/MEMORY_USAGE.sh]'
+			'system.run[/zabbix/shells/MEM_COMP.sh]'
+			// MEMORY_USAGE.sh 키는 사용률 추출 화면 전용이라 conf/usageexport.conf.php 에 있다.
 		],
 		'prefix' => [
 		]

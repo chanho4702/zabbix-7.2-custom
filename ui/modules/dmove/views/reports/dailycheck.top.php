@@ -27,7 +27,9 @@
  *   metric          'cpu' 또는 'memory'. 제목과 마지막 열 제목을 고른다
  *   day             집계한 날짜(어제). 예) '2026-11-22'
  *   config_missing  true 면 아이템 키 설정이 비어 있다
- *   rows            [['num' => 1, 'name' => 'web-01', 'ip' => '10.0.0.1', 'description' => '...', 'avg' => 87.65], ...]
+ *   query_error     true 면 DB 집계가 실패했다 (오류 상자)
+ *   rows            [['num' => 1, 'name' => 'web-01', 'ip' => '10.0.0.1', 'description' => '...',
+ *                     'description_hint' => '', 'avg' => 87.65], ...]   description_hint 는 ITSM 에 없을 때의 안내
  *   user            ['debug_mode' => 0 또는 1]  디버그 정보를 붙일지 정한다
  *
  * ── 관련 파일 ──
@@ -56,7 +58,14 @@ foreach ($data['rows'] as $row) {
 		(new CCol($row['name']))->addClass(ZBX_STYLE_NOWRAP),
 		(new CCol($row['ip']))->addClass(ZBX_STYLE_NOWRAP),
 		// 설명이 길어도 표가 팝업 밖으로 나가지 않게 줄바꿈을 허용한다.
-		(new CCol($row['description']))->addClass(ZBX_STYLE_WORDBREAK),
+		// ITSM 에 없으면 빨간 '-' 에 마우스를 올리면 이유가 보인다. (5버전과 같다)
+		(new CCol($row['description_hint'] === ''
+			? $row['description']
+			: (new CSpan($row['description']))
+				->addClass(ZBX_STYLE_RED)
+				->addClass(ZBX_STYLE_CURSOR_POINTER)
+				->setHint($row['description_hint'])
+		))->addClass(ZBX_STYLE_WORDBREAK),
 		// number_format(값, 2, '.', ''): 항상 소수 둘째 자리까지 표시한다. 예) 87.5 -> 87.50
 		number_format($row['avg'], 2, '.', '')
 	]);
@@ -69,6 +78,13 @@ $body = '';
 if ($data['config_missing']) {
 	$body .= makeMessageBox(ZBX_STYLE_MSG_WARNING, [],
 		Lang::t('Settings are required: %1$s', 'conf/serverusage.conf.php'), false
+	)->toString();
+}
+
+// DB 집계가 실패했다. 빈 표가 "값 없음"으로 보이지 않게 빨간 오류 상자를 띄운다.
+if ($data['query_error']) {
+	$body .= makeMessageBox(ZBX_STYLE_MSG_BAD, [],
+		Lang::t('A database error occurred while calculating usage. Try again later.'), false
 	)->toString();
 }
 

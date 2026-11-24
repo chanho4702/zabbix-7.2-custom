@@ -43,6 +43,7 @@ use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
 use CWebUser;
+use Modules\DMove\Actions\Reports\ServerUsage\ServerUsageController;
 use Modules\DMove\Includes\HostHelper;
 use Modules\DMove\Includes\ItsmRepository;
 use Modules\DMove\Includes\Lang;
@@ -118,12 +119,16 @@ class DailyCheckTop extends CController {
 		// 어제 날짜. 시간대는 로그인한 사용자의 시간대 설정을 따른다. (5버전: date("Y-m-d", strtotime("-1 day")))
 		$day = date('Y-m-d', strtotime('-1 day'));
 
+		// DB 집계가 실패하면 getRows() 가 null 이다. 뷰가 빈 표 대신 오류 상자를 띄운다.
+		$rows = $service->isConfigured() ? $this->getRows($service, $day) : [];
+
 		$this->setResponse(new CControllerResponseData([
 			'metric' => $metric,
 			'day' => $day,
 			// 아이템 키 설정이 비어 있으면 뷰가 안내를 띄운다.
 			'config_missing' => !$service->isConfigured(),
-			'rows' => $service->isConfigured() ? $this->getRows($service, $day) : [],
+			'query_error' => $rows === null,
+			'rows' => $rows ?? [],
 			// 디버그 모드 사용자에게 디버그 정보를 붙일 때 코어가 쓰는 값. 팝업 뷰의 관례다.
 			'user' => ['debug_mode' => $this->getDebugMode()]
 		]));
@@ -134,9 +139,10 @@ class DailyCheckTop extends CController {
 	 *
 	 * @param string $day  집계할 날짜. 예) '2026-11-22'
 	 *
-	 * @return array  [['num' => 1, 'name' => 'web-01', 'ip' => '10.0.0.1', 'description' => '...', 'avg' => 87.65], ...]
+	 * @return array|null  [['num' => 1, 'name' => 'web-01', 'ip' => '10.0.0.1', 'description' => '...',
+	 *                       'description_hint' => '', 'avg' => 87.65], ...]   DB 집계가 실패하면 null.
 	 */
-	private function getRows(ServerUsageService $service, string $day): array {
+	private function getRows(ServerUsageService $service, string $day): ?array {
 		/*
 		 * 1) 사용자가 볼 수 있는 전체 호스트.
 		 *    selectInterfaces  각 호스트에 'interfaces' => [[ip, main, type], ...] 를 붙인다. (대표 IP 용)
@@ -157,6 +163,10 @@ class DailyCheckTop extends CController {
 			ServerUsageService::HOURS_ALL
 		);
 
+		if ($usage === null) {
+			return null;
+		}
+
 		/*
 		 * 3) 평균이 큰 순으로 정렬해서 위에서 10개만 남긴다.
 		 *    uasort : 배열의 키(hostid)를 유지하면서 값으로 정렬한다.
@@ -166,7 +176,7 @@ class DailyCheckTop extends CController {
 		uasort($usage, static fn(array $a, array $b): int => $b['avg'] <=> $a['avg']);
 		$usage = array_slice($usage, 0, self::LIMIT, true);
 
-		// 4) ITSM 설명. [소문자 호스트명 => 설명]. ITSM 을 쓰지 않으면 빈 배열이다.
+		// 4) ITSM 설명. [소문자 표시명 => 설명]. ITSM 을 쓸 수 없으면(테이블 없음) null 이다.
 		$itsm_descriptions = (new ItsmRepository())->fetchDescriptions();
 
 		$rows = [];
@@ -175,12 +185,17 @@ class DailyCheckTop extends CController {
 		foreach ($usage as $hostid => $values) {
 			$host = $hosts[$hostid];
 
+			// ITSM 설명만 쓴다. 없으면 '-' 와 안내 문구. (5버전과 같다. 규칙은 저사용/고사용 화면과 같다)
+			[$description, $description_hint] = ServerUsageController::itsmDescription($itsm_descriptions, $hostid,
+				$host['name']
+			);
+
 			$rows[] = [
 				'num' => $num++,
 				'name' => $host['name'],
 				'ip' => HostHelper::mainIp($host['interfaces']),
-				// ITSM 설명이 있으면 그것을, 없으면 Zabbix 호스트 설명을 쓴다.
-				'description' => $itsm_descriptions[mb_strtolower($host['name'])] ?? $host['description'],
+				'description' => $description,
+				'description_hint' => $description_hint,
 				// 소수 둘째 자리까지. (5버전: sprintf("%0.2f", ...))
 				'avg' => round($values['avg'], 2)
 			];
