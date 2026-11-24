@@ -115,5 +115,12 @@ return [
 	'business_peak_whole_day' => true,
 
 	/** 조회할 수 있는 최대 기간(일). 5버전 화면 안내문: "최대 1년까지 기간 지정이 가능합니다." */
-	'max_period_days' => 366
+	'max_period_days' => 366,
+
+	/*
+	 * 집계 결과를 저장해 두는 시간(초). 같은 조건이면 이 시간 동안은 다시 계산하지 않는다.
+	 * 페이지 이동, 정렬, 내보내기가 빨라진다. 그동안 새로 쌓인 값은 반영되지 않는다.
+	 * 0 이면 저장하지 않는다(매번 계산). 저장 위치: 웹 서버 임시 폴더의 dmove_cache (includes/UsageCache.php)
+	 */
+	'cache_seconds' => 300
 ];

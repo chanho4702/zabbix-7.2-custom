@@ -43,6 +43,8 @@
  * 주의
  *   - 기간이 길고 호스트가 많으면 읽는 양이 많다. (1시간 1줄 x 아이템 수 x 날짜 수)
  *     1년 x 2000대면 약 1700만 줄이다. DB 가 집계하므로 PHP 메모리는 쓰지 않지만 수 초 ~ 수십 초 걸릴 수 있다.
+ *   - 같은 조건의 결과는 잠시(cache_seconds, 기본 300초) 저장해 두고 다시 쓴다. 페이지 이동, 정렬, 내보내기 때
+ *     집계를 다시 돌리지 않기 위해서다. (getUsage() 의 "결과 저장" 설명)
  *   - trends / trends_uint 를 직접 읽는 것은 API 로 같은 집계를 할 수 없기 때문이다. (trend.get 은 줄을 그대로
  *     돌려줘서 위 분량을 PHP 로 받아야 한다) 대신 "어느 호스트를 볼 수 있는가"는 API 로 걸러서 권한을 지킨다.
  *
@@ -55,6 +57,7 @@
 namespace Modules\DMove\Includes;
 
 use API;
+use CHousekeepingHelper;
 
 class ServerUsageService {
 
@@ -89,6 +92,18 @@ class ServerUsageService {
 	/** @var array  집계할 아이템의 키 설정. ['exact' => [...], 'prefix' => [...]] */
 	private array $item_keys;
 
+	/** 어떤 값을 집계하는지 (METRIC_CPU / METRIC_MEMORY). 결과 저장 이름에 넣는다. */
+	private string $metric;
+
+	/** findCpuItems() 가 찾은 아이템의 요약 보관 기간 설정. [itemid => '365d'] */
+	private array $item_trends = [];
+
+	/**
+	 * 마지막 getUsage() 에서 "이 시각 이후는 요약 값이 남아 있다"고 볼 수 있는 시각(유닉스 초).
+	 * 보관 기간 때문에 지워졌을 수 있는 구간이 없으면 null. getTrendsAvailableFrom() 으로 읽는다.
+	 */
+	private ?int $trends_available_from = null;
+
 	/**
 	 * 설정 파일을 읽고, 어느 아이템(CPU / 메모리)을 집계할지 정한다.
 	 *
@@ -101,6 +116,7 @@ class ServerUsageService {
 	public function __construct(string $metric = self::METRIC_CPU) {
 		// 설정 파일은 "return [ ... ];" 형태다. require 가 그 배열을 돌려준다.
 		$this->config = require dirname(__DIR__).'/conf/serverusage.conf.php';
+		$this->metric = $metric;
 
 		// 설정에 그 키가 없으면(예: 예전 설정 파일) 빈 값으로 본다. ?? : 왼쪽이 없으면 오른쪽.
 		$keys = $this->config[$metric] ?? [];
@@ -177,16 +193,89 @@ class ServerUsageService {
 	 *                기간 안에 값이 없는 호스트와 사용률 아이템이 없는 호스트는 결과에 없다.
 	 */
 	public function getUsage(array $hostids, int $time_from, int $time_till, string $hours): array {
+		$this->trends_available_from = null;
+
 		if (!$hostids) {
 			return [];
 		}
 
+		/*
+		 * 결과 저장. 같은 조건이면 cache_seconds(기본 300초) 동안 저장해 둔 결과를 쓴다.
+		 *   저사용/고사용 화면은 페이지를 넘기거나 정렬을 바꿀 때마다 이 메소드를 다시 부른다. 집계는 1년 x 2000대면
+		 *   수천만 줄을 읽으므로, 같은 조건이면 다시 계산하지 않는다. 저사용과 고사용은 같은 결과를 함께 쓴다.
+		 *   조건(호스트 ID 목록, 기간, 시간대, 업무시간 설정, 아이템 키)이 하나라도 다르면 새로 계산한다.
+		 *   호스트 ID 목록은 부르는 쪽이 권한으로 걸러 넘기므로, 볼 수 있는 호스트가 다른 사용자끼리는 섞이지 않는다.
+		 */
+		$cache = new UsageCache((int) ($this->config['cache_seconds'] ?? 300));
+		$cache_key = $this->cacheKey($hostids, $time_from, $time_till, $hours);
+		$cached = $cache->get($cache_key);
+
+		if ($cached !== null) {
+			$this->trends_available_from = $cached['trends_available_from'];
+
+			return $cached['usage'];
+		}
+
+		$usage = $this->calculateUsage($hostids, $time_from, $time_till, $hours);
+
+		$cache->set($cache_key, ['usage' => $usage, 'trends_available_from' => $this->trends_available_from]);
+
+		return $usage;
+	}
+
+	/**
+	 * 요약 값(trends)이 남아 있다고 볼 수 있는 가장 이른 시각(유닉스 초). 마지막 getUsage() 기준.
+	 *
+	 * Zabbix 하우스키퍼는 보관 기간이 지난 요약 값을 지운다. 조회 시작일이 이 시각보다 이르면 그 앞 구간은
+	 * 값이 없어 평균에서 빠진다. 컨트롤러가 이 값으로 화면에 안내한다.
+	 *
+	 *   관리 > 하우스키핑 의 "트렌드" 에서
+	 *     - 하우스키핑을 끄면 지우지 않으므로 null
+	 *     - "아이템 트렌드 기간 덮어쓰기" 가 켜져 있으면 그 기간
+	 *     - 아니면 대상 아이템의 트렌드 보관 기간 중 가장 짧은 것 (매크로라 계산할 수 없는 값은 뺀다)
+	 *
+	 * @return int|null  예) 지금이 2026-11-24 이고 보관 기간이 365d 면 2025-11-24 의 유닉스 초. 알 수 없으면 null.
+	 */
+	public function getTrendsAvailableFrom(): ?int {
+		return $this->trends_available_from;
+	}
+
+	/**
+	 * 결과 저장 이름. 조건이 같으면 같은 이름이 나온다.
+	 * sort(): 호스트 ID 순서가 달라도 같은 이름이 나오게 정렬한다. md5: 긴 목록을 짧은 글자로 줄인다.
+	 */
+	private function cacheKey(array $hostids, int $time_from, int $time_till, string $hours): string {
+		$hostids = array_map('strval', $hostids);
+		sort($hostids);
+
+		return md5(json_encode([
+			$this->metric,
+			$this->item_keys,
+			$this->config['business_hours'] ?? null,
+			$this->config['business_days'] ?? null,
+			$this->config['business_peak_whole_day'] ?? null,
+			// 사용자 시간대가 다르면 "몇 시인가" 계산이 달라진다.
+			(int) date('Z', $time_from),
+			$hostids,
+			$time_from,
+			$time_till,
+			$hours
+		]));
+	}
+
+	/**
+	 * 실제 집계. getUsage() 가 저장해 둔 결과가 없을 때 부른다. 반환 형식은 getUsage() 와 같다.
+	 */
+	private function calculateUsage(array $hostids, int $time_from, int $time_till, string $hours): array {
 		// 1) 아이템 찾기. [itemid => hostid]
 		$hostid_by_itemid = $this->findCpuItems($hostids);
 
 		if (!$hostid_by_itemid) {
 			return [];
 		}
+
+		// 요약 값이 남아 있는 시작 시각 (보관 기간 안내용)
+		$this->trends_available_from = $this->trendsAvailableFrom();
 
 		/*
 		 * 2) 날짜와 시간대를 SQL 에서 계산하기 위한 준비.
@@ -310,6 +399,38 @@ class ServerUsageService {
 	}
 
 	/**
+	 * 요약 값이 남아 있다고 볼 수 있는 가장 이른 시각. 설명은 getTrendsAvailableFrom().
+	 *
+	 *   CHousekeepingHelper::get(이름) : 관리 > 하우스키핑 의 설정 값.
+	 *     HK_TRENDS_MODE   '1' = 트렌드 하우스키핑 켜짐
+	 *     HK_TRENDS_GLOBAL '1' = 아이템 트렌드 기간 덮어쓰기 켜짐,  HK_TRENDS = 그 기간 (예: '365d')
+	 *   timeUnitToSeconds('365d') : 초로 바꾼다. 매크로({$TRENDS} 등)처럼 바꿀 수 없으면 null.
+	 *   트렌드 기간 0 은 "요약을 저장하지 않음" 이라 그 아이템은 처음부터 값이 없다. 기간 계산에서는 뺀다.
+	 */
+	private function trendsAvailableFrom(): ?int {
+		if (CHousekeepingHelper::get(CHousekeepingHelper::HK_TRENDS_MODE) != 1) {
+			return null;
+		}
+
+		if (CHousekeepingHelper::get(CHousekeepingHelper::HK_TRENDS_GLOBAL) == 1) {
+			$keep = timeUnitToSeconds(CHousekeepingHelper::get(CHousekeepingHelper::HK_TRENDS));
+		}
+		else {
+			$keep = null;
+
+			foreach ($this->item_trends as $trends) {
+				$seconds = timeUnitToSeconds((string) $trends);
+
+				if ($seconds !== null && $seconds > 0 && ($keep === null || $seconds < $keep)) {
+					$keep = $seconds;
+				}
+			}
+		}
+
+		return ($keep !== null && $keep > 0) ? time() - (int) $keep : null;
+	}
+
+	/**
 	 * 대상 호스트의 사용률 아이템을 찾아 [itemid => hostid] 로 돌려준다. (다른 클래스에서 쓰는 공개 메소드)
 	 *
 	 * CPU/Memory 전체 사용률 추출(includes/UsageExportService.php)이 "어느 아이템의 값을 내보낼지" 정할 때 쓴다.
@@ -342,13 +463,15 @@ class ServerUsageService {
 		// 키가 정확히 같은 아이템. filter 는 "값이 같은 것", 배열을 주면 "그중 하나와 같은 것".
 		if (!empty($keys['exact'])) {
 			$items = API::Item()->get([
-				'output' => ['itemid', 'hostid'],
+				// trends: 요약 보관 기간 (예: '365d'). 보관 기간 안내에 쓴다.
+				'output' => ['itemid', 'hostid', 'trends'],
 				'hostids' => $hostids,
 				'filter' => ['key_' => array_values($keys['exact'])]
 			]);
 
 			foreach ($items as $item) {
 				$found[$item['itemid']] = $item['hostid'];
+				$this->item_trends[$item['itemid']] = $item['trends'];
 			}
 		}
 
@@ -360,7 +483,7 @@ class ServerUsageService {
 		 */
 		if (!empty($keys['prefix'])) {
 			$items = API::Item()->get([
-				'output' => ['itemid', 'hostid'],
+				'output' => ['itemid', 'hostid', 'trends'],
 				'hostids' => $hostids,
 				'search' => ['key_' => array_values($keys['prefix'])],
 				'startSearch' => true,
@@ -369,6 +492,7 @@ class ServerUsageService {
 
 			foreach ($items as $item) {
 				$found[$item['itemid']] = $item['hostid'];
+				$this->item_trends[$item['itemid']] = $item['trends'];
 			}
 		}
 

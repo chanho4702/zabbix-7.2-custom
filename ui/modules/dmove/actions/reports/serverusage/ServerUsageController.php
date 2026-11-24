@@ -194,6 +194,7 @@ abstract class ServerUsageController extends CController {
 	 *   'business_hours' => [9, 18]                    // 설정의 업무시간 [시작 시, 끝 시]
 	 *   'criteria'       => 판정 기준 안내문
 	 *   'period_error'   => ''                         // 기간이 잘못됐을 때의 안내문. 문제없으면 ''
+ *   'trends_warning' => ''                         // 조회 시작일이 요약 값 보관 기간보다 이를 때의 안내문. 문제없으면 ''
 	 *   'config_missing' => false                      // 아이템 키 설정이 비어 있으면 true
 	 *   'sort', 'sortorder', 'paging', 'rows'
 	 */
@@ -290,6 +291,20 @@ abstract class ServerUsageController extends CController {
 			? $this->getRows($service, $host_filter, $time_from, $time_till, $filter['hours'], $thresholds)
 			: [];
 
+		/*
+		 * 보관 기간 안내. 조회 시작일이 요약 값(trends)의 보관 기간보다 이르면, 그 앞 구간은 하우스키퍼가 지워
+		 * 값이 없고 평균은 남은 구간으로만 계산된다. 숫자는 그대로 두고 화면에 알려만 준다.
+		 * getTrendsAvailableFrom(): 마지막 집계 기준. 알 수 없거나 지울 일이 없으면 null.
+		 */
+		$trends_warning = '';
+		$available_from = $period_error === '' ? $service->getTrendsAvailableFrom() : null;
+
+		if ($available_from !== null && $time_from < $available_from) {
+			$trends_warning = Lang::t('Values before %1$s may have been deleted because the trend storage period has passed. The average covers only the remaining period.',
+				date('Y-m-d', $available_from)
+			);
+		}
+
 		$rows = self::sortRows($rows, $sort_field, $sort_order);
 
 		$title = $this->getPageTitle();
@@ -315,6 +330,8 @@ abstract class ServerUsageController extends CController {
 			'business_hours' => $service->getBusinessHours(),
 			'criteria' => $this->getCriteriaText($thresholds),
 			'period_error' => $period_error,
+			// 요약 값 보관 기간 안내. 문제없으면 ''
+			'trends_warning' => $trends_warning,
 			// 아이템 키 설정이 비어 있으면 뷰가 안내를 띄운다.
 			'config_missing' => !$service->isConfigured(),
 			'sort' => $sort_field,

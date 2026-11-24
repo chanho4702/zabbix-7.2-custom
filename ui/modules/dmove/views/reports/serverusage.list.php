@@ -36,6 +36,7 @@
  *   business_hours  업무시간. [시작 시, 끝 시]. 예) [9, 18]
  *   criteria        기준 안내문 글자
  *   period_error    기간 오류 문구. 오류가 없으면 ''
+ *   trends_warning  요약 값 보관 기간 안내 문구. 문제없으면 ''
  *   config_missing  true 면 아이템 키 설정이 비어 있다 (경고 상자를 띄운다)
  *   sort            현재 정렬 열. 'name' 또는 'avg'
  *   sortorder       현재 정렬 방향. 'ASC' 또는 'DESC'
@@ -206,6 +207,11 @@ if ($data['config_missing']) {
 if ($data['period_error'] !== '') {
 	// 기간이 잘못되어 조회하지 않은 경우. 빨간 오류 상자로 이유를 보여 준다.
 	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_BAD, [], $data['period_error'], false));
+}
+
+if ($data['trends_warning'] !== '') {
+	// 조회 시작일이 요약 값 보관 기간보다 이르다. 숫자는 그대로 보여 주고 노란 상자로 알려만 준다.
+	$html_page->addItem(makeMessageBox(ZBX_STYLE_MSG_WARNING, [], $data['trends_warning'], false));
 }
 
 $html_page
