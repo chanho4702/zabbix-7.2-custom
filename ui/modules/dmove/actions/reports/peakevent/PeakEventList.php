@@ -47,6 +47,7 @@
 namespace Modules\DMove\Actions\Reports\PeakEvent;
 
 use API;
+use CArrayHelper;
 use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
@@ -438,6 +439,17 @@ class PeakEventList extends CController {
 			];
 		}
 
-		return $rows;
+		/*
+		 * 5버전과 같은 순서로 다시 정렬한다. (5버전 peak_event.php: cnt_event 내림차순, 그다음 description, priority 오름차순)
+		 * 개수가 같은 트리거는 위의 arsort 만으로는 순서가 정해지지 않아서, 트리거 이름과 심각도를 읽은 뒤 여기서 정한다.
+		 * 개수가 같은 트리거가 100번째 경계에 걸리면 어느 것이 100개 안에 드는지는 5버전도 정해져 있지 않았다. (SQL LIMIT 100)
+		 */
+		CArrayHelper::sort($rows, [
+			['field' => 'count', 'order' => ZBX_SORT_DOWN],
+			'trigger',
+			'severity'
+		]);
+
+		return array_values($rows);
 	}
 }
