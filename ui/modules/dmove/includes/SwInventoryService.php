@@ -14,8 +14,8 @@
  * ── 데이터 흐름 ──
  *   컨트롤러
  *     ├─ getRows()   전체 행을 만든다
- *     │    ├─ fetchAllHosts()          DB 에서 전체 Zabbix 호스트 + 인벤토리 + 인터페이스
- *     │    ├─ ItsmRepository::fetch()  ITSM 서버 목록 (미연동이면 Zabbix 호스트 목록으로 대신한다)
+ *     │    ├─ fetchAllHosts()          DB 에서 Zabbix 호스트 + 인벤토리 (호스트 그룹/호스트 필터가 있으면 그 안에서만)
+ *     │    ├─ ItsmRepository::fetch()  ITSM 서버 목록 (읽을 수 없으면 행 0개, isItsmUnavailable() 이 true)
  *     │    ├─ SoftwareResolver::resolve()  행마다 os/web/was/db/duplex 값
  *     │    └─ applyAgentStatus()       행마다 Agent 설치 상태 (Agent 상태 표 extends_agent 의 최신 기록)
  *     ├─ filter()    필터 입력에 맞는 행만 남긴다
@@ -97,8 +97,8 @@ class SwInventoryService {
 	private AgentStatusRepository $agent_status;
 	private SoftwareResolver $software;
 
-	/** ITSM 미연동이라 Zabbix 호스트 목록으로 대체했는지 여부. */
-	private bool $itsm_fallback = false;
+	/** ITSM 표를 읽지 못했는지 여부. (설정이 비었다 / 표가 없다 / 조회 실패) */
+	private bool $itsm_unavailable = false;
 
 	/**
 	 * 인자를 주지 않으면 기본 구현을 쓴다. 인자는 테스트할 때 가짜 ITSM 목록을 끼워 넣기 위한 것이다.
@@ -121,15 +121,16 @@ class SwInventoryService {
 	}
 
 	/**
-	 * ITSM 을 쓸 수 없어서 Zabbix 호스트 목록으로 대신했는지 알려 준다.
+	 * ITSM 표를 읽지 못했는지 알려 준다. 이때 getRows() 는 빈 배열이다.
+	 * (5버전도 ITSM 표가 없으면 목록이 비었다. Zabbix 호스트로 대신 채우지 않는다)
 	 *
 	 * getRows() 를 부른 "뒤에" 불러야 맞는 값이 나온다. getRows() 가 ITSM 목록을 읽어 보고 이 값을 정하기 때문이다.
-	 * 컨트롤러는 이 값을 뷰에 넘기고, 뷰는 true 일 때 화면 위에 "ITSM 미연동" 경고를 띄운다.
+	 * 컨트롤러는 이 값을 뷰에 넘기고, 뷰는 true 일 때 화면 위에 오류 상자를 띄운다.
 	 *
-	 * @return bool  ITSM 미연동(설정이 비었거나 테이블이 없음)이면 true.
+	 * @return bool  설정이 비었거나, 표가 없거나, 조회에 실패했으면 true.
 	 */
-	public function isItsmFallback(): bool {
-		return $this->itsm_fallback;
+	public function isItsmUnavailable(): bool {
+		return $this->itsm_unavailable;
 	}
 
 	/**
@@ -152,7 +153,13 @@ class SwInventoryService {
 	 * 필터/정렬 전의 전체 행 목록을 만든다.
 	 *
 	 * 행 1개 = ITSM 서버 1대다. 같은 이름(대소문자 무시)의 Zabbix 호스트가 있으면 그 호스트의 값을 붙인다.
-	 * ITSM 미연동이면 Zabbix 호스트 1대가 행 1개가 된다. (isItsmFallback() 이 true 가 된다)
+	 * ITSM 표를 읽지 못하면 빈 배열이다. (isItsmUnavailable() 이 true 가 된다)
+	 *
+	 * 호스트 그룹/호스트 필터는 "맞춰 볼 Zabbix 호스트"만 줄인다. (5버전 CControllerSwinventories.php:184-208)
+	 * ITSM 행은 모두 나오고, 필터 밖 호스트와 이름이 같은 ITSM 행은 매칭이 안 된 줄(미설치/예외)로 나온다.
+	 *
+	 * @param array $host_options  HostFilter::toApiOptions() 의 결과. ['groupids' => [...]|null, 'hostids' => [...]|null]
+	 *                             null 이면 그 조건이 없다. (하위 그룹은 toApiOptions() 가 이미 넣어 준다)
 	 *
 	 * @return array  행 목록. 예) [['rowid' => '10084', 'hostid' => '10084', 'has_inventory' => true,
 	 *                'host' => 'web-server-01', 'name' => 'web-server-01', 'ip' => '10.0.0.1', 'description' => '...',
@@ -167,7 +174,7 @@ class SwInventoryService {
 	 *   ip, description, os, web, was, db, duplex
 	 *   agent       AGENT_* 상수 값
 	 */
-	public function getRows(): array {
+	public function getRows(array $host_options = []): array {
 		/*
 		 * 1) Zabbix 호스트 조회. 로그인한 사용자의 호스트 권한과 관계없이 전체 호스트를 읽는다.
 		 *    (주의: 5버전은 API::Host()->get() 이라 사용자 권한이 적용됐다. Super admin 이면 결과가 같다.
@@ -178,8 +185,10 @@ class SwInventoryService {
 		 *    그래서 Zabbix 호스트도 전체를 읽는다. 결정: 2026-11-23.
 		 *
 		 *    단, 코어의 인벤토리 상세 화면 링크는 사용자가 볼 수 있는 호스트에만 단다. (권한 밖이면 코어가 오류를 띄운다)
+		 *
+		 *    호스트 그룹/호스트 필터를 고르면 그 안의 호스트만 읽는다. (5버전: host.get 의 groupids, hostids)
 		 */
-		$zbx_hosts = $this->fetchAllHosts();
+		$zbx_hosts = $this->fetchAllHosts($host_options['groupids'] ?? null, $host_options['hostids'] ?? null);
 		// 사용자가 볼 수 있는 호스트의 ID. preservekeys 라서 배열의 키가 hostid 다. (아래에서 array_key_exists 로 찾는다)
 		$visible_hostids = API::Host()->get([
 			'output' => ['hostid'],
@@ -194,41 +203,32 @@ class SwInventoryService {
 		$hostid_by_name = [];
 
 		foreach ($zbx_hosts as $hostid => $zbx_host) {
-			// mb_strtolower: 한글 등 멀티바이트 문자도 안전하게 소문자로 바꾼다. (5버전의 strtolower 대체)
-			$hostid_by_name[mb_strtolower($zbx_host['host'])] = $hostid;
+			// strtolower: 5버전과 같은 함수. 영문자만 소문자로 바꾸고 한글 등은 그대로 둔다.
+			$hostid_by_name[strtolower($zbx_host['host'])] = $hostid;
 		}
 
-		// 3) ITSM 서버 목록.
+		// 3) ITSM 서버 목록. 읽지 못하면 행을 만들지 않는다. (뷰가 오류 상자를 띄운다)
 		$itsm_rows = $this->itsm->fetch();
 
 		if ($itsm_rows === null) {
-			// ITSM 미연동: 개발/검증을 위해 Zabbix 호스트를 ITSM 목록처럼 취급한다.
-			$this->itsm_fallback = true;
-			$itsm_rows = [];
+			$this->itsm_unavailable = true;
 
-			foreach ($zbx_hosts as $hostid => $zbx_host) {
-				$itsm_rows[] = [
-					'id' => $hostid,
-					'ci_name' => $zbx_host['host'],
-					'ip_address' => '',
-					'description' => $zbx_host['description']
-				];
-			}
+			return [];
 		}
 
-		// 4) ITSM 행 기준으로 Zabbix 호스트를 매칭해 화면 행을 만든다.
+		/*
+		 * 4) ITSM 행 기준으로 Zabbix 호스트를 매칭해 화면 행을 만든다.
+		 *    5버전은 줄을 $rowdatas[키] 에 넣었다. 그래서 키가 같은 ITSM 행(같은 Zabbix 호스트에 맞은 행,
+		 *    또는 매칭이 안 되고 id 가 같은 행)은 한 줄로 합쳐지고 뒤에 읽은 행이 남는다. 여기서도 같다.
+		 */
 		$rows = [];
 
 		foreach ($itsm_rows as $itsm_row) {
-			$ci_name = trim((string) ($itsm_row['ci_name'] ?? ''));
+			// ci_name, id 는 앞뒤 빈칸을 떼지 않고 그대로 쓴다. (5버전과 같다)
+			$ci_name = (string) ($itsm_row['ci_name'] ?? '');
 			$zbx_host = null;
 
-			// 호스트명이 비어 있는 ITSM 행은 표시할 수 없으므로 건너뛴다.
-			if ($ci_name === '') {
-				continue;
-			}
-
-			$key = mb_strtolower($ci_name);
+			$key = strtolower($ci_name);
 
 			if (array_key_exists($key, $hostid_by_name)) {
 				$zbx_host = $zbx_hosts[$hostid_by_name[$key]];
@@ -238,28 +238,25 @@ class SwInventoryService {
 			 * 5버전 버그 수정: 매칭이 안 된 행에서 $host_name 을 초기화하지 않아
 			 * 바로 앞 행의 표시명이 그대로 표시됐다. 여기서는 매칭이 안 되면 빈 값이다.
 			 */
-			// IP: ITSM 값을 먼저 쓰고, 비어 있으면 Zabbix 호스트의 대표 IP 를 쓴다.
-			$ip = trim((string) ($itsm_row['ip_address'] ?? ''));
-
-			if ($ip === '' && $zbx_host !== null) {
-				$ip = HostHelper::mainIp($zbx_host['interfaces']);
-			}
-
-			// Description: ITSM 값을 먼저 쓰고, 비어 있으면 Zabbix 호스트 설명을 쓴다.
-			$description = trim((string) ($itsm_row['description'] ?? ''));
-
-			if ($description === '' && $zbx_host !== null) {
-				$description = $zbx_host['description'];
-			}
+			// IP, Description 은 ITSM 값만 쓴다. (5버전 CControllerSwinventories.php:228-229)
+			$ip = (string) ($itsm_row['ip_address'] ?? '');
+			$description = (string) ($itsm_row['description'] ?? '');
 
 			/*
 			 * 줄의 키. 매칭된 줄은 hostid, 매칭이 안 된 줄은 'itsm_' + ITSM ID. (5버전과 같다: "itsm_".$row['id'])
 			 * Agent 상태 표(extends_agent)에 이 키로 저장하고 읽는다.
 			 */
-			$itsm_id = trim((string) ($itsm_row['id'] ?? ''));
+			$itsm_id = (string) ($itsm_row['id'] ?? '');
 			$rowid = $zbx_host !== null ? $zbx_host['hostid'] : 'itsm_'.$itsm_id;
 
-			$rows[] = [
+			/*
+			 * 5버전 버그 수정: 매칭이 안 되고 ITSM ID 가 빈 행은 키가 모두 'itsm_' 라서 5버전은 한 줄로 합쳐졌다.
+			 * 여기서는 합치지 않고 행마다 따로 보인다. (상태 입력 링크는 달지 않는다. 아래 agent_editable)
+			 */
+			// 배열 키 앞에 글자를 붙여 hostid('10084')가 숫자 키로 바뀌지 않게 한다. 마지막에 array_values() 로 키를 버린다.
+			$row_index = ($zbx_host === null && $itsm_id === '') ? 'noid_'.count($rows) : 'k'.$rowid;
+
+			$rows[$row_index] = [
 				'rowid' => $rowid,
 				'hostid' => $zbx_host !== null ? $zbx_host['hostid'] : null,
 				// 인벤토리가 켜져 있고 사용자가 볼 수 있는 호스트만 코어의 인벤토리 상세 화면으로 링크한다.
@@ -277,31 +274,36 @@ class SwInventoryService {
 				 * 다만 아래 두 경우는 링크를 만들지 않는다. 이런 줄은 "미설치" 글자만 보인다.
 				 *   - ITSM ID 가 비어 있다: 키가 모두 'itsm_' 로 같아져 서로의 상태를 덮어쓴다. (5버전은 그대로 덮어썼다)
 				 *   - 키가 20자를 넘는다: 상태 표의 칸(varchar(20))에 들어가지 않는다. ITSM ID 가 15자리를 넘을 때만 생긴다.
+				 * 가장 최근 기록이 1(설치)인 줄도 링크를 달지 않는다. (applyAgentStatus() 에서 정한다)
 				 */
-				'agent_editable' => $zbx_host === null && !$this->itsm_fallback && $itsm_id !== ''
-					&& mb_strlen($rowid) <= 20
+				'agent_editable' => $zbx_host === null && $itsm_id !== '' && mb_strlen($rowid) <= 20
 			// 배열 + 배열: 오른쪽 배열의 키(os, web, was, db, duplex)를 왼쪽 배열에 합친다.
 			] + $this->software->resolve($itsm_row, $zbx_host);
 		}
 
-		return $this->applyAgentStatus($rows);
+		return $this->applyAgentStatus(array_values($rows));
 	}
 
 	/**
-	 * 권한과 관계없이 전체 Zabbix 호스트를 읽는다. host.get 결과와 같은 모양으로 돌려준다.
+	 * 권한과 관계없이 Zabbix 호스트를 읽는다. host.get 결과와 같은 모양으로 돌려준다.
 	 *
 	 * host.get 은 항상 로그인한 사용자의 권한으로 걸러서 여기서는 DB 를 직접 읽는다.
 	 * (5버전은 swinventory DB 뷰를 읽었다. 그 뷰는 인터페이스가 여러 개면 행이 중복되고 템플릿이 섞였다.
-	 *  여기서는 호스트 한 줄에 인터페이스를 따로 붙여 중복이 없고, 템플릿은 빼고 읽는다.)
+	 *  여기서는 템플릿은 빼고 호스트 한 줄씩 읽는다.)
 	 *
 	 *   status IN (0, 1)  : 모니터링 중 / 중지된 호스트. 템플릿(3)은 뺀다.
 	 *   flags IN (0, 4)   : 일반 호스트 / 디스커버리로 만들어진 호스트. host.get 기본값과 같다. (호스트 프로토타입 2 는 뺀다)
 	 *   host_inventory    : 인벤토리가 꺼진 호스트는 이 표에 줄이 없다. 그래서 LEFT JOIN 하고 없으면 -1(꺼짐)로 본다.
+	 *   groupids          : 이 그룹들 중 하나에 들어 있는 호스트만. (hosts_groups 표)
+	 *   hostids           : 이 호스트만. 둘 다 주면 둘 다 맞는 호스트만. (host.get 과 같다)
+	 *
+	 * @param array|null $groupids  호스트 그룹 ID (하위 그룹 포함). null 이면 조건 없음.
+	 * @param array|null $hostids   호스트 ID. null 이면 조건 없음.
 	 *
 	 * @return array  [hostid => ['hostid', 'host', 'name', 'description', 'inventory_mode',
-	 *                            'inventory' => [필드 => 값], 'interfaces' => [[ip, main, type], ...]]]
+	 *                            'inventory' => [필드 => 값]]]
 	 */
-	private function fetchAllHosts(): array {
+	private function fetchAllHosts(?array $groupids = null, ?array $hostids = null): array {
 		/*
 		 * 인벤토리 필드 이름은 host_inventory 표의 열 이름이다. (SoftwareResolver::INVENTORY_FIELDS)
 		 * 쿼리에 이어 붙이므로 영문자/숫자/밑줄로 된 이름만 쓴다.
@@ -325,7 +327,13 @@ class SwInventoryService {
 			' FROM hosts h'.
 			' LEFT JOIN host_inventory hi ON hi.hostid=h.hostid'.
 			' WHERE '.dbConditionInt('h.status', [HOST_STATUS_MONITORED, HOST_STATUS_NOT_MONITORED]).
-				' AND '.dbConditionInt('h.flags', [ZBX_FLAG_DISCOVERY_NORMAL, ZBX_FLAG_DISCOVERY_CREATED])
+				' AND '.dbConditionInt('h.flags', [ZBX_FLAG_DISCOVERY_NORMAL, ZBX_FLAG_DISCOVERY_CREATED]).
+				($groupids !== null
+					? ' AND h.hostid IN (SELECT hg.hostid FROM hosts_groups hg WHERE '
+						.dbConditionId('hg.groupid', $groupids).')'
+					: ''
+				).
+				($hostids !== null ? ' AND '.dbConditionId('h.hostid', $hostids) : '')
 		);
 
 		$hosts = [];
@@ -346,24 +354,8 @@ class SwInventoryService {
 				'name' => $row['name'],
 				'description' => $row['description'],
 				'inventory_mode' => $row['inventory_mode'],
-				'inventory' => $inventory,
-				'interfaces' => []
+				'inventory' => $inventory
 			];
-		}
-
-		// 인터페이스를 한 번에 읽어 호스트별로 붙인다. (대표 IP 를 고르는 HostHelper::mainIp() 가 쓴다)
-		if ($hosts) {
-			$result = DBselect(
-				'SELECT hostid,ip,main,type FROM interface WHERE '.dbConditionId('hostid', array_keys($hosts))
-			);
-
-			while ($result !== false && $row = DBfetch($result)) {
-				$hosts[$row['hostid']]['interfaces'][] = [
-					'ip' => $row['ip'],
-					'main' => $row['main'],
-					'type' => $row['type']
-				];
-			}
 		}
 
 		return $hosts;
@@ -399,11 +391,12 @@ class SwInventoryService {
 		$latest = $this->agent_status->latestByKeys($keys);
 
 		foreach ($rows as &$row) {
-			if (!$row['agent_editable']) {
+			// Zabbix 에 등록된 서버는 설치. 키를 만들 수 없는 줄(ID 가 비었거나 너무 길다)은 기록을 읽지 않고 미설치.
+			if ($row['hostid'] !== null) {
 				continue;
 			}
 
-			$record = $latest[$row['rowid']] ?? null;
+			$record = $row['agent_editable'] ? ($latest[$row['rowid']] ?? null) : null;
 
 			if ($record === null) {
 				$row['agent'] = self::AGENT_NOT_INSTALLED;
@@ -421,6 +414,11 @@ class SwInventoryService {
 
 				default:
 					$row['agent'] = self::AGENT_INSTALLED;
+			}
+
+			// 기록이 1(설치)이면 글자만 보이고 입력 링크를 달지 않는다. (5버전 Agent 트레잇 ...HostAgent.php 105-123행)
+			if ($record['agent'] == AgentStatusRepository::STATUS_INSTALLED) {
+				$row['agent_editable'] = false;
 			}
 
 			// 예) "사유 (Admin, 2026-11-23 10:15)"  zbx_date2str: 사용자 시간대로 날짜를 글자로 바꾸는 코어 함수.

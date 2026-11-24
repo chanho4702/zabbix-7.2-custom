@@ -5,7 +5,7 @@
  * ── 이 화면이 하는 일 ──
  *   ITSM 에 등록된 서버 목록을 한 줄씩 보여 주고, 각 서버가 Zabbix 에 등록되어 있는지(Agent 설치 여부)와
  *   그 서버의 OS / WEB / WAS / DB / 이중화 솔루션을 함께 보여 준다.
- *   ITSM 을 연결하지 않은 환경에서는 Zabbix 호스트 목록을 대신 쓴다. (그때는 화면에 안내가 뜬다)
+ *   ITSM 표를 읽지 못하면 목록은 비고 화면에 오류 상자가 뜬다. 내보내기는 화면으로 돌아온다.
  *
  *   화면 : zabbix.php?action=swinventory.list
  *   내보내기 : zabbix.php?action=swinventory.export&format=csv 또는 xlsx
@@ -14,7 +14,8 @@
  * 5버전 대응: 커스텀 폴더의 controllers/CControllerSwinventories.php, CControllerSWInventCSV
  *
  * ── 화면 구성 ──
- *   필터 : ITSM HOST, OS/Version, WEB, WAS, DB, 이중화 (글자 입력. 부분 일치)
+ *   필터 : 호스트 그룹, 호스트 (맞춰 볼 Zabbix 호스트를 줄인다. includes/filter/HostFilter.php)
+ *          ITSM HOST, OS/Version, WEB, WAS, DB, 이중화 (글자 입력. 부분 일치)
  *          Agent 설치 / 미설치 / 예외 (체크박스)
  *   버튼 : CSV 내보내기
  *   표   : 호스트, 표시명, IP, Description, OS, WEB, WAS, DB, 이중화 솔루션, Agent 설치
@@ -66,12 +67,14 @@ namespace Modules\DMove\Actions\Inventory\SwInventory;
 use CController;
 use CControllerResponseData;
 use CControllerResponseFatal;
+use CControllerResponseRedirect;
 use CPagerHelper;
 use CProfile;
 use CRoleHelper;
 use CUrl;
 use CWebUser;
 use Modules\DMove\Includes\Export\ExportTrait;
+use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\Lang;
 use Modules\DMove\Includes\SwInventoryService;
 
@@ -133,8 +136,9 @@ class SwInventoryList extends CController {
 			'filter_rst' =>	'in 1',
 			'sort' =>		'in '.implode(',', SwInventoryService::SORT_FIELDS),
 			'sortorder' =>	'in '.ZBX_SORT_UP.','.ZBX_SORT_DOWN
-		// 내보내기용 규칙(format)을 더한다. 배열 + 배열 = 두 배열을 합친다.
-		] + self::exportInputFields();
+		// 호스트 그룹/호스트 필터(filter_groupids, filter_hostids)와 내보내기용 규칙(format)을 더한다.
+		// 배열 + 배열 = 두 배열을 합친다.
+		] + HostFilter::INPUT_FIELDS + self::exportInputFields();
 
 		// 텍스트 필터: filter_itsm, filter_os, filter_web, filter_was, filter_db, filter_duplex
 		foreach (array_keys(SwInventoryService::TEXT_FILTERS) as $key) {
@@ -192,7 +196,8 @@ class SwInventoryList extends CController {
 	 *   active_tab              필터 영역이 펼쳐져 있는지 (1 = 펼침)
 	 *   sort, sortorder         정렬 열, 방향('ASC' / 'DESC')
 	 *   agent_labels            Agent 상태 값 => 글자. [1 => '설치', 2 => '미설치', 4 => '예외']
-	 *   itsm_fallback           ITSM 대신 Zabbix 호스트 목록을 썼으면 true (뷰가 안내를 띄운다)
+	 *   host_filter             호스트 그룹/호스트 선택창에 표시할 값. HostFilter::toViewData() 의 결과
+	 *   itsm_unavailable        ITSM 표를 읽지 못했으면 true (행 0개, 뷰가 오류 상자를 띄운다)
 	 *   total                   필터를 적용한 뒤의 전체 줄 수
 	 *   paging                  페이지 이동 줄
 	 *   rows                    현재 페이지의 행들
@@ -204,9 +209,13 @@ class SwInventoryList extends CController {
 		// [적용] 버튼 -> filter_set=1, [초기화] 버튼 -> filter_rst=1 이 넘어온다.
 		if ($this->hasInput('filter_set')) {
 			$this->updateProfiles();
+			HostFilter::save(self::PROFILE_PREFIX, $this->getInput('filter_groupids', []),
+				$this->getInput('filter_hostids', [])
+			);
 		}
 		elseif ($this->hasInput('filter_rst')) {
 			$this->deleteProfiles();
+			HostFilter::reset(self::PROFILE_PREFIX);
 		}
 
 		/*
@@ -214,6 +223,14 @@ class SwInventoryList extends CController {
 		 * 그래서 페이지 이동, 정렬 클릭, 내보내기, 다음에 다시 접속했을 때도 같은 필터가 유지된다.
 		 */
 		$filter = $this->getFilter();
+
+		/*
+		 * 호스트 그룹/호스트 필터. 저장 키: web.dmove.swinventory.filter.groupids / .hostids
+		 * 맞춰 볼 Zabbix 호스트만 줄인다. ITSM 행은 모두 나온다. (5버전 CControllerSwinventories.php:184-208)
+		 * 주의: toApiOptions() 는 API 호출 앞에서 변수에 담아 둔다. (includes/filter/HostFilter.php 설명)
+		 */
+		$host_filter = HostFilter::load(self::PROFILE_PREFIX);
+		$host_options = HostFilter::toApiOptions($host_filter);
 
 		// ── 2) 정렬 값 (헤더를 클릭하면 sort / sortorder 가 넘어온다. 마지막 값을 기억한다) ──
 		// getInput('이름', 기본값): 요청에 값이 없으면 기본값. 여기서는 기본값이 "지난번에 저장한 정렬"이다.
@@ -226,7 +243,7 @@ class SwInventoryList extends CController {
 		// ── 3) 데이터 조회 -> 필터 -> 정렬 (로직은 includes/SwInventoryService.php) ──
 		$service = new SwInventoryService();
 
-		$rows = $service->getRows();
+		$rows = $service->getRows($host_options);
 		$rows = $service->filter($rows, $filter);
 		$rows = $service->sort($rows, $sort_field, $sort_order);
 
@@ -235,6 +252,15 @@ class SwInventoryList extends CController {
 
 		// ── 4) 내보내기 요청이면 여기서 끝낸다 (이 컨트롤러는 액션 2개 list, export 에 등록되어 있다) ──
 		if ($this->isExportRequest()) {
+			// ITSM 표를 읽지 못했으면 파일을 만들지 않고 화면으로 돌려보낸다. 화면에 오류 상자가 보인다.
+			if ($service->isItsmUnavailable()) {
+				$this->setResponse(new CControllerResponseRedirect(
+					(new CUrl('zabbix.php'))->setArgument('action', 'swinventory.list')
+				));
+
+				return;
+			}
+
 			// 내보내기 행에는 화면에 보이는 글자를 넣는다. Agent 상태 값(1/2/4)을 라벨(설치/미설치/예외)로 바꾼다.
 			foreach ($rows as &$row) {
 				$row['agent'] = $agent_labels[$row['agent']];
@@ -254,11 +280,12 @@ class SwInventoryList extends CController {
 			'export_action' => 'swinventory.export',
 			'columns' => self::getColumns(),
 			'filter' => $filter,
+			'host_filter' => HostFilter::toViewData($host_filter),
 			'active_tab' => CProfile::get(self::PROFILE_PREFIX.'filter.active', 1),
 			'sort' => $sort_field,
 			'sortorder' => $sort_order,
 			'agent_labels' => $agent_labels,
-			'itsm_fallback' => $service->isItsmFallback(),
+			'itsm_unavailable' => $service->isItsmUnavailable(),
 			// Agent 상태 표(extends_agent)를 쓸 수 있는가. 없으면 뷰가 안내를 띄운다.
 			'agent_status_available' => $service->isAgentStatusAvailable(),
 			'total' => count($rows)

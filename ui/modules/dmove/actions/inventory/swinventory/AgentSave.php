@@ -23,6 +23,7 @@ use CControllerResponseData;
 use CRoleHelper;
 use CWebUser;
 use Modules\DMove\Includes\AgentStatusRepository;
+use Modules\DMove\Includes\ItsmRepository;
 use Modules\DMove\Includes\Lang;
 
 class AgentSave extends CController {
@@ -38,11 +39,17 @@ class AgentSave extends CController {
 	}
 
 	/**
-	 * 줄의 키가 올바른가. 'itsm_' 로 시작하고 20자 이하여야 한다. (표의 hostid 열이 varchar(20))
+	 * 줄의 키가 올바른가. 'itsm_' + 비어 있지 않은 ITSM id 이고, 20자 이하이고(표의 hostid 열이 varchar(20)),
+	 * 그 id 의 줄이 ITSM 표에 실제로 있어야 한다.
 	 * Zabbix 에 등록된 서버(키가 숫자 hostid)는 상태를 입력하지 않는다. (5버전과 같다. 등록된 서버는 항상 "설치")
 	 */
 	public static function isValidKey(string $key): bool {
-		return str_starts_with($key, 'itsm_') && mb_strlen($key) <= 20;
+		if (!str_starts_with($key, 'itsm_') || $key === 'itsm_' || mb_strlen($key) > 20) {
+			return false;
+		}
+
+		// substr($key, 5): 앞의 'itsm_' 5글자를 뗀 나머지가 ITSM id 다.
+		return (new ItsmRepository())->idExists(substr($key, 5));
 	}
 
 	/**
@@ -106,8 +113,9 @@ class AgentSave extends CController {
 		}
 
 		// CWebUser::$data: 지금 로그인한 사용자의 정보. userid, username(로그인 이름), name(이름) 이 들어 있다.
+		// 사유는 입력한 그대로 저장한다. (5버전과 같다. 빈칸만 있는 사유는 checkInput() 에서 막는다)
 		$saved = $repository->insert($this->getInput('key'), (int) $this->getInput('agent'),
-			trim($this->getInput('explanation', '')), CWebUser::$data
+			$this->getInput('explanation', ''), CWebUser::$data
 		);
 
 		if (!$saved) {

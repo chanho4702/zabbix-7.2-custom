@@ -28,9 +28,16 @@ namespace Modules\DMove\Includes;
 
 class AgentStatusRepository {
 
-	/** 상태 값. 5버전 표에 저장된 값과 같다. */
+	/** 상태 값. 5버전 표에 저장된 값과 같다. 1(설치)은 이 모듈이 넣지 않지만 5버전 기록에 있을 수 있다. */
+	public const STATUS_INSTALLED = 1;
 	public const STATUS_NOT_INSTALLED = 2;
 	public const STATUS_EXCEPTION = 4;
+
+	/*
+	 * "가장 최근 기록"을 고르는 순서. 목록(latestByKeys)과 입력 창(history)이 같은 순서를 쓴다.
+	 * 표에 일련번호 열이 없어서 같은 초(clock)에 저장된 줄은 나머지 열로 순서를 정한다. (매번 같은 줄이 고르게 된다)
+	 */
+	private const LATEST_ORDER = 'clock DESC,agent DESC,userid DESC,explanation DESC';
 
 	/** 설정 파일 위치. 모듈 폴더 기준. */
 	private const CONFIG_FILE = '/conf/swinventory.conf.php';
@@ -56,7 +63,8 @@ class AgentStatusRepository {
 	 *
 	 * 쿼리 설명:
 	 *   안쪽 SELECT 가 키별 가장 큰 clock 을 구하고, 바깥이 그 clock 의 줄을 고른다.
-	 *   같은 키, 같은 clock 의 줄이 둘 이상이면(같은 초에 두 번 저장) 아무 줄이나 하나 남긴다.
+	 *   같은 키, 같은 clock 의 줄이 둘 이상이면(같은 초에 두 번 저장) LATEST_ORDER 순서로 첫 줄을 남긴다.
+	 *   입력 창의 history() 첫 줄과 같은 줄이다.
 	 */
 	public function latestByKeys(array $keys): array {
 		$table = $this->tableName();
@@ -69,16 +77,22 @@ class AgentStatusRepository {
 		$in = implode(',', array_map('zbx_dbstr', array_values($keys)));
 
 		$result = DBselect(
-			'SELECT a.hostid,a.agent,a.explanation,a.clock,a.username,a.useralias'.
-			' FROM '.$table.' a'.
-			' JOIN ('.
-				'SELECT hostid,MAX(clock) AS clock FROM '.$table.' WHERE hostid IN ('.$in.') GROUP BY hostid'.
-			') m ON m.hostid=a.hostid AND m.clock=a.clock'
+			'SELECT hostid,agent,explanation,clock,username,useralias FROM '.$table.
+			' WHERE hostid IN ('.$in.')'.
+				' AND (hostid,clock) IN ('.
+					'SELECT hostid,MAX(clock) FROM '.$table.' WHERE hostid IN ('.$in.') GROUP BY hostid'.
+				')'.
+			' ORDER BY hostid,'.self::LATEST_ORDER
 		);
 
 		$latest = [];
 
 		while ($result !== false && $row = DBfetch($result)) {
+			// 키마다 첫 줄만 남긴다.
+			if (array_key_exists($row['hostid'], $latest)) {
+				continue;
+			}
+
 			$latest[$row['hostid']] = [
 				'agent' => (int) $row['agent'],
 				'explanation' => (string) $row['explanation'],
@@ -109,7 +123,7 @@ class AgentStatusRepository {
 		$result = DBselect(
 			'SELECT agent,explanation,clock,username,useralias FROM '.$table.
 			' WHERE hostid='.zbx_dbstr($key).
-			' ORDER BY clock DESC',
+			' ORDER BY '.self::LATEST_ORDER,
 			$limit
 		);
 

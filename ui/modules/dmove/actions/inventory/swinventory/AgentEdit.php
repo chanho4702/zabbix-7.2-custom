@@ -38,7 +38,7 @@ class AgentEdit extends CController {
 
 	/**
 	 * 받는 값 검사.
-	 *   key  : 줄의 키. 'itsm_' 로 시작하는 20자 이하. (표의 hostid 열 크기)
+	 *   key  : 줄의 키. 'itsm_' + ITSM 표에 있는 id, 20자 이하. (AgentSave::isValidKey())
 	 *   name : 창 제목에 보일 서버 이름.
 	 */
 	protected function checkInput(): bool {

@@ -14,7 +14,7 @@
  * ── 화면 구성 ──
  *   제목 오른쪽 : [CSV 내보내기]
  *   필터        : 왼쪽 단에 글자 입력 3개, 오른쪽 단에 글자 입력 3개 + Agent 체크박스(설치 / 미설치 / 예외)
- *   경고 상자   : ITSM 설정이 비어 있어 Zabbix 호스트로 대신 보여 줄 때만 나온다
+ *   오류 상자   : ITSM 표를 읽지 못했을 때만 나온다 (목록은 0줄)
  *   표          : 열 제목을 누르면 정렬된다. 아래쪽에 페이지 번호가 붙는다
  *
  * ── 받는 값 ($data) ──
@@ -26,7 +26,8 @@
  *   sort           현재 정렬 열
  *   sortorder      현재 정렬 방향. 'ASC' 또는 'DESC'
  *   agent_labels   [Agent 상태 값 => 화면에 표시할 글자]
- *   itsm_fallback  true 면 ITSM 대신 Zabbix 호스트를 보여 주는 중이다 (경고 상자를 띄운다)
+ *   host_filter    호스트 그룹/호스트 선택창에 표시할 값 (HostFilter::toViewData())
+ *   itsm_unavailable  true 면 ITSM 표를 읽지 못했다 (오류 상자를 띄운다)
  *   paging         페이지 번호 줄 (컨트롤러가 CPagerHelper 로 만든 것)
  *   rows           표의 행. 현재 페이지 분량만 들어 있다
  *
@@ -49,6 +50,7 @@
  */
 
 use Modules\DMove\Includes\Export\ExportButtons;
+use Modules\DMove\Includes\Filter\HostFilter;
 use Modules\DMove\Includes\Lang;
 use Modules\DMove\Includes\SwInventoryService;
 
@@ -78,9 +80,10 @@ $text_filter_labels = [
 	'duplex' => Lang::t('Redundancy')
 ];
 
-// 필터는 좌/우 2단으로 배치한다. 왼쪽 3개, 오른쪽 3개 + Agent 체크박스.
+// 필터는 좌/우 2단으로 배치한다. 왼쪽 호스트 그룹/호스트 + 3개, 오른쪽 3개 + Agent 체크박스.
 // CFormList: "라벨 + 입력창" 줄을 차례로 쌓는 폼. addRow(라벨, 입력창) 으로 한 줄을 넣는다.
-$filter_columns = [new CFormList(), new CFormList()];
+// 호스트 그룹/호스트 두 줄은 공용 부품이 넣는다. (includes/filter/HostFilter.php, 5버전 필터 맨 위 두 줄)
+$filter_columns = [HostFilter::addRows(new CFormList(), $data['host_filter']), new CFormList()];
 $index = 0;
 
 foreach ($text_filter_labels as $key => $label) {
@@ -212,7 +215,7 @@ $html_page = (new CHtmlPage())
 	->setControls(ExportButtons::create($data['export_action']))
 	->addItem($filter);
 
-if (!$data['itsm_fallback'] && !$data['agent_status_available']) {
+if (!$data['itsm_unavailable'] && !$data['agent_status_available']) {
 	// Agent 상태 표(extends_agent)가 없으면 Zabbix 에 없는 서버는 모두 "미설치"로 나온다. 이유를 알려 준다.
 	$html_page->addItem(
 		makeMessageBox(ZBX_STYLE_MSG_WARNING, [], Lang::t('The Agent status table does not exist.').' '
@@ -221,11 +224,11 @@ if (!$data['itsm_fallback'] && !$data['agent_status_available']) {
 	);
 }
 
-if ($data['itsm_fallback']) {
-	// conf/itsm.conf.php 에 ITSM 스키마/테이블 이름을 채우면 이 경고는 사라진다.
-	// makeMessageBox(종류, 상세 목록, 제목 글자, 닫기 버튼 여부): 코어 함수. 노란 경고 상자를 만든다.
+if ($data['itsm_unavailable']) {
+	// ITSM 표를 읽지 못해 목록이 비어 있다. conf/itsm.conf.php 의 스키마/테이블 이름과 DB 를 확인한다.
+	// makeMessageBox(종류, 상세 목록, 제목 글자, 닫기 버튼 여부): 코어 함수. 빨간 오류 상자를 만든다.
 	$html_page->addItem(
-		makeMessageBox(ZBX_STYLE_MSG_WARNING, [], Lang::t('ITSM table is not configured (conf/itsm.conf.php). Showing Zabbix hosts instead.'),
+		makeMessageBox(ZBX_STYLE_MSG_BAD, [], Lang::t('Cannot read ITSM data. Check conf/itsm.conf.php and the ITSM table.'),
 			false
 		)
 	);
