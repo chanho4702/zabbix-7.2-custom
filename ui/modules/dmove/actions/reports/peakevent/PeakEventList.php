@@ -310,8 +310,9 @@ class PeakEventList extends CController {
 	 * @param array $host_filter  ['groupids' => [...], 'hostids' => [...]]  비어 있으면 볼 수 있는 전체 호스트.
 	 * @param array $filter       ['name' => 'CPU', 'severities' => [2, 4]]  비어 있으면 조건 없음.
 	 *
-	 * @return array  [['host' => .., 'ip' => .., 'description' => .., 'trigger' => .., 'severity' => 0~5, 'count' => N], ...]
-	 *   예) ['host' => 'web-server-01', 'ip' => '10.0.0.1', 'description' => '...',
+	 * @return array  [['hostid' => .., 'triggerid' => .., 'host' => .., 'ip' => .., 'description' => .., 'trigger' => ..,
+	 *                  'severity' => 0~5, 'count' => N], ...]
+	 *   예) ['hostid' => '10084', 'triggerid' => '23001', 'host' => 'web-server-01', 'ip' => '10.0.0.1', 'description' => '...',
 	 *        'trigger' => 'CPU 사용률 높음', 'severity' => 4, 'count' => 12]
 	 *   severity 는 트리거의 심각도 숫자다. 0(미분류) ~ 5(가장 심각).
 	 */
@@ -430,6 +431,9 @@ class PeakEventList extends CController {
 			$host_detail = ($host !== null && array_key_exists($host['hostid'], $hosts)) ? $hosts[$host['hostid']] : null;
 
 			$rows[] = [
+				// hostid, triggerid 는 화면의 호스트 메뉴, 트리거 메뉴에 쓴다. 내보내기 파일에는 들어가지 않는다. (getColumns() 에 없다)
+				'hostid' => $host !== null ? $host['hostid'] : '',
+				'triggerid' => (string) $triggerid,	// 배열 키로 쓰여 숫자가 되었으므로 API 처럼 문자열로 맞춘다.
 				'host' => $host !== null ? $host['name'] : '',
 				'ip' => $host_detail !== null ? HostHelper::mainIp($host_detail['interfaces']) : '',
 				'description' => $host_detail !== null ? $host_detail['description'] : '',

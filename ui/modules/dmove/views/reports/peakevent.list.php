@@ -25,7 +25,7 @@
  *   active_tab        필터가 펼쳐져 있는지 (지난번 상태)
  *   host_filter       호스트 그룹/호스트 선택창에 표시할 값. ['groups' => [...], 'hosts' => [...]]
  *   filter            ['name' => 'CPU', 'severities' => [2, 4]]
- *   rows              [['host' => .., 'ip' => .., 'description' => .., 'trigger' => .., 'severity' => 0~5, 'count' => N], ...]
+ *   rows              [['hostid' => .., 'triggerid' => .., 'host' => .., 'ip' => .., 'description' => .., 'trigger' => .., 'severity' => 0~5, 'count' => N], ...]
  *
  * ── 관련 파일 ──
  *   actions/reports/peakevent/PeakEventList.php   컨트롤러
@@ -100,13 +100,34 @@ foreach ($data['columns'] as $column) {
 // CTableInfo: 코어의 목록 표. 행이 하나도 없으면 "데이터 없음" 안내 줄을 스스로 표시한다.
 $table = (new CTableInfo())->setHeader($header);
 
+/*
+ * 트리거 메뉴의 링크(장애, 설정 등)를 따라갔다가 [취소]로 돌아올 주소. 지금 화면이다.
+ * 코어는 backurl 이 zabbix.php 로 시작하는지 검사하므로 상대 주소로 넘긴다.
+ */
+$backurl = (new CUrl('zabbix.php'))->setArgument('action', $data['action'])->getUrl();
+
 foreach ($data['rows'] as $row) {
+	/*
+	 * 5버전 화면처럼 호스트 이름과 Peak이벤트 유형(트리거 이름)을 누르면 코어 메뉴가 뜬다.
+	 *   호스트 메뉴 : 인벤토리, 최근 데이터, 장애, 그래프, 대시보드, 웹, 설정 + 스크립트
+	 *   트리거 메뉴 : 장애, 설정(트리거), 이력(트리거에 쓰인 아이템의 그래프/값)
+	 * CLinkAction : 밑줄 친 글자. 누르면 이동하지 않고 메뉴를 띄운다.
+	 * 호스트가 없는 줄(그 사이 삭제 등)은 글자만 표시한다.
+	 */
+	$host_cell = $row['hostid'] !== ''
+		? (new CLinkAction($row['host']))->setMenuPopup(CMenuPopupHelper::getHost($row['hostid']))
+		: $row['host'];
+	$trigger_cell = (new CLinkAction($row['trigger']))->setMenuPopup(CMenuPopupHelper::getTrigger([
+		'triggerid' => $row['triggerid'],
+		'backurl' => $backurl
+	]));
+
 	// ZBX_STYLE_NOWRAP: 칸 안에서 줄바꿈을 하지 않는다.  ZBX_STYLE_WORDBREAK: 긴 글자를 칸 너비에 맞춰 줄바꿈한다.
 	$table->addRow([
-		(new CCol($row['host']))->addClass(ZBX_STYLE_NOWRAP),
+		(new CCol($host_cell))->addClass(ZBX_STYLE_NOWRAP),
 		(new CCol($row['ip']))->addClass(ZBX_STYLE_NOWRAP),
 		(new CCol($row['description']))->addClass(ZBX_STYLE_WORDBREAK),
-		(new CCol($row['trigger']))->addClass(ZBX_STYLE_WORDBREAK),
+		(new CCol($trigger_cell))->addClass(ZBX_STYLE_WORDBREAK),
 		// 심각도 칸. 코어 도우미가 심각도 이름과 배경색(정보/경고/평균/높음/재해)을 넣어 준다.
 		CSeverityHelper::makeSeverityCell($row['severity']),
 		$row['count']

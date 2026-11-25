@@ -24,7 +24,7 @@
  *   sortorder    현재 정렬 방향. 'ASC' 또는 'DESC'
  *   paging       페이지 번호 줄
  *   rows         행 1개 = 호스트 1대.
- *                ['host' => .., 'ip' => .., 'description' => .., 'os' => ..,
+ *                ['hostid' => .., 'host' => .., 'ip' => .., 'description' => .., 'os' => ..,
  *                 'server_time' => '158 일, 13:38:45', 'server_start' => '2026/06/14 05:13:26']
  *
  * ── 관련 파일 ──
@@ -90,7 +90,14 @@ $table = (new CTableInfo())
 foreach ($data['rows'] as $row) {
 	// 값은 문자열 그대로 넘긴다. 화면 클래스가 출력할 때 HTML 이스케이프를 해 준다.
 	$table->addRow([
-		(new CCol($row['host']))->addClass(ZBX_STYLE_NOWRAP),
+		/*
+		 * 호스트 이름을 누르면 코어의 호스트 메뉴가 뜬다. (5버전 화면과 같다)
+		 *   메뉴: 인벤토리, 최근 데이터, 장애, 그래프, 대시보드, 웹, 설정 + 이 호스트에 쓸 수 있는 스크립트
+		 *   CLinkAction                 : 밑줄 친 글자. 누르면 이동하지 않고 메뉴를 띄운다.
+		 *   CMenuPopupHelper::getHost() : 코어 호스트 메뉴의 데이터. 메뉴 내용은 브라우저가 서버에 따로 물어 그린다.
+		 */
+		(new CCol((new CLinkAction($row['host']))->setMenuPopup(CMenuPopupHelper::getHost($row['hostid']))))
+			->addClass(ZBX_STYLE_NOWRAP),
 		(new CCol($row['ip']))->addClass(ZBX_STYLE_NOWRAP),
 		(new CCol($row['description']))->addClass(ZBX_STYLE_WORDBREAK),
 		$row['os'],
