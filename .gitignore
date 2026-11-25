@@ -1,3 +1,6 @@
 # 이미지 파일은 커밋하지 않는다
 /*.jpg
 .idea/
+
+# 로그인 추가 인증 설정(인증 서버 주소, 키). 공개 저장소라 넣지 않는다. 견본: login.conf.example.php
+ui/modules/dmove/conf/login.conf.php

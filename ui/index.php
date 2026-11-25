@@ -35,7 +35,11 @@ $fields = [
 	'enter' =>		[T_ZBX_STR, O_OPT,	P_SYS,			null,		null],
 	'autologin' =>	[T_ZBX_INT, O_OPT,	P_SYS,			IN([0,1]),	null],
 	'request' =>	[T_ZBX_STR, O_OPT,	null,			null,		null],
-	'form' =>		[T_ZBX_STR, O_OPT,	null,			null,		null]
+	'form' =>		[T_ZBX_STR, O_OPT,	null,			null,		null],
+	// DMOVE-PATCH BEGIN: 로그인 추가 인증(OTP, MPASS)의 입력값 (docs/CORE_PATCHES.md)
+	'otp' =>		[T_ZBX_STR, O_OPT,	null,			null,		null],
+	'dmove_mpass' =>	[T_ZBX_STR, O_OPT,	null,	IN('"request","result","cancel"'),	null]
+	// DMOVE-PATCH END
 ];
 // [DM 해설] 로그인 화면의 진입 파일(옛 방식 페이지). 로그인 폼 표시와 로그인 처리(POST)를 모두 여기서 한다.
 // [DM 해설] 위 $fields 가 로그인 폼에서 받을 수 있는 값 목록이다. 폼에 입력창(OTP 번호 등)을 추가하면 여기에도 추가해야 getRequest() 로 읽힌다.
@@ -63,6 +67,14 @@ if ($request !== '' && !CHtmlUrlValidator::validateSameSite($request)) {
 	$request = '';
 }
 
+// DMOVE-PATCH BEGIN: MPASS(휴대폰 간편인증) 요청/결과/취소. 로그인 화면 스크립트가 부르고, JSON 으로 응답한 뒤 끝난다.
+require_once __DIR__.'/modules/dmove/includes/LoginAuth.php';
+
+if (hasRequest('dmove_mpass')) {
+	\Modules\DMove\Includes\LoginAuth::handleMpass(getRequest('dmove_mpass'), $request, (int) $autologin);
+}
+// DMOVE-PATCH END
+
 if (!hasRequest('form')
 		&& CAuthenticationHelper::getPublic(CAuthenticationHelper::HTTP_AUTH_ENABLED) == ZBX_AUTH_HTTP_ENABLED
 		&& CAuthenticationHelper::getPublic(CAuthenticationHelper::HTTP_LOGIN_FORM) == ZBX_AUTH_FORM_HTTP
@@ -73,7 +85,10 @@ if (!hasRequest('form')
 // login via form
 // [DM 해설] 로그인 처리의 핵심. [Sign in] 버튼(enter)이 눌렸으면 CWebUser::login() 으로 아이디/비밀번호를 검증한다.
 // [DM 해설] 성공하면 이 블록 안으로 들어온다. 이 시점에 세션은 이미 만들어져 있다.
-if (hasRequest('enter') && CWebUser::login(getRequest('name', ZBX_GUEST_USER), getRequest('password', ''))) {
+// DMOVE-PATCH BEGIN: 비밀번호가 맞으면 OTP 를 확인한다. 틀리면 방금 만든 세션을 끊는다. (기능이 꺼져 있으면 늘 통과)
+if (hasRequest('enter') && CWebUser::login(getRequest('name', ZBX_GUEST_USER), getRequest('password', ''))
+		&& \Modules\DMove\Includes\LoginAuth::verifyOtpOrLogout(getRequest('otp', ''))) {
+// DMOVE-PATCH END
 	CSessionHelper::set('sessionid', CWebUser::$data['sessionid']);
 
 	if (CWebUser::$data['autologin'] != $autologin) {
