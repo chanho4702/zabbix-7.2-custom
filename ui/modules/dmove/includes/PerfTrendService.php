@@ -3,7 +3,7 @@
  * 성능 데이터 추세 분석의 데이터 처리. (그래프 그리기, CSV 만들기)
  *
  * ── 이 파일이 하는 일 ──
- *   사용자가 정한 "데이터 셋"(호스트 패턴 + 아이템 패턴 + 색 + 그래프 형식)으로
+ *   사용자가 정한 "데이터 셋"(호스트 패턴 + 아이템 패턴 + 색, 그래프 형식, Y축, 타임 시프트, 집계 등)과 기간으로
  *     1) Zabbix 코어의 그래프 위젯과 같은 SVG 그래프를 그리고
  *     2) 같은 아이템의 값을 5버전과 같은 모양의 CSV 로 만든다.
  *
@@ -72,42 +72,171 @@ class PerfTrendService {
 		return $this->config['max_csv_rows'];
 	}
 
+	/** 결손 데이터 처리. 5버전 화면의 세 가지 (없음 / 접속됨 / 0 으로 처리). 코어 상수와 같은 값이다. */
+	public const MISSING_DATA_FUNCS = [SVG_GRAPH_MISSING_DATA_NONE, SVG_GRAPH_MISSING_DATA_CONNECTED,
+		SVG_GRAPH_MISSING_DATA_TREAT_AS_ZERO
+	];
+
+	/** 집계 함수. 5버전 화면과 같은 목록이다. (없음, min, max, avg, count, sum, first, last) */
+	public const AGGREGATE_FUNCTIONS = [AGGREGATE_NONE, AGGREGATE_MIN, AGGREGATE_MAX, AGGREGATE_AVG, AGGREGATE_COUNT,
+		AGGREGATE_SUM, AGGREGATE_FIRST, AGGREGATE_LAST
+	];
+
+	/** [기간] 탭에서 "사용자 정의 기간"을 고르지 않았을 때의 기간. 5버전처럼 최신 1시간. */
+	public const DEFAULT_PERIOD = ['custom' => 0, 'from' => 'now-1h', 'to' => 'now'];
+
 	/**
-	 * 화면/저장값에서 온 데이터 셋을 올바른 모양으로 고른다. 잘못된 값은 버리거나 기본값으로 바꾼다.
+	 * 데이터 셋 한 줄의 기본값. 5버전 화면(5.0 그래프 위젯)의 기본값과 같다.
+	 *   색은 줄마다 다르게 normalizeDataSets() 가 기본 색상표에서 고른다.
+	 */
+	public static function defaultDataSet(): array {
+		return [
+			'hosts' => [],
+			'items' => [],
+			'color' => CWidgetFieldDataSet::DEFAULT_COLOR_PALETTE[0],
+			'type' => SVG_GRAPH_TYPE_LINE,
+			'width' => SVG_GRAPH_DEFAULT_WIDTH,
+			'pointsize' => SVG_GRAPH_DEFAULT_POINTSIZE,
+			'transparency' => SVG_GRAPH_DEFAULT_TRANSPARENCY,
+			'fill' => SVG_GRAPH_DEFAULT_FILL,
+			'missingdatafunc' => SVG_GRAPH_MISSING_DATA_NONE,
+			'axisy' => GRAPH_YAXIS_SIDE_LEFT,
+			'timeshift' => '',
+			'aggregate_function' => AGGREGATE_NONE,
+			'aggregate_interval' => GRAPH_AGGREGATE_DEFAULT_INTERVAL,
+			'aggregate_grouping' => GRAPH_AGGREGATE_BY_ITEM
+		];
+	}
+
+	/**
+	 * 화면/저장값에서 온 데이터 셋을 올바른 모양으로 고른다. 잘못된 값은 기본값으로 바꾼다.
 	 *
-	 * @param array $data_sets  [['hosts' => 'web-*, db-01', 'items' => 'CPU utilization', 'color' => 'FF465C', 'type' => 0], ...]
-	 *                          hosts / items 는 쉼표로 나눈 글자 또는 배열.
+	 * @param array $data_sets  화면의 ds[n][...] 값. hosts / items 는 배열(패턴 선택창) 또는 쉼표로 나눈 글자.
+	 *   예) [['hosts' => ['web-*'], 'items' => ['CPU utilization'], 'color' => 'FF465C', 'type' => '0',
+	 *         'width' => '1', 'timeshift' => '1w', ...], ...]
 	 *
-	 * @return array  [['hosts' => ['web-*', 'db-01'], 'items' => ['CPU utilization'], 'color' => 'FF465C', 'type' => 0], ...]
-	 *                호스트나 아이템이 비어 있어도 줄은 남긴다(화면에서 고칠 수 있게). 최대 MAX_DATA_SETS 개.
+	 * @return array  defaultDataSet() 과 같은 키의 배열 목록. 최대 MAX_DATA_SETS 개.
+	 *                호스트나 아이템이 비어 있어도 줄은 남긴다(화면에서 고칠 수 있게).
 	 */
 	public static function normalizeDataSets(array $data_sets): array {
 		$result = [];
+		$palette = CWidgetFieldDataSet::DEFAULT_COLOR_PALETTE;
 
 		foreach (array_values($data_sets) as $index => $data_set) {
 			if (!is_array($data_set) || count($result) >= self::MAX_DATA_SETS) {
 				continue;
 			}
 
-			$color = strtoupper(ltrim(trim((string) ($data_set['color'] ?? '')), '#'));
+			$default = self::defaultDataSet();
 
 			// 색은 16진수 6글자. 아니면 코어 기본 색상표에서 순서대로 고른다.
+			$color = strtoupper(ltrim(trim((string) ($data_set['color'] ?? '')), '#'));
+
 			if (preg_match('/^[0-9A-F]{6}$/', $color) !== 1) {
-				$palette = CWidgetFieldDataSet::DEFAULT_COLOR_PALETTE;
 				$color = $palette[$index % count($palette)];
 			}
 
-			$type = (int) ($data_set['type'] ?? SVG_GRAPH_TYPE_LINE);
+			// 타임 시프트: "1h", "-1d", "1w" 같은 시간 단위. 틀리거나 범위(약 ±10년) 밖이면 비운다(= 없음).
+			$timeshift = trim((string) ($data_set['timeshift'] ?? ''));
+			$seconds = $timeshift !== '' ? timeUnitToSeconds($timeshift, true) : null;
+
+			if ($seconds === null || $seconds < ZBX_MIN_TIMESHIFT || $seconds > ZBX_MAX_TIMESHIFT) {
+				$timeshift = '';
+			}
+
+			// 집계 간격: "1h" 같은 시간 단위. 틀리면 기본 1h.
+			$interval = trim((string) ($data_set['aggregate_interval'] ?? ''));
+			$seconds = $interval !== '' ? timeUnitToSeconds($interval, true) : null;
+
+			if ($seconds === null || $seconds < 1 || $seconds > ZBX_MAX_TIMESHIFT) {
+				$interval = GRAPH_AGGREGATE_DEFAULT_INTERVAL;
+			}
 
 			$result[] = [
 				'hosts' => self::splitPatterns($data_set['hosts'] ?? []),
 				'items' => self::splitPatterns($data_set['items'] ?? []),
 				'color' => $color,
-				'type' => in_array($type, self::GRAPH_TYPES, true) ? $type : SVG_GRAPH_TYPE_LINE
+				'type' => self::pick($data_set, 'type', self::GRAPH_TYPES, $default['type']),
+				'width' => self::range($data_set, 'width', 0, 10, $default['width']),
+				'pointsize' => self::range($data_set, 'pointsize', 1, 10, $default['pointsize']),
+				'transparency' => self::range($data_set, 'transparency', 0, 10, $default['transparency']),
+				'fill' => self::range($data_set, 'fill', 0, 10, $default['fill']),
+				'missingdatafunc' => self::pick($data_set, 'missingdatafunc', self::MISSING_DATA_FUNCS,
+					$default['missingdatafunc']
+				),
+				'axisy' => self::pick($data_set, 'axisy', [GRAPH_YAXIS_SIDE_LEFT, GRAPH_YAXIS_SIDE_RIGHT],
+					$default['axisy']
+				),
+				'timeshift' => $timeshift,
+				'aggregate_function' => self::pick($data_set, 'aggregate_function', self::AGGREGATE_FUNCTIONS,
+					$default['aggregate_function']
+				),
+				'aggregate_interval' => $interval,
+				'aggregate_grouping' => self::pick($data_set, 'aggregate_grouping',
+					[GRAPH_AGGREGATE_BY_ITEM, GRAPH_AGGREGATE_BY_DATASET], $default['aggregate_grouping']
+				)
 			];
 		}
 
 		return $result;
+	}
+
+	/**
+	 * [기간] 탭의 값을 고른다.
+	 *
+	 * @param array $period  ['custom' => '1', 'from' => 'now-1d', 'to' => 'now']
+	 *
+	 * @return array  ['custom' => 0 또는 1, 'from' => .., 'to' => ..]. 글자가 비면 기본값.
+	 */
+	public static function normalizePeriod(array $period): array {
+		$from = trim((string) ($period['from'] ?? ''));
+		$to = trim((string) ($period['to'] ?? ''));
+
+		return [
+			'custom' => (int) ($period['custom'] ?? 0) === 1 ? 1 : 0,
+			'from' => $from !== '' ? $from : self::DEFAULT_PERIOD['from'],
+			'to' => $to !== '' ? $to : self::DEFAULT_PERIOD['to']
+		];
+	}
+
+	/**
+	 * 기간을 유닉스 초로 바꾼다. "사용자 정의 기간"이 꺼져 있으면 최신 1시간.
+	 *
+	 *   CRangeTimeParser : 코어의 시간 표현 해석기. "now-1d/d", "2026-11-25 00:00:00" 같은 글자를 읽는다.
+	 *
+	 * @param array $period  normalizePeriod() 의 결과.
+	 *
+	 * @return array  ['from_ts' => 초, 'to_ts' => 초, 'error' => 오류 문구 또는 null]
+	 *                오류면 from_ts / to_ts 는 최신 1시간이다.
+	 */
+	public static function resolvePeriod(array $period): array {
+		$source = $period['custom'] ? $period : self::DEFAULT_PERIOD;
+		$parser = new \CRangeTimeParser();
+
+		$from_ts = $parser->parse($source['from']) === \CParser::PARSE_SUCCESS
+			? $parser->getDateTime(true)->getTimestamp()
+			: null;
+		$to_ts = $parser->parse($source['to']) === \CParser::PARSE_SUCCESS
+			? $parser->getDateTime(false)->getTimestamp()
+			: null;
+
+		$error = null;
+
+		if ($from_ts === null) {
+			$error = _s('Invalid parameter "%1$s": %2$s.', Lang::t('From'), _('a time is expected'));
+		}
+		elseif ($to_ts === null) {
+			$error = _s('Invalid parameter "%1$s": %2$s.', Lang::t('To'), _('a time is expected'));
+		}
+		elseif ($from_ts >= $to_ts) {
+			$error = Lang::t('"From" must be earlier than "To".');
+		}
+
+		if ($error !== null) {
+			return ['from_ts' => time() - SEC_PER_HOUR, 'to_ts' => time(), 'error' => $error];
+		}
+
+		return ['from_ts' => $from_ts, 'to_ts' => $to_ts, 'error' => null];
 	}
 
 	/**
@@ -116,21 +245,21 @@ class PerfTrendService {
 	 * @param array $data_sets  normalizeDataSets() 의 결과.
 	 * @param int   $time_from  시작(유닉스 초)
 	 * @param int   $time_to    끝(유닉스 초)
+	 * @param int   $width      그래프 너비(픽셀). 화면 너비에 맞춰 스크립트가 보낸다.
+	 * @param int   $height     그래프 높이(픽셀). 범례 포함.
 	 *
-	 * @return array  ['svg' => SVG 그래프 HTML, 'legend' => 범례 HTML 또는 '', 'errors' => [오류 문구, ...]]
+	 * @return array  ['svg' => SVG 그래프 HTML, 'legend' => 범례 HTML 또는 '', 'errors' => [오류 문구, ...],
+	 *                 'data' => 마우스를 올렸을 때 값 말풍선을 띄우는 데 필요한 값(그래프 크기 등)]
 	 */
-	public function buildGraph(array $data_sets, int $time_from, int $time_to): array {
+	public function buildGraph(array $data_sets, int $time_from, int $time_to, int $width = self::GRAPH_WIDTH,
+			int $height = self::GRAPH_HEIGHT): array {
 		$ds = [];
 
 		foreach ($data_sets as $data_set) {
-			// 코어 데이터 셋의 기본값(너비, 투명도, 채우기, 집계 없음 등)에 사용자가 고른 값만 덮어쓴다.
+			// 코어 데이터 셋의 기본값(쌓기 없음, 근사값 평균 등)에 화면의 값을 덮어쓴다.
 			$ds[] = [
-				'dataset_type' => CWidgetFieldDataSet::DATASET_TYPE_PATTERN_ITEM,
-				'hosts' => $data_set['hosts'],
-				'items' => $data_set['items'],
-				'color' => $data_set['color'],
-				'type' => $data_set['type']
-			] + CWidgetFieldDataSet::getDefaults();
+				'dataset_type' => CWidgetFieldDataSet::DATASET_TYPE_PATTERN_ITEM
+			] + $data_set + CWidgetFieldDataSet::getDefaults();
 		}
 
 		/*
@@ -182,12 +311,13 @@ class PerfTrendService {
 			'overrides' => [],
 			'templateid' => '',
 			'override_hostid' => ''
-		], self::GRAPH_WIDTH, self::GRAPH_HEIGHT);
+		], $width, $height);
 
 		return [
 			'svg' => (string) $graph['svg'],
 			'legend' => (string) $graph['legend'],
-			'errors' => (array) ($graph['errors'] ?? [])
+			'errors' => (array) ($graph['errors'] ?? []),
+			'data' => (array) ($graph['data'] ?? [])
 		];
 	}
 
@@ -351,6 +481,24 @@ class PerfTrendService {
 		$base = $use_history ? 'history' : 'trends';
 
 		return $value_type == ITEM_VALUE_TYPE_UINT64 ? $base.'_uint' : $base;
+	}
+
+	/**
+	 * $values[$key] 가 $allowed 중 하나면 그 정수를, 아니면 $default 를 돌려준다.
+	 */
+	private static function pick(array $values, string $key, array $allowed, int $default): int {
+		$value = $values[$key] ?? null;
+
+		return (is_numeric($value) && in_array((int) $value, $allowed, true)) ? (int) $value : $default;
+	}
+
+	/**
+	 * $values[$key] 가 $min ~ $max 사이의 정수면 그 값을, 아니면 $default 를 돌려준다. (슬라이더 값)
+	 */
+	private static function range(array $values, string $key, int $min, int $max, int $default): int {
+		$value = $values[$key] ?? null;
+
+		return (is_numeric($value) && (int) $value >= $min && (int) $value <= $max) ? (int) $value : $default;
 	}
 
 	/**

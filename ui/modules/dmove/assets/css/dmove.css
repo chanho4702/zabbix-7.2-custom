@@ -47,25 +47,95 @@
 }
 
 /*
- * 성능 데이터 추세 분석 화면. (views/reports/perftrend.list.php)
- *   .dm-graph     : 그래프 영역. 흰 바탕에 여백을 주고, 화면이 좁으면 가로로 스크롤한다.
- *   .dm-ds-table  : 데이터 셋 줄. 칸 사이 여백.
- *   .dm-ds-color  : 색 고르는 칸의 크기.
+ * 성능 데이터 추세 분석 화면. (views/reports/perftrend.list.php) 5버전 화면(5.0 그래프 위젯 설정)과 같은 배치.
+ *   .dm-pt-graph      : 위쪽 그래프 칸. 흰 바탕, 높이 최소 300px (5버전 #svg-graph-preview 와 같다).
+ *   .dm-pt-ds-tab     : [데이터 셋] 탭. 왼쪽에 "데이터 셋" 글자, 오른쪽에 줄 목록.
+ *   .dm-pt-ds         : 데이터 셋 한 줄. 머리(손잡이, 색, 호스트 패턴, 아이템 패턴, ×) + 펼친 몸통(옵션 두 열).
+ *   .dm-pt-swatch     : 줄 머리의 색 칸.
  */
-.dm-graph {
+.dm-pt-graph {
+	position: relative;
+	min-height: 300px;
 	margin: 0 0 10px;
 	padding: 10px;
-	overflow-x: auto;
 	background-color: #ffffff;
 	border: 1px solid #dfe4e7;
 }
 
-.dm-ds-table td {
-	padding: 3px 6px 3px 0;
+/* 말풍선용으로 붙인 대시보드 칸 이름의 위치 지정(position: absolute 등)을 끈다. */
+.dm-pt-graph .dashboard-grid-widget-container {
+	position: static;
+	display: block;
+	padding: 0;
 }
 
-.dm-ds-color {
-	width: 32px;
-	height: 24px;
+.dm-pt-ds-tab {
+	display: grid;
+	grid-template-columns: 100px 1fr;
+	column-gap: 10px;
+}
+
+.dm-pt-ds-label {
+	line-height: 24px;
+	padding-top: 5px;
+	text-align: right;
+}
+
+.dm-pt-data-sets {
+	margin: 0;
 	padding: 0;
+}
+
+.dm-pt-ds {
+	padding: 5px 0;
+}
+
+.dm-pt-ds-head {
+	display: grid;
+	grid-template-columns: 10px 24px 1fr 1fr 24px;
+	column-gap: 10px;
+	align-items: start;
+}
+
+.dm-pt-ds-head .drag-icon {
+	height: 24px;
+	cursor: grab;
+}
+
+.dm-pt-ds-head .multiselect-control {
+	overflow: hidden;
+}
+
+.dm-pt-ds-head .multiselect-control .multiselect {
+	flex-grow: 1;
+}
+
+/* 접힌 줄은 패턴 칸을 한 줄 높이로. */
+.dm-pt-ds.list-accordion-item-closed .multiselect {
+	height: 24px;
+	overflow: hidden;
+}
+
+.dm-pt-swatch {
+	display: inline-block;
+	width: 24px;
+	height: 24px;
+	cursor: pointer;
+	border: 1px solid #c4cdd2;
+	box-sizing: border-box;
+}
+
+.dm-pt-ds-body {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 20px;
+	padding: 5px 34px 0 44px;
+}
+
+.dm-pt-ds.list-accordion-item-closed .dm-pt-ds-body {
+	display: none;
+}
+
+.dm-pt-ds-add {
+	margin: 5px 0 0 44px;
 }

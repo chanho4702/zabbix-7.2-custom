@@ -91,7 +91,7 @@ class Module extends CModule {
 		'Server time check' =>				['uptime.list', []],
 		'Low usage servers' =>				['lowserver.list', ['lowserver.export']],
 		'High usage servers' =>				['highserver.list', ['highserver.export']],
-		'Performance trend analysis' =>		['perftrend.list', ['perftrend.export']],
+		'Performance trend analysis' =>		['perftrend.list', ['perftrend.graph', 'perftrend.export']],
 		'Daily check' =>					['dailycheck.list', []],
 		'Peak event analysis' =>			['peakevent.list', ['peakevent.export']],
 		'Windows patch status' =>			['winpatch.list', ['winpatch.export']],
@@ -113,8 +113,8 @@ class Module extends CModule {
 	 */
 	private const TIME_SELECTOR_PROFILES = [
 		'web.dmove.peakevent.filter',
-		'web.dmove.usageexport.filter',
-		'web.dmove.perftrend.filter'
+		'web.dmove.usageexport.filter'
+		// 성능 데이터 추세 분석은 5버전처럼 [기간] 탭(사용자 정의 기간)을 써서 시간 선택기가 없다. (2026-11-25)
 	];
 
 	/**

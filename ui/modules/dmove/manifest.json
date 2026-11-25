@@ -62,6 +62,10 @@
 			"class": "Reports/ServerUsage/ThresholdSave",
 			"layout": "layout.json"
 		},
+		"perftrend.graph": {
+			"class": "Reports/PerfTrend/PerfTrendList",
+			"layout": "layout.json"
+		},
 		"perftrend.export": {
 			"class": "Reports/PerfTrend/PerfTrendList",
 			"layout": "layout.csv"

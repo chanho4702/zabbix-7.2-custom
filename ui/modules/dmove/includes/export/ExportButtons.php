@@ -12,7 +12,7 @@
  *
  * ── 누가 쓰는가 ──
  *   내보내기가 있는 화면의 뷰. (views/inventory/swinventory.list.php, views/reports/winpatch.list.php,
- *   peakevent.list.php, perftrend.list.php, serverusage.list.php, usageexport.list.php, 견본 template/views/sample.list.php)
+ *   peakevent.list.php, serverusage.list.php, usageexport.list.php, 견본 template/views/sample.list.php)
  *
  * ── 동작 순서 ──
  *   뷰가 create('x.export') 로 버튼을 만든다
